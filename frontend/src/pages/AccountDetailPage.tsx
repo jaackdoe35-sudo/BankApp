@@ -1,4 +1,4 @@
-import { useMemo, useState, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import AppLayout from '../components/AppLayout'
@@ -29,6 +29,8 @@ export default function AccountDetailPage() {
   const [accountName, setAccountName] = useState('')
   const [accountNumber, setAccountNumber] = useState('')
   const [uploads, setUploads] = useState<Record<string, UploadMeta | null>>({})
+  const [previews, setPreviews] = useState<Record<string, string | null>>({})
+  useEffect(() => () => { Object.values(previews).forEach(url => { if (url) URL.revokeObjectURL(url) }) }, [previews])
   const [testCategory, setTestCategory] = useState('File upload validation')
   const [testNotes, setTestNotes] = useState('')
   const [error, setError] = useState('')
@@ -49,6 +51,7 @@ export default function AccountDetailPage() {
     try { stored = await storeActivityFile(file) } catch { /* Storage failure is included in the event. */ }
     const meta: UploadMeta = { id: stored?.id || '', slot, name: file.name.slice(0, 120), size: file.size, type: file.type || 'unknown', createdAt: stored?.createdAt || new Date().toISOString(), status: valid && !!stored ? 'valid' : 'invalid' }
     setUploads(current => ({ ...current, [slot]: meta }))
+    setPreviews(current => { const previous = current[slot]; if (previous) URL.revokeObjectURL(previous); return { ...current, [slot]: file.type.startsWith('image/') ? URL.createObjectURL(file) : null } })
     record('withdrawal_upload', experimentId, { ...snapshot(), uploadCount: Object.values({ ...uploads, [slot]: meta }).filter(Boolean).length }, { upload: meta, validation: meta.status === 'valid' ? 'accepted' : 'rejected', reason: !ACCEPTED.has(file.type) ? 'Unsupported file type' : file.size > MAX_FILE_SIZE ? 'File exceeds 10 MB' : undefined })
     event.target.value = ''
   }
@@ -87,8 +90,21 @@ export default function AccountDetailPage() {
               {codeChecked && <label className="mt-3">Code<input required value={codeValue} onChange={e => { setCodeValue(e.target.value); change('codeValue',e.target.value) }} placeholder="Enter code" autoComplete="off" /></label>}
             </div>
             <div className="bank-form-divider"><h3>SUPPORTING DOCUMENTS</h3><p className="bank-panel-description">Add up to five documents or images. Accepted: JPG, PNG, WebP, PDF, TXT, DOC and DOCX. Maximum 10 MB per file.</p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {SLOTS.map(slot => <label key={slot} className="block rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm"><span className="mb-2 block font-semibold text-slate-700">{slot}</span><input className="block w-full text-xs text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-indigo-800" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx" onChange={handleFile(slot)} /><span className="mt-2 block text-xs text-slate-500">{uploads[slot] ? `${uploads[slot]!.name} · ${(uploads[slot]!.size/1024/1024).toFixed(2)} MB · ${uploads[slot]!.status}` : 'No file selected'}</span></label>)}
+              <div className="withdrawal-upload-grid">
+                {SLOTS.map(slot => <div key={slot} className="withdrawal-upload-card">
+                  <label className="withdrawal-upload-dropzone">
+                    <span className="withdrawal-upload-icon" aria-hidden="true">＋</span>
+                    <strong>{slot}</strong>
+                    <span>{uploads[slot] ? 'Replace selected file' : 'Tap to choose an image or file'}</span>
+                    <small>JPG · PNG · WebP · PDF · DOC · TXT</small>
+                    <input className="withdrawal-file-input" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,image/*,application/pdf" onChange={handleFile(slot)} aria-label={slot} />
+                  </label>
+                  {uploads[slot] && <div className="withdrawal-upload-selected">
+                    {previews[slot] && <img className="withdrawal-upload-preview" src={previews[slot]!} alt={slot + ' preview'} />}
+                    <div className="withdrawal-upload-filecopy"><strong>{uploads[slot]!.name}</strong><span>{(uploads[slot]!.size/1024/1024).toFixed(2)} MB · {uploads[slot]!.status}</span></div>
+                    <button type="button" className="withdrawal-upload-remove" onClick={() => { const current = uploads[slot]; if (!current) return; if (previews[slot]) URL.revokeObjectURL(previews[slot]!); setPreviews(value => ({ ...value, [slot]: null })); setUploads(value => ({ ...value, [slot]: null })); record('withdrawal_upload_removed', experimentId, snapshot(), { upload: current, slot }) }}>Remove</button>
+                  </div>}
+                </div>)}
               </div>
               <p className="mt-3 text-xs text-slate-500">Uploaded file contents are stored in browser IndexedDB and can be opened or downloaded from the same-origin Activity Ledger. All form values and test notes are recorded as lab activity.</p>
             </div>
