@@ -181,7 +181,10 @@ function Beneficiaries() {
         >
           Add
         </button>
-        {addM.isPending && <span className="text-sm text-slate-500">Saving payee…</span>}\n        {error && <span role="alert" className="text-sm text-red-600">{error}</span>}\n        {addM.isSuccess && <span role="status" className="text-sm text-emerald-700">Payee saved.</span>}\n        {delM.isError && <span role="alert" className="text-sm text-red-600">Unable to remove payee.</span>}
+        {addM.isPending && <span className="text-sm text-slate-500">Saving payee…</span>}
+        {error && <span role="alert" className="text-sm text-red-600">{error}</span>}
+        {addM.isSuccess && <span role="status" className="text-sm text-emerald-700">Payee saved.</span>}
+        {delM.isError && <span role="alert" className="text-sm text-red-600">Unable to remove payee.</span>}
       </div>
 
       <ul className="mt-4 divide-y divide-slate-100">
@@ -193,10 +196,12 @@ function Beneficiaries() {
               <span className="font-mono text-slate-500">{b.accountNumber}</span>
             </span>
             <button
+              type="button"
+              disabled={delM.isPending}
               onClick={() => delM.mutate(b.id)}
-              className="text-slate-400 hover:text-red-600"
+              className="text-slate-400 hover:text-red-600 disabled:opacity-50"
             >
-              Remove
+              {delM.isPending ? 'Removing…' : 'Remove'}
             </button>
           </li>
         ))}
