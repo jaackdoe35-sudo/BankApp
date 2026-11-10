@@ -105,7 +105,7 @@ export default function AccountDetailPage() {
                 onSubmit={(e) => { e.preventDefault(); setError(null); withdrawM.mutate() }}
               >
                 <h3 className="font-semibold">Bank details</h3>
-                <p className="text-sm text-slate-500">Enter the bank account details for this withdrawal request.</p>
+                <p className="text-sm text-slate-500">Enter the bank account details for this withdrawal request. This demo does not send or store these details; the request will be rejected.</p>
                 <label className="block text-sm font-medium text-slate-700">
                   Bank name
                   <input required value={bankDetails.bankName} onChange={(e) => setBankDetails(d => ({ ...d, bankName: e.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="e.g. First Bank" />
