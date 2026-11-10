@@ -149,6 +149,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.goto('http://127.0.0.1:4173/notifications', { waitUntil: 'networkidle' })
     const markAllRead = page.getByRole('button', { name: 'Mark all read' })
     await markAllRead.click()
+    await page.waitForFunction(() => Array.from(document.querySelectorAll('button')).some(button => button.textContent?.trim() === 'Mark all read' && button.disabled))
     assert.equal(await markAllRead.isDisabled(), true, 'mark-all-read should disable after notifications are read')
 
     await page.reload({ waitUntil: 'networkidle' })
