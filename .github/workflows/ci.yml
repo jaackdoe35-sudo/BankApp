@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   backend:
     name: Backend (Maven verify)
@@ -43,6 +46,15 @@ jobs:
         run: npm ci
       - name: Apply compatible dependency security updates
         run: npm audit fix
+      - name: Commit patched dependency lockfile
+        run: |
+          if ! git diff --quiet -- package-lock.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add package-lock.json
+            git commit -m "fix: update vulnerable frontend dependencies"
+            git push origin "HEAD:${GITHUB_HEAD_REF}"
+          fi
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
       - name: Upload updated frontend lockfile
