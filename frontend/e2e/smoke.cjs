@@ -50,7 +50,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.getByPlaceholder('0.00').fill('125.50')
     await page.getByLabel('Bank name').fill('Synthetic Test Bank')
     await page.getByLabel('Account name').fill('Test Customer')
-    await page.getByLabel('Account number').fill('1234567890')
+    await page.getByRole('textbox', { name: 'Account number', exact: true }).fill('1234567890')
     await page.getByLabel('Enter a Code').check()
     await page.getByPlaceholder('Enter code').fill('482913')
 
