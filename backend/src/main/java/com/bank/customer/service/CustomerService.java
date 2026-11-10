@@ -47,11 +47,6 @@ public class CustomerService {
         CustomerProfile profile = requireProfile(userId);
         if (request.firstName() != null) profile.setFirstName(request.firstName());
         if (request.lastName() != null) profile.setLastName(request.lastName());
-        if (request.dateOfBirth() != null) profile.setDateOfBirth(request.dateOfBirth());
-        if (request.phone() != null) profile.setPhone(request.phone());
-        if (request.addressLine1() != null) profile.setAddressLine1(request.addressLine1());
-        if (request.city() != null) profile.setCity(request.city());
-        if (request.country() != null) profile.setCountry(request.country());
         return toResponse(user, profile);
     }
 
@@ -81,11 +76,6 @@ public class CustomerService {
                 user.getEmail(),
                 user.getRole().name(),
                 p == null ? null : p.getFirstName(),
-                p == null ? null : p.getLastName(),
-                p == null ? null : p.getDateOfBirth(),
-                p == null ? null : p.getPhone(),
-                p == null ? null : p.getAddressLine1(),
-                p == null ? null : p.getCity(),
-                p == null ? null : p.getCountry());
+                p == null ? null : p.getLastName());
     }
 }
