@@ -22,8 +22,8 @@ class AccountLedgerIntegrationTest extends AbstractIntegrationTest {
     JdbcTemplate jdbc;
 
     @Test
-    void tellerDepositAndWithdrawAdjustBalance() throws Exception {
-        String token = registerVerified("acct1@example.com");
+    void withdrawalIsDisabledAndDoesNotChangeBalance() throws Exception {
+        String token = register("acct1@example.com");
         JsonNode account = openAccount(token);
         String accountId = account.get("id").asText();
         String number = account.get("accountNumber").asText();
@@ -32,34 +32,21 @@ class AccountLedgerIntegrationTest extends AbstractIntegrationTest {
 
         mvc.perform(post("/api/v1/accounts/" + accountId + "/withdraw")
                         .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"amount\":30.00}"))
-                .andExpect(status().isOk());
+                        .contentType(MediaType.APPLICATION_JSON).content("{\\"amount\\":30.00}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", is("cannot withdraw")));
 
         mvc.perform(get("/api/v1/accounts/" + accountId).header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.balance", is(70.00)));
+                .andExpect(jsonPath("$.balance", is(100.00)));
 
         String txns = mvc.perform(get("/api/v1/accounts/" + accountId + "/transactions")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         JsonNode arr = mapper.readTree(txns);
-        assertThat(arr).hasSize(2);
-        assertThat(arr.get(0).get("type").asText()).isEqualTo("WITHDRAWAL");
-        assertThat(arr.get(0).get("balanceAfter").asDouble()).isEqualTo(70.00);
-        assertThat(arr.get(1).get("type").asText()).isEqualTo("DEPOSIT");
-        assertThat(arr.get(1).get("balanceAfter").asDouble()).isEqualTo(100.00);
-    }
-
-    @Test
-    void withdrawBeyondBalanceIsRejected() throws Exception {
-        String token = registerVerified("acct2@example.com");
-        String accountId = openAccount(token).get("id").asText();
-
-        mvc.perform(post("/api/v1/accounts/" + accountId + "/withdraw")
-                        .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"amount\":50.00}"))
-                .andExpect(status().isUnprocessableEntity());
+        assertThat(arr).hasSize(1);
+        assertThat(arr.get(0).get("type").asText()).isEqualTo("DEPOSIT");
     }
 
     @Test
@@ -70,7 +57,7 @@ class AccountLedgerIntegrationTest extends AbstractIntegrationTest {
         mvc.perform(post("/api/v1/accounts/" + account.get("id").asText() + "/withdraw")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"amount\":100.25}"))
-                .andExpect(status().isOk());
+                .andExpect(status().isBadRequest());
 
         List<java.math.BigDecimal> sums = jdbc.query(
                 "select sum(case when direction = 'CREDIT' then amount else -amount end) as s "
