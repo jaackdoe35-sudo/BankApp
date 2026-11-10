@@ -15,7 +15,7 @@ See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full architecture and phased 
 
 - **Phase 0 — Scaffold & infra ✅**
 - **Phase 1 — Auth & users ✅** — registration, login, JWT access + rotating
-  refresh tokens (Redis), RBAC, KYC profiles, admin verification, signup/login/profile UI.
+  refresh tokens (Redis), RBAC, customer profiles, signup/login/profile UI.
 - **Phase 2 — Accounts & ledger ✅** — open accounts, deposits/withdrawals on a
   **double-entry ledger** (balanced debit/credit entries, `BigDecimal`, pessimistic
   locking, running balance), dashboard + account detail UI with transaction history.
@@ -24,13 +24,13 @@ See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full architecture and phased 
 - **Phase 4 — Cards & payments ✅** — tokenized **virtual cards** (one-time PAN, freeze/cancel,
   monthly spend limits), card purchases that debit the account, and **account top-ups** through a
   **Stripe**-or-simulated payment gateway (idempotent fulfilment).
-- **Phase 5 — Loans & interest ✅** — loan applications (KYC-gated), admin approval that
+- **Phase 5 — Loans & interest ✅** — loan applications, admin approval that
   generates an **amortization schedule** and disburses the principal, installment **repayments**,
   and a **scheduled job** that flags overdue installments. All disbursements/repayments flow
   through the ledger. Loans UI + (admin) approvals panel.
 - **Phase 6 — Notifications & audit ✅** (current) — **event-driven** via **Kafka**: services
   publish domain events that independent consumers turn into in-app **notifications** (+ email)
-  and an append-only **audit log**. Notifications bell + page; admin audit viewer + KYC panel.
+  and an append-only **audit log**. Notifications bell + page; admin audit viewer.
 
 Remaining roadmap: observability and deployment.
 
@@ -51,7 +51,7 @@ Domain events flow over Kafka topic `banking.events`; two consumer groups
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| POST | `/api/v1/loans` | bearer | Apply for a loan (requires verified KYC) |
+| POST | `/api/v1/loans` | bearer | Apply for a loan |
 | GET | `/api/v1/loans` `/{id}` | bearer | List / view loan + amortization schedule |
 | POST | `/api/v1/loans/{id}/repay` | bearer | Pay the next installment |
 | GET | `/api/v1/admin/loans` | ADMIN | List loans (optional `?status=PENDING`) |
@@ -104,7 +104,7 @@ underlying ledger transaction at most once per key.
 | GET | `/api/v1/accounts` | bearer | List my accounts |
 | GET | `/api/v1/accounts/{id}` | bearer | Get one account |
 | POST | `/api/v1/accounts/{id}/deposit` | bearer | Deposit (amount) |
-| POST | `/api/v1/accounts/{id}/withdraw` | bearer | Withdraw (amount, no overdraft) |
+| POST | `/api/v1/accounts/{id}/withdraw` | bearer | Returns `cannot withdraw`; withdrawals are disabled |
 | GET | `/api/v1/accounts/{id}/transactions` | bearer | Transaction history (newest first) |
 
 Every money movement posts a balanced set of ledger entries (debits + credits net to
@@ -118,8 +118,8 @@ zero) against the customer account and a system settlement account, in one DB tr
 | POST | `/api/v1/auth/login` | public | Authenticate, returns tokens |
 | POST | `/api/v1/auth/refresh` | public | Rotate refresh token → new pair |
 | POST | `/api/v1/auth/logout` | public | Revoke a refresh token |
-| GET | `/api/v1/users/me` | bearer | Current user + KYC profile |
-| PUT | `/api/v1/users/me/profile` | bearer | Update KYC profile |
+| GET | `/api/v1/users/me` | bearer | Current user profile |
+| PUT | `/api/v1/users/me/profile` | bearer | Update customer profile |
 | GET | `/api/v1/admin/users` | ADMIN | List all customer profiles |
 | POST | `/api/v1/admin/users/{id}/kyc` | ADMIN | Set KYC status |
 
