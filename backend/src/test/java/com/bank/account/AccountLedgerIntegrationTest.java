@@ -32,7 +32,7 @@ class AccountLedgerIntegrationTest extends AbstractIntegrationTest {
 
         mvc.perform(post("/api/v1/accounts/" + accountId + "/withdraw")
                         .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON).content("{\\"amount\\":30.00}"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"amount\":30.00}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message", is("cannot withdraw")));
 
