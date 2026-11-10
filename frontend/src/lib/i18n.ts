@@ -37,6 +37,8 @@ const translatedText = new WeakMap<Text, string>()
 const originalAttributes = new WeakMap<Element, Map<string, string>>()
 const translatedAttributes = new WeakMap<Element, Map<string, string>>()
 const translatedCache = new Map<string, string>()
+const knownTextNodes = new Set<Text>()
+const knownElements = new Set<Element>()
 const excludedTags = new Set(['SCRIPT','STYLE','NOSCRIPT','TEXTAREA','INPUT','CODE','PRE','SVG'])
 function cachedTranslation(language: string, source: string) {
   const key = language + ':' + source
@@ -64,7 +66,19 @@ async function fetchTranslation(language: string, source: string): Promise<strin
   } catch { return '' }
 }
 function translateDocument(root: HTMLElement, language: string) {
-  if (language === 'en') return () => {}
+  if (language === 'en') {
+    for (const node of knownTextNodes) {
+      if (!node.isConnected) { knownTextNodes.delete(node); continue }
+      const original = originalText.get(node)
+      if (original !== undefined) node.nodeValue = original
+    }
+    for (const element of knownElements) {
+      if (!element.isConnected) { knownElements.delete(element); continue }
+      const originals = originalAttributes.get(element)
+      originals?.forEach((value, attr) => element.setAttribute(attr, value))
+    }
+    return () => {}
+  }
   let stopped = false
   let queue = Promise.resolve()
   const manual = new Set(Object.values(messages[language] || {}))
@@ -75,7 +89,7 @@ function translateDocument(root: HTMLElement, language: string) {
     const source = previous ?? node.nodeValue ?? ''
     if (!source.trim() || !/[A-Za-z]/.test(source) || manual.has(source.trim())) return
     if (translatedText.get(node) === language) return
-    originalText.set(node, source)
+    originalText.set(node, source)\n    knownTextNodes.add(node)
     queue = queue.then(async () => {
       if (stopped) return
       const value = await cachedTranslation(language, source.trim())
@@ -83,7 +97,7 @@ function translateDocument(root: HTMLElement, language: string) {
     })
   }
   const processElement = (element: Element) => {
-    if (excludedTags.has(element.tagName) || element.closest('[data-no-translate]')) return
+    if (excludedTags.has(element.tagName) || element.closest('[data-no-translate]')) return\n    knownElements.add(element)
     const attrs = ['placeholder','title','aria-label']
     for (const attr of attrs) {
       const value = element.getAttribute(attr)
