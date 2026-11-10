@@ -68,12 +68,14 @@ function translateDocument(root: HTMLElement, language: string) {
     for (const node of knownTextNodes) {
       if (!node.isConnected) { knownTextNodes.delete(node); continue }
       const original = originalText.get(node)
-      if (original !== undefined) node.nodeValue = original\n      translatedText.delete(node)
+      if (original !== undefined) node.nodeValue = original
+      translatedText.delete(node)
     }
     for (const element of knownElements) {
       if (!element.isConnected) { knownElements.delete(element); continue }
       const originals = originalAttributes.get(element)
-      originals?.forEach((value, attr) => element.setAttribute(attr, value))\n      translatedAttributes.get(element)?.clear()
+      originals?.forEach((value, attr) => element.setAttribute(attr, value))
+      translatedAttributes.get(element)?.clear()
     }
     return () => {}
   }
