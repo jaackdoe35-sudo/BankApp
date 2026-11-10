@@ -299,3 +299,43 @@ a { color: inherit; }
 @media (max-width: 520px) {
   .bank-card-face { min-height: 218px; padding: 19px 20px 17px; border-radius: 18px; }
 }
+
+
+/* Accessible language selector and explicit withdrawal upload controls */
+.language-picker { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.language-picker > span { white-space: nowrap; font-weight: 650; }
+.language-picker select { width: clamp(145px, 18vw, 220px); min-width: 0; min-height: 40px; padding: 8px 34px 8px 11px; border: 1px solid #DCE1EF; border-radius: 9px; background: #fff; color: #172447; font-size: 12px; }
+.withdrawal-upload-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.withdrawal-upload-card { min-width: 0; padding: 10px; border: 1px solid #DCE3E0; border-radius: 12px; background: #FBFCFA; }
+.withdrawal-upload-dropzone { position: relative; display: flex !important; min-height: 142px; flex-direction: column; align-items: center; justify-content: center; gap: 7px; overflow: hidden; padding: 14px; border: 1.5px dashed #AAB8B0; border-radius: 9px; background: #F5F8F5; color: #344B40 !important; text-align: center; cursor: pointer; }
+.withdrawal-upload-dropzone:focus-within { outline: 3px solid rgba(40,95,69,.25); outline-offset: 2px; }
+.withdrawal-upload-dropzone strong { font-size: 12px; }
+.withdrawal-upload-dropzone > span:not(.withdrawal-upload-icon) { color: #5F7067; font-size: 11px; font-weight: 500; }
+.withdrawal-upload-dropzone small { color: #7D8982; font-size: 9px; font-weight: 500; }
+.withdrawal-upload-icon { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; background: #E5EEE7; color: #285F45; font-size: 22px; font-weight: 400; }
+.withdrawal-file-input { position: absolute !important; inset: 0; width: 100% !important; height: 100% !important; margin: 0 !important; opacity: 0; cursor: pointer; }
+.withdrawal-upload-selected { display: flex; min-width: 0; align-items: center; gap: 8px; padding: 10px 2px 2px; }
+.withdrawal-upload-preview { width: 42px; height: 42px; flex: 0 0 auto; border: 1px solid #E1E6E2; border-radius: 7px; object-fit: cover; }
+.withdrawal-upload-filecopy { display: grid; min-width: 0; flex: 1; gap: 3px; }
+.withdrawal-upload-filecopy strong { overflow: hidden; color: #344B40; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.withdrawal-upload-filecopy span { color: #7D8982; font-size: 9px; }
+.withdrawal-upload-remove { flex: 0 0 auto; padding: 5px 7px; border: 1px solid #E2D6D3; border-radius: 7px; background: #FFF; color: #9B463A; font-size: 10px; }
+@media (max-width: 700px) {
+  .language-picker { gap: 5px; }
+  .language-picker select { width: min(42vw, 180px); min-height: 38px; font-size: 11px; }
+  .withdrawal-upload-grid { grid-template-columns: 1fr; }
+  .withdrawal-upload-dropzone { min-height: 118px; }
+  .bank-topbar-right .language-picker > span { display: none; }
+  .bank-topbar-right .language-picker select { width: min(44vw, 170px); }
+  .bank-topbar-right { min-width: 0; }
+  .bank-topbar { gap: 8px; }
+  .bank-topbar-left { min-width: 0; }
+  .bank-topbar-left > span:last-child { display: none; }
+  .bank-content { min-width: 0; overflow-x: hidden; }
+  .bank-panel { min-width: 0; padding: 16px; }
+}
+@media (min-width: 701px) {
+  .withdrawal-upload-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+html[dir="rtl"] .bank-shell, html[dir="rtl"] .auth-shell { direction: rtl; }
+html[dir="rtl"] .withdrawal-upload-selected { direction: rtl; }
