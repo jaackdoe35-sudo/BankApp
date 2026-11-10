@@ -23,7 +23,7 @@ import java.math.BigDecimal;
 
 @Component
 @Order(20)
-@ConditionalOnProperty(name = "app.seed.demo", havingValue = "true")
+@ConditionalOnProperty(name = "app.seed.demo.enabled", havingValue = "true")
 public class DemoDataSeeder implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DemoDataSeeder.class);
