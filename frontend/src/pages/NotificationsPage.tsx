@@ -7,9 +7,11 @@ export default function NotificationsPage() {
   const qc = useQueryClient()
   const { data, isLoading } = useQuery({ queryKey: ['notifications'], queryFn: listNotifications })
 
-  const invalidate = () => {
-    qc.invalidateQueries({ queryKey: ['notifications'] })
-    qc.invalidateQueries({ queryKey: ['notifications', 'unread-count'] })
+  const invalidate = async () => {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ['notifications'] }),
+      qc.invalidateQueries({ queryKey: ['notifications', 'unread-count'] }),
+    ])
   }
   const readOne = useMutation({ mutationFn: (id: string) => markRead(id), onSuccess: invalidate })
   const readAll = useMutation({ mutationFn: markAllRead, onSuccess: invalidate })
