@@ -141,6 +141,6 @@ export function useLanguage() {
   const language = useSyncExternalStore<Language>(subscribe, snapshot, () => 'en')
   const active = messages[language] || {}
   const fallback = messages.en
-  useEffect(() => { const root = document.querySelector<HTMLElement>('.bank-shell, .auth-shell'); return root ? translateDocument(root, language) : undefined }, [language])
+  useEffect(() => { document.documentElement.lang = language; document.documentElement.dir = /^(ar|he|fa|ur)(-|$)/i.test(language) ? 'rtl' : 'ltr'; const root = document.querySelector<HTMLElement>('.bank-shell, .auth-shell'); return root ? translateDocument(root, language) : undefined }, [language])
   return { language, t: (key: string) => active[key] || fallback[key] || key, setLanguage }
 }
