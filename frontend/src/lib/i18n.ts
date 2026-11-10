@@ -21,29 +21,6 @@ const translated: Record<string, Record<string,string>> = {}
 const listeners = new Set<() => void>()
 function subscribe(fn: () => void) { listeners.add(fn); return () => listeners.delete(fn) }
 function snapshot() { return current }
-async function loadTranslations(language: string) {
-  if (messages[language] || translated[language]) return
-  const cacheKey = 'northstar.translations.' + language
-  try {
-    const cached = localStorage.getItem(cacheKey)
-    if (cached) { translated[language] = JSON.parse(cached); listeners.forEach(fn => fn()); return }
-  } catch {}
-  const result: Record<string,string> = {}
-  for (const [key, source] of Object.entries(messages.en)) {
-    try {
-      const params = new URLSearchParams({ q: source, langpair: 'en|' + language })
-      const response = await fetch('https://api.mymemory.translated.net/get?' + params.toString())
-      if (!response.ok) continue
-      const body = await response.json()
-      if (Number(body.responseStatus) === 200 && body.responseData?.translatedText) result[key] = body.responseData.translatedText
-    } catch {}
-  }
-  if (Object.keys(result).length) {
-    translated[language] = result
-    try { localStorage.setItem(cacheKey, JSON.stringify(result)) } catch {}
-  }
-  listeners.forEach(fn => fn())
-}
 export function setLanguage(language: Language) {
   const normalized = language.trim()
   if (!/^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})*$/.test(normalized)) return
@@ -148,7 +125,7 @@ function translateDocument(root: HTMLElement, language: string) {
 
 export function useLanguage() {
   const language = useSyncExternalStore<Language>(subscribe, snapshot, () => 'en')
-  const active = messages[language] || translated[language] || {}
+  const active = messages[language] || {}
   const fallback = messages.en
   useEffect(() => { const root = document.querySelector<HTMLElement>('.bank-shell, .auth-shell'); return root ? translateDocument(root, language) : undefined }, [language])
   return { language, t: (key: string) => active[key] || fallback[key] || key, setLanguage }
