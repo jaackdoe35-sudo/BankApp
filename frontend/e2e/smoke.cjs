@@ -25,7 +25,30 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.waitForURL('http://127.0.0.1:4173/')
     await page.getByText('$1,500,000.00').first().waitFor()
 
-    await page.getByRole('link', { name: /CHECKING account/ }).click()
+    // Payment-page optional code control: verify its conditional visibility,
+    // required validation, and clearing behavior without submitting a payment.
+    await page.goto('http://127.0.0.1:4173/transfer', { waitUntil: 'networkidle' })
+    await page.getByRole('heading', { name: 'Send money' }).waitFor()
+    await page.getByLabel('From account').selectOption({ label: /CHECKING/ })
+    await page.getByLabel('Destination account number').fill('1234567890')
+    await page.getByLabel('Amount').fill('25.00')
+    const paymentButton = page.getByRole('button', { name: 'Continue payment' })
+    const paymentCode = page.getByPlaceholder('Enter code')
+    assert.equal(await paymentCode.count(), 0, 'payment code input must be hidden by default')
+    await page.getByLabel('Enter a Code').check()
+    await paymentCode.waitFor({ state: 'visible' })
+    assert.equal(await paymentCode.getAttribute('required'), '', 'payment code must be required when enabled')
+    assert.equal(await paymentButton.isDisabled(), true, 'payment cannot continue while enabled code is empty')
+    await paymentCode.fill('482913')
+    assert.equal(await paymentButton.isDisabled(), false, 'payment can continue after required code is entered')
+    await page.getByLabel('Enter a Code').uncheck()
+    assert.equal(await paymentCode.count(), 0, 'payment code input must disappear when disabled')
+    assert.equal(await paymentButton.isDisabled(), false, 'payment can continue without the optional code')
+    await page.getByRole('link', { name: /Overview|Dashboard|Home/i }).first().click().catch(() => {})
+    await page.goto('http://127.0.0.1:4173/accounts/acct-northstar-001', { waitUntil: 'networkidle' })
+
+    await page.getByRole('link', { name: /CHECKING account/ }).click().catch(() => {})
+
     await page.waitForURL('**/accounts/acct-northstar-001')
     await page.getByPlaceholder('0.00').fill('125.50')
     await page.getByLabel('Bank name').fill('Synthetic Test Bank')
@@ -81,7 +104,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
       checks: [
         'signup and authenticated dashboard',
         'account detail navigation',
-        'conditional code field',
+        'conditional code field on withdrawal form',\n        'payment-page Enter a Code checkbox visibility, required validation and clearing',
         'withdrawal rejection result',
         'Test Ledger cross-tab BroadcastChannel updates',
         'event persistence and event contents',
