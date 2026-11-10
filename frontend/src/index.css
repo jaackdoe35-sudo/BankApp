@@ -52,6 +52,7 @@ a { color: inherit; }
 .bank-user-copy span { display: block; margin-top: 3px; color: #91a39a; font-size: 10px; }
 .bank-signout { margin: 4px 8px 0; padding: 7px 0; border: 0; background: transparent; color: #aebdb4; cursor: pointer; font-size: 11px; text-align: left; }
 .bank-signout:hover { color: white; }
+.mobile-signout { display: none; }
 .bank-main { min-width: 0; }
 .bank-topbar { height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 0 clamp(22px, 4vw, 58px); border-bottom: 1px solid var(--line); background: rgba(255,254,250,.88); }
 .bank-topbar-left { display: flex; align-items: center; gap: 12px; color: #68746d; font-size: 11px; }
@@ -183,6 +184,7 @@ a { color: inherit; }
 }
 @media (max-width: 700px) {
   .bank-shell { display: block; }
+  .mobile-signout { display: inline-flex; align-items: center; margin: 0; padding: 5px 0; }
   .bank-sidebar { position: relative; height: auto; padding: 14px 16px 10px; }
   .bank-brand { padding: 0 2px 13px; }
   .bank-brand-mark { width: 33px; height: 33px; font-size: 20px; }
