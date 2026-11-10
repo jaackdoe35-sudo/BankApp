@@ -101,7 +101,8 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
       checks: [
         'signup and authenticated dashboard',
         'account detail navigation',
-        'conditional code field on withdrawal form',\n        'payment-page Enter a Code checkbox visibility, required validation and clearing',
+        'conditional code field on withdrawal form',
+        'payment-page Enter a Code checkbox visibility, required validation and clearing',
         'withdrawal rejection result',
         'Test Ledger cross-tab BroadcastChannel updates',
         'event persistence and event contents',
