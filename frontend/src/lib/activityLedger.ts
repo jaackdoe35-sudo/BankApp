@@ -40,7 +40,7 @@ export function recordActivity(event: ActivityEvent) {
   try {
     const previous = JSON.parse(localStorage.getItem(STORAGE) || '[]')
     const events = Array.isArray(previous) ? previous : []
-    localStorage.setItem(STORAGE, JSON.stringify([...events, event].slice(-500)))
+    localStorage.setItem(STORAGE, JSON.stringify([...events, event]))
   } catch {
     localStorage.setItem(STORAGE, JSON.stringify([event]))
   }
