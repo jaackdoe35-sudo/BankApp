@@ -57,7 +57,7 @@ public class AccountController {
     }
 
     @PostMapping("/{accountId}/withdraw")
-    @Operation(summary = "Withdraw money from an account")
+    @Operation(summary = "Withdrawals are disabled")
     public AccountResponse withdraw(@PathVariable UUID accountId, @Valid @RequestBody AmountRequest request) {
         return AccountResponse.from(
                 accountService.withdraw(SecurityUtils.currentUserId(), accountId, request.amount()));
