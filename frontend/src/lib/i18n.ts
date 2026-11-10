@@ -1,9 +1,19 @@
 import { useEffect, useSyncExternalStore } from 'react'
 
-export const languages = [
-  { code: 'en', label: 'English' }, { code: 'fr', label: 'Français' }, { code: 'es', label: 'Español' },
-  { code: 'pt', label: 'Português' }, { code: 'ar', label: 'العربية' }, { code: 'ha', label: 'Hausa' }, { code: 'yo', label: 'Yorùbá' },
-] as const
+const LANGUAGE_CODES = ["af","am","ar","az","be","bg","bn","bs","ca","ceb","co","cs","cy","da","de","el","en","eo","es","et","eu","fa","fi","fil","fj","fr","fy","ga","gd","gl","gu","ha","haw","he","hi","hmn","hr","ht","hu","hy","id","ig","is","it","ja","jv","ka","kk","km","kn","ko","ku","ky","la","lb","lo","lt","lv","mg","mi","mk","ml","mn","mr","ms","mt","my","ne","nl","no","ny","pa","pl","ps","pt","ro","ru","rw","sd","si","sk","sl","sm","sn","so","sq","sr","st","su","sv","sw","ta","te","tg","th","tk","tl","tr","tt","ug","uk","ur","uz","vi","xh","yi","yo","zh","zu","ab","aa","av","ae","ak","an","as","ay","ba","bh","bi","bm","br","ch","cu","cv","dz","ee","fo","gn","ho","hz","ia","ie","io","iu","kg","ki","kr","ks","kv","lg","li","ln","lu","mh","na","nd","ng","nv","oc","oj","om","os","pi","qu","rm","rn","sa","sc","se","sg","sh","ss","ts","tw","ty","wa","wo","za","ast","bal","bar","bua","ce","chk","chm","crh","cvk","dty","grc","hak","hsb","ile","kab","kbd","lez","lmo","mai","nap","nso","pms","sah","scn","sco","syr","tcy","vec","vep","vro","wuu","yue"]
+
+function displayName(code: string) {
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'language' }).of(code) || code
+  } catch {
+    return code
+  }
+}
+
+export const languages = LANGUAGE_CODES
+  .map((code: string) => ({ code, label: displayName(code) }))
+  .sort((a: {code:string;label:string}, b: {code:string;label:string}) => a.label.localeCompare(b.label))
+
 export type Language = string
 const KEY = 'northstar.language.v1'
 const messages: Record<string, Record<string,string>> = {
