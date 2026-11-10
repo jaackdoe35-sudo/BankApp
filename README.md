@@ -121,7 +121,6 @@ zero) against the customer account and a system settlement account, in one DB tr
 | GET | `/api/v1/users/me` | bearer | Current user profile |
 | PUT | `/api/v1/users/me/profile` | bearer | Update customer profile |
 | GET | `/api/v1/admin/users` | ADMIN | List all customer profiles |
-| POST | `/api/v1/admin/users/{id}/kyc` | ADMIN | Set KYC status |
 
 **Demo admin** (seeded at startup): `admin@bank.local` / `Admin123!`
 (override via `ADMIN_EMAIL` / `ADMIN_PASSWORD`).
