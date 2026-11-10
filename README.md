@@ -3,7 +3,7 @@
 A simulated, full-stack banking platform built to demonstrate clean architecture,
 correct money handling (double-entry ledger), security, and a real deployment.
 
-> ⚠️ Simulated bank — no real money. Cards/payments use **Stripe test mode** (added in Phase 4).
+> ⚠️ Simulated bank — no real money. Customer withdrawals are disabled and return `cannot withdraw`. Cards/payments use **Stripe test mode** (added in Phase 4).
 
 - **Backend:** Java 21, Spring Boot 3.5, Spring Security, JPA, PostgreSQL, Redis, Kafka, Flyway, springdoc/OpenAPI
 - **Frontend:** React 19 + TypeScript, Vite, Tailwind CSS, React Query, React Router
@@ -16,9 +16,9 @@ See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full architecture and phased 
 - **Phase 0 — Scaffold & infra ✅**
 - **Phase 1 — Auth & users ✅** — registration, login, JWT access + rotating
   refresh tokens (Redis), RBAC, customer profiles, signup/login/profile UI.
-- **Phase 2 — Accounts & ledger ✅** — open accounts, deposits/withdrawals on a
+- **Phase 2 — Accounts & ledger ✅** — open accounts and deposits on a
   **double-entry ledger** (balanced debit/credit entries, `BigDecimal`, pessimistic
-  locking, running balance), dashboard + account detail UI with transaction history.
+  locking, running balance). Customer withdrawal requests are rejected with `cannot withdraw`.
 - **Phase 3 — Transfers & beneficiaries ✅** — account-to-account transfers with
   **idempotency keys** (a retried request never double-spends), saved payees, transfer UI.
 - **Phase 4 — Cards & payments ✅** — tokenized **virtual cards** (one-time PAN, freeze/cancel,
