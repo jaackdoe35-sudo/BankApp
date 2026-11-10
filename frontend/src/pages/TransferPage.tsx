@@ -56,7 +56,8 @@ export default function TransferPage() {
       <div className="account-detail-grid">
         <section className="bank-panel">
           <h2 className="bank-panel-title">Payment details</h2>
-          <p className="bank-panel-description">Review the sending account and recipient information before continuing.</p>\n          <p className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 text-xs text-indigo-900">Prototype simulation: payment requests are recorded for testing only. No funds are transferred.</p>
+          <p className="bank-panel-description">Review the sending account and recipient information before continuing.</p>
+          <p className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 text-xs text-indigo-900">Prototype simulation: payment requests are recorded for testing only. No funds are transferred.</p>
           <form className="bank-form" onSubmit={(e) => { e.preventDefault(); setError(null); setSuccess(null); transferM.mutate() }}>
             <label>From account
               <select value={sourceAccountId} onChange={(e) => setSourceAccountId(e.target.value)} required>
