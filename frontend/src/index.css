@@ -139,7 +139,11 @@ a { color: inherit; }
 .bank-content section { border-color: var(--line); }
 .bank-content h1 { color: var(--ink); }
 .bank-content section.rounded-2xl, .bank-content section.rounded-xl { border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,100,.025); }
-.bank-content button:not(.bank-primary-button) { transition: background .16s ease, border-color .16s ease, color .16s ease; }
+.bank-content button:not(.bank-primary-button) { min-height: 40px; cursor: pointer; transition: background .16s ease, border-color .16s ease, color .16s ease; }
+.bank-content button:disabled { cursor: not-allowed; }
+.bank-content button:focus-visible, .bank-content a:focus-visible, .bank-content input:focus-visible, .bank-content select:focus-visible { outline: 3px solid rgba(122,122,204,.38); outline-offset: 2px; }
+.bank-content .bank-primary-button { min-height: 46px; }
+.bank-content .flex.items-center.justify-between { flex-wrap: wrap; }
 .bank-content table { border-collapse: collapse; }
 .bank-content table th { color: #78819B; font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; }
 .bank-content table td { padding-top: 12px; padding-bottom: 12px; border-top: 1px solid var(--line); }
@@ -183,6 +187,16 @@ a { color: inherit; }
   .account-detail-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 700px) {
+  .bank-content .mt-4.space-y-2 > div { align-items: stretch; }
+  .bank-content .mt-4.space-y-2 > div > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+  .bank-content .flex.items-center.justify-between > div { min-width: 0; }
+  .bank-content .flex.items-center.justify-between > span { max-width: 100%; }
+  .bank-content .space-y-3 > div { min-width: 0; }
+  .bank-content .space-y-3 > div > div:first-child { flex-wrap: wrap; }
+  .bank-content .flex.items-end { align-items: stretch; }
+  .bank-content .flex.items-end > label { flex: 1 1 100%; }
+  .bank-content .flex.items-end > button { width: 100%; }
+
   .section-heading { flex-wrap: wrap; }
   .section-heading > div:last-child { width: 100%; flex-wrap: wrap; }
   .section-heading > div:last-child select { flex: 1 1 120px; max-width: none; }
