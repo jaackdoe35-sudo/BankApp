@@ -2,12 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import AppLayout from '../components/AppLayout'
 import { listAccounts } from '../lib/accounts'
-import {
-  addBeneficiary,
-  createTransfer,
-  deleteBeneficiary,
-  listBeneficiaries,
-} from '../lib/transfers'
+import { addBeneficiary, createTransfer, deleteBeneficiary, listBeneficiaries } from '../lib/transfers'
 import { formatMoney } from '../lib/format'
 import { apiErrorMessage } from '../lib/errors'
 
@@ -15,145 +10,121 @@ export default function TransferPage() {
   const qc = useQueryClient()
   const accountsQ = useQuery({ queryKey: ['accounts'], queryFn: listAccounts })
   const beneficiariesQ = useQuery({ queryKey: ['beneficiaries'], queryFn: listBeneficiaries })
-
   const ownAccounts = (accountsQ.data ?? []).filter((a) => a.type !== 'SYSTEM')
-
   const [sourceAccountId, setSourceAccountId] = useState('')
   const [destMode, setDestMode] = useState<'beneficiary' | 'manual'>('manual')
   const [beneficiaryNumber, setBeneficiaryNumber] = useState('')
   const [manualNumber, setManualNumber] = useState('')
   const [amount, setAmount] = useState('')
   const [note, setNote] = useState('')
+  const [codeChecked, setCodeChecked] = useState(false)
+  const [codeValue, setCodeValue] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-
   const destinationAccountNumber = destMode === 'beneficiary' ? beneficiaryNumber : manualNumber
 
   const transferM = useMutation({
-    mutationFn: () =>
-      createTransfer({
-        sourceAccountId: sourceAccountId || ownAccounts[0]?.id,
-        destinationAccountNumber,
-        amount: Number(amount),
-        note: note || undefined,
-      }),
+    mutationFn: () => createTransfer({
+      sourceAccountId: sourceAccountId || ownAccounts[0]?.id,
+      destinationAccountNumber,
+      amount: Number(amount),
+      note: note || undefined,
+    }),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['accounts'] })
-      setSuccess(
-        `Sent ${formatMoney(res.amount)} to ${res.destinationAccountNumber} · ref ${res.reference}`,
-      )
+      setSuccess(`Sent ${formatMoney(res.amount)} to ${res.destinationAccountNumber} · ref ${res.reference}`)
       setError(null)
       setAmount('')
       setNote('')
+      setCodeValue('')
+      setCodeChecked(false)
     },
-    onError: (e) => {
-      setError(apiErrorMessage(e))
-      setSuccess(null)
-    },
+    onError: (e) => { setError(apiErrorMessage(e)); setSuccess(null) },
   })
-
-  const validTransfer = Number(amount) > 0 && destinationAccountNumber.trim() !== ''
+  const validTransfer = Number(amount) > 0 && destinationAccountNumber.trim() !== '' && (!codeChecked || codeValue.trim() !== '')
 
   return (
     <AppLayout>
-      <h1 className="text-2xl font-bold tracking-tight">Send money</h1>
+      <div className="page-heading">
+        <div>
+          <p className="page-eyebrow">PAYMENTS & TRANSFERS</p>
+          <h1 className="page-title">Send money</h1>
+          <p className="page-subtitle">Make a payment from your account to a saved payee or another account.</p>
+        </div>
+      </div>
 
-      <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-6">
-        <div className="grid gap-4">
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium text-slate-700">From account</span>
-            <select
-              value={sourceAccountId}
-              onChange={(e) => setSourceAccountId(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2"
-            >
-              {ownAccounts.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.type} · {a.accountNumber} · {formatMoney(a.balance, a.currency)}
-                </option>
-              ))}
-            </select>
-          </label>
+      <div className="account-detail-grid">
+        <section className="bank-panel">
+          <h2 className="bank-panel-title">Payment details</h2>
+          <p className="bank-panel-description">Review the sending account and recipient information before continuing.</p>
+          <form className="bank-form" onSubmit={(e) => { e.preventDefault(); setError(null); setSuccess(null); transferM.mutate() }}>
+            <label>From account
+              <select value={sourceAccountId} onChange={(e) => setSourceAccountId(e.target.value)} required>
+                <option value="">Select an account</option>
+                {ownAccounts.map((a) => <option key={a.id} value={a.id}>{a.type} · {a.accountNumber} · {formatMoney(a.balance, a.currency)}</option>)}
+              </select>
+            </label>
 
-          <div>
-            <div className="mb-1 flex items-center gap-4 text-sm font-medium text-slate-700">
-              <span>To</span>
-              <label className="flex items-center gap-1 font-normal">
-                <input
-                  type="radio"
-                  checked={destMode === 'manual'}
-                  onChange={() => setDestMode('manual')}
-                />
-                Account number
+            <div className="bank-form-divider">
+              <h3>PAYMENT RECIPIENT</h3>
+              <div className="flex flex-wrap items-center gap-4 mt-4 text-xs text-slate-600">
+                <label className="flex items-center gap-2"><input type="radio" checked={destMode === 'manual'} onChange={() => setDestMode('manual')} />Account number</label>
+                <label className="flex items-center gap-2"><input type="radio" checked={destMode === 'beneficiary'} onChange={() => setDestMode('beneficiary')} />Saved payee</label>
+              </div>
+              <div className="mt-4">
+                {destMode === 'manual' ? (
+                  <label>Destination account number
+                    <input value={manualNumber} onChange={(e) => setManualNumber(e.target.value)} placeholder="Enter account number" required />
+                  </label>
+                ) : (
+                  <label>Saved payee
+                    <select value={beneficiaryNumber} onChange={(e) => setBeneficiaryNumber(e.target.value)} required>
+                      <option value="">Select a beneficiary…</option>
+                      {(beneficiariesQ.data ?? []).map((b) => <option key={b.id} value={b.accountNumber}>{b.nickname} · {b.accountNumber}</option>)}
+                    </select>
+                  </label>
+                )}
+              </div>
+            </div>
+
+            <div className="bank-form-grid">
+              <label>Amount
+                <input type="number" min="0.01" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" required />
               </label>
-              <label className="flex items-center gap-1 font-normal">
-                <input
-                  type="radio"
-                  checked={destMode === 'beneficiary'}
-                  onChange={() => setDestMode('beneficiary')}
-                />
-                Saved payee
+              <label>Payment reference <span className="font-normal text-slate-400">(optional)</span>
+                <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add a payment note" />
               </label>
             </div>
-            {destMode === 'manual' ? (
-              <input
-                value={manualNumber}
-                onChange={(e) => setManualNumber(e.target.value)}
-                placeholder="Destination account number"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2"
-              />
-            ) : (
-              <select
-                value={beneficiaryNumber}
-                onChange={(e) => setBeneficiaryNumber(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2"
-              >
-                <option value="">Select a beneficiary…</option>
-                {(beneficiariesQ.data ?? []).map((b) => (
-                  <option key={b.id} value={b.accountNumber}>
-                    {b.nickname} · {b.accountNumber}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium text-slate-700">Amount</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium text-slate-700">Note (optional)</span>
-              <input
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2"
-              />
-            </label>
-          </div>
+            <div className="bank-form-divider">
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={codeChecked} onChange={(e) => { setCodeChecked(e.target.checked); if (!e.target.checked) setCodeValue('') }} />
+                <span>Enter a Code</span>
+              </label>
+              {codeChecked && (
+                <label className="mt-4">Code
+                  <input value={codeValue} onChange={(e) => setCodeValue(e.target.value)} placeholder="Enter code" required />
+                </label>
+              )}
+            </div>
 
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => transferM.mutate()}
-              disabled={!validTransfer || transferM.isPending}
-              className="rounded-lg bg-slate-900 px-5 py-2 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-            >
-              {transferM.isPending ? 'Sending…' : 'Send transfer'}
+            <button type="submit" disabled={!validTransfer || transferM.isPending || ownAccounts.length === 0} className="bank-primary-button">
+              {transferM.isPending ? 'Processing…' : 'Continue payment'}
             </button>
-            {success && <span className="text-sm text-green-600">{success}</span>}
-            {error && <span className="text-sm text-red-600">{error}</span>}
-          </div>
-        </div>
-      </section>
+            {success && <p role="status" className="text-sm text-emerald-700">{success}</p>}
+            {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+          </form>
+        </section>
+
+        <aside className="bank-side-note">
+          <span className="bank-side-note-mark">N</span>
+          <h3>Before you continue</h3>
+          <p>Confirm the recipient details and payment amount before submitting. Payments should only be sent to recipients you trust.</p>
+          <div className="bank-side-note-rule" />
+          <p className="eyebrow" style={{ color: '#8b7955' }}>PAYMENT SECURITY</p>
+          <p>Keep any verification codes private. The optional code field is currently a UI experiment and is not validated or transmitted to the payment service.</p>
+        </aside>
+      </div>
 
       <Beneficiaries />
     </AppLayout>
