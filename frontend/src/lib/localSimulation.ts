@@ -61,7 +61,7 @@ export const localSimulationAdapter: AxiosAdapter = async (config) => {
   const method = (config.method || 'get').toLowerCase()
   const path = (config.url || '').split('?')[0]
   const body = typeof config.data === 'string' ? JSON.parse(config.data || '{}') : (config.data || {})
-  const ok = (data: any) => Promise.resolve(res(config, data))
+  const ok = (data: any, status = 200) => Promise.resolve(res(config, data, status))
   const accounts = () => readAccounts()
   const findAccount = (accountId: string) => accounts().find((a) => a.id === accountId)
 
