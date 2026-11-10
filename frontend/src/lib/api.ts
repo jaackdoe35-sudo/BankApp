@@ -29,11 +29,6 @@ export interface Profile {
   role: string;
   firstName: string | null;
   lastName: string | null;
-  dateOfBirth: string | null;
-  phone: string | null;
-  addressLine1: string | null;
-  city: string | null;
-  country: string | null;
 }
 
 export interface RegisterPayload {
@@ -46,11 +41,6 @@ export interface RegisterPayload {
 export interface UpdateProfilePayload {
   firstName?: string;
   lastName?: string;
-  dateOfBirth?: string;
-  phone?: string;
-  addressLine1?: string;
-  city?: string;
-  country?: string;
 }
 
 // ---- Interceptors ----
