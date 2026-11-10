@@ -126,7 +126,8 @@ function translateDocument(root: HTMLElement, language: string) {
   scan(root)
   const observer = new MutationObserver(records => {
     for (const item of records) {
-      if (item.type === 'characterData' && item.target instanceof Text) processText(item.target)\n      if (item.type === 'attributes' && item.target instanceof Element) processElement(item.target)
+      if (item.type === 'characterData' && item.target instanceof Text) processText(item.target)
+      if (item.type === 'attributes' && item.target instanceof Element) processElement(item.target)
       item.addedNodes.forEach(node => {
         if (node instanceof Text) processText(node)
         else if (node instanceof Element) scan(node)
