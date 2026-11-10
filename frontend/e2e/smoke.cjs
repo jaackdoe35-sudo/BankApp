@@ -40,8 +40,8 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.getByRole('button', { name: 'Continue withdrawal' }).click()
     await page.getByRole('status').getByText('Withdrawal rejected').waitFor()
     await ledger.getByText('Observed result').waitFor()
-    await ledger.getByText('482913').waitFor()
-    await ledger.getByText('Synthetic Test Bank').waitFor()
+    await ledger.getByText('482913').first().waitFor()
+    await ledger.getByText('Synthetic Test Bank').first().waitFor()
 
     const accountState = await page.evaluate(() => {
       const state = JSON.parse(localStorage.getItem('northstar.local-simulation.v1') || '{}')
