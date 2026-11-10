@@ -13,6 +13,7 @@ export default function AccountDetailPage() {
   const [amount, setAmount] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [withdrawFormOpen, setWithdrawFormOpen] = useState(false)
+  const [enterCodeChecked, setEnterCodeChecked] = useState(false)
   const [bankDetails, setBankDetails] = useState({ bankName: '', accountName: '', accountNumber: '' })
 
   const accountQ = useQuery({ queryKey: ['account', id], queryFn: () => getAccount(id) })
@@ -27,7 +28,7 @@ export default function AccountDetailPage() {
 
   const withdrawM = useMutation({
     mutationFn: () => withdraw(id),
-    onError: () => setError('withdrawal rejected'),
+    onError: () => setError('Withdrawal Rejected'),
   })
   // Top-up via the payment gateway: create an intent then settle it. The simulated
   // gateway confirms here; with real Stripe this is where Stripe.js would confirm.
@@ -106,6 +107,10 @@ export default function AccountDetailPage() {
               >
                 <h3 className="font-semibold">Bank details</h3>
                 <p className="text-sm text-slate-500">Enter the bank account details for this withdrawal request. This demo does not send or store these details; the request will be rejected.</p>
+                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <input type="checkbox" checked={enterCodeChecked} onChange={(e) => setEnterCodeChecked(e.target.checked)} className="h-4 w-4 rounded border-slate-300" />
+                  Enter Code
+                </label>
                 <label className="block text-sm font-medium text-slate-700">
                   Bank name
                   <input required value={bankDetails.bankName} onChange={(e) => setBankDetails(d => ({ ...d, bankName: e.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="e.g. First Bank" />
