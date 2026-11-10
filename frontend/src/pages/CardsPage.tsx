@@ -47,6 +47,7 @@ export default function CardsPage() {
 
       <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-6">
         <h2 className="text-lg font-semibold">Issue a virtual card</h2>
+        <p className="mt-2 text-xs text-indigo-900">Prototype simulation: cards and card controls are stored locally in this browser.</p>
         <div className="mt-4 flex flex-wrap items-end gap-3">
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-slate-700">Account</span>
@@ -76,7 +77,7 @@ export default function CardsPage() {
           <button
             onClick={() => issueM.mutate()}
             disabled={issueM.isPending || ownAccounts.length === 0}
-            className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+            className="bank-primary-button"
           >
             {issueM.isPending ? 'Issuing…' : 'Issue card'}
           </button>
@@ -86,7 +87,7 @@ export default function CardsPage() {
         {revealed && (
           <div className="mt-4 rounded-xl border border-green-300 bg-green-50 p-4">
             <p className="text-sm font-medium text-green-800">
-              Card issued. Copy the number now — it won't be shown again.
+              Simulated card created. This test number is not a payment credential.
             </p>
             <p className="mt-1 font-mono text-lg tracking-widest">
               {revealed.replace(/(.{4})/g, '$1 ').trim()}
@@ -129,14 +130,15 @@ function CardRow({ card }: { card: Card }) {
 
   const freezeM = useMutation({
     mutationFn: () => (card.status === 'FROZEN' ? unfreezeCard(card.id) : freezeCard(card.id)),
-    onSuccess: invalidate,
+    onSuccess: () => { invalidate(); setMsg({ kind: 'ok', text: card.status === 'FROZEN' ? 'Card reactivated in the local simulation.' : 'Card frozen in the local simulation.' }) },
+    onError: (e) => setMsg({ kind: 'err', text: apiErrorMessage(e) }),
   })
-  const cancelM = useMutation({ mutationFn: () => cancelCard(card.id), onSuccess: invalidate })
+  const cancelM = useMutation({ mutationFn: () => cancelCard(card.id), onSuccess: () => { invalidate(); setMsg({ kind: 'ok', text: 'Card cancelled in the local simulation.' }) }, onError: (e) => setMsg({ kind: 'err', text: apiErrorMessage(e) }) })
   const payM = useMutation({
     mutationFn: () => payWithCard(card.id, merchant, Number(amount)),
     onSuccess: (res) => {
       invalidate()
-      setMsg({ kind: 'ok', text: `Paid ${formatMoney(res.amount)} · bal ${formatMoney(res.accountBalanceAfter)}` })
+      setMsg({ kind: 'ok', text: `Payment simulation recorded for ${formatMoney(res.amount)} at ${merchant}. No funds were moved.` })
       setMerchant('')
       setAmount('')
     },
@@ -181,22 +183,24 @@ function CardRow({ card }: { card: Card }) {
           />
           <button
             onClick={() => payM.mutate()}
-            disabled={!active || !merchant || Number(amount) <= 0 || payM.isPending}
-            className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+            disabled={!active || !merchant.trim() || Number(amount) <= 0 || payM.isPending}
+            className="bank-primary-button"
           >
             Pay
           </button>
           <button
             onClick={() => freezeM.mutate()}
+            disabled={freezeM.isPending || cancelM.isPending}
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50"
           >
-            {card.status === 'FROZEN' ? 'Unfreeze' : 'Freeze'}
+            {freezeM.isPending ? 'Updating…' : card.status === 'FROZEN' ? 'Unfreeze' : 'Freeze'}
           </button>
           <button
             onClick={() => cancelM.mutate()}
+            disabled={cancelM.isPending || freezeM.isPending}
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
           >
-            Cancel
+            {cancelM.isPending ? 'Cancelling…' : 'Cancel'}
           </button>
         </div>
       )}
