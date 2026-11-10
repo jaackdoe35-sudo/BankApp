@@ -4,8 +4,10 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import AppLayout from '../components/AppLayout'
 import { getAccount, listTransactions, withdraw } from '../lib/accounts'
 import { formatDateTime, formatMoney } from '../lib/format'
+import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../lib/i18n'
 
-type Snapshot = { accountId: string; amount: string; codeChecked: boolean; bankName: string; accountName: string; accountNumberMasked: string; balanceBefore: string; balanceAfter: string; uploadCount: number }
+type Snapshot = { customerName: string; language: string; accountId: string; amount: string; codeChecked: boolean; bankName: string; accountName: string; accountNumberMasked: string; balanceBefore: string; balanceAfter: string; uploadCount: number }
 type UploadMeta = { slot: string; name: string; size: number; type: string; status: 'valid' | 'invalid' }
 const STORAGE = 'bankapp.experiment.events.v1'
 const CHANNEL = 'bankapp-experiments'
@@ -23,6 +25,8 @@ function AccountGlyph() { return <svg viewBox="0 0 24 24" aria-hidden="true"><re
 
 export default function AccountDetailPage() {
   const { id = '' } = useParams()
+  const { user } = useAuth()
+  const { language } = useLanguage()
   const [amount, setAmount] = useState('')
   const [codeChecked, setCodeChecked] = useState(false)
   const [codeValue, setCodeValue] = useState('')
@@ -36,7 +40,7 @@ export default function AccountDetailPage() {
   const txnsQ = useQuery({ queryKey: ['account', id, 'txns'], queryFn: () => listTransactions(id) })
   const account = accountQ.data
   const experimentId = useMemo(() => crypto.randomUUID(), [id])
-  const snapshot = (): Snapshot => ({ accountId: id, amount, codeChecked, bankName, accountName, accountNumberMasked: accountNumber ? '••••' : '', balanceBefore: account?.balance || 'unknown', balanceAfter: account?.balance || 'unknown', uploadCount: Object.values(uploads).filter(Boolean).length })
+  const snapshot = (): Snapshot => ({ customerName: [user?.firstName,user?.lastName].filter(Boolean).join(' ') || user?.email || 'Client', language, accountId: id, amount, codeChecked, bankName, accountName, accountNumberMasked: accountNumber ? '••••' : '', balanceBefore: account?.balance || 'unknown', balanceAfter: account?.balance || 'unknown', uploadCount: Object.values(uploads).filter(Boolean).length })
   const change = (field: string, value: string | boolean) => record('withdrawal_input', experimentId, snapshot(), { field, value: field === 'accountNumber' || field === 'codeValue' ? '[REDACTED]' : value })
   const handleFile = (slot: string) => (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
