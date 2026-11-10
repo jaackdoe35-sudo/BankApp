@@ -119,8 +119,8 @@ export const localSimulationAdapter: AxiosAdapter = async (config) => {
     if (!/^\d{6,20}$/.test(String(body.destinationAccountNumber || ''))) return error(config, 'Enter a valid destination account number')
     if (!(Number(body.amount) > 0)) return error(config, 'Enter a valid payment amount')
     const result = { reference: 'SIM-' + crypto.randomUUID().slice(0, 8).toUpperCase(), sourceAccountId: body.sourceAccountId, destinationAccountNumber: body.destinationAccountNumber, amount: money(Number(body.amount)), sourceBalanceAfter: findAccount(body.sourceAccountId)!.balance, status: 'SIMULATED_NOT_POSTED', createdAt: now() }
-    addAudit('PAYMENT_SIMULATED', 'TRANSFER', result.reference, `Payment request for ${result.amount} was simulated; no funds moved.`)
-    addNotification('PAYMENT', 'Payment simulation complete', 'The payment request was recorded for this prototype. No funds were moved.')
+    addAudit('PAYMENT_REQUEST_RECEIVED', 'TRANSFER', result.reference, `Payment request for ${result.amount} received.`)
+    addNotification('PAYMENT', 'Payment request received', `Your payment request for ${result.amount} has been received.`)
     return ok(result)
   }
 
@@ -130,7 +130,7 @@ export const localSimulationAdapter: AxiosAdapter = async (config) => {
     if (Number(body.monthlyLimit) < 0) return error(config, 'Monthly limit cannot be negative')
     const number = Array.from({ length: 16 }, () => Math.floor(Math.random() * 10)).join('')
     const card: LocalCard = { id: id('card'), accountId: body.accountId, last4: number.slice(-4), brand: 'VISA', expMonth: new Date().getMonth() + 1, expYear: new Date().getFullYear() + 4, status: 'ACTIVE', monthlyLimit: money(Number(body.monthlyLimit) || 0), createdAt: now() }
-    data.cards.unshift(card); writeData(data); addNotification('CARD', 'Virtual card issued', `A virtual card ending ${card.last4} was issued in simulation.`)
+    data.cards.unshift(card); writeData(data); addNotification('CARD', 'Virtual card issued', `Your virtual card ending ${card.last4} is ready.`)
     return ok({ card, cardNumber: number }, 201)
   }
   const cardMatch = path.match(/^\/api\/v1\/cards\/([^/]+)(?:\/(freeze|unfreeze|cancel|pay))?$/)
@@ -146,7 +146,7 @@ export const localSimulationAdapter: AxiosAdapter = async (config) => {
       if (!String(body.merchant || '').trim() || !(Number(body.amount) > 0)) return error(config, 'Enter a merchant and a valid amount')
       const account = findAccount(card.accountId)
       const result = { reference: 'SIM-' + crypto.randomUUID().slice(0, 8).toUpperCase(), merchant: body.merchant, amount: money(Number(body.amount)), accountBalanceAfter: account?.balance || '0.00', status: 'SIMULATED_NOT_POSTED' }
-      addAudit('CARD_PAYMENT_SIMULATED', 'CARD', card.id, `Card payment at ${body.merchant} simulated; no funds moved.`)
+      addAudit('CARD_PAYMENT_REQUESTED', 'CARD', card.id, `Card payment request at ${body.merchant} received.`)
       return ok(result)
     }
   }
@@ -157,7 +157,7 @@ export const localSimulationAdapter: AxiosAdapter = async (config) => {
     if (!(Number(body.principal) > 0) || !(Number(body.termMonths) >= 1) || Number(body.termMonths) > 60) return error(config, 'Enter a valid loan amount and term')
     const loan: LocalLoan = { id: id('loan'), accountId: body.accountId, principal: money(Number(body.principal)), annualRate: '0.1200', termMonths: Number(body.termMonths), status: 'PENDING', outstanding: money(Number(body.principal)), nextDueDate: null, createdAt: now() }
     data.loans.unshift(loan); data.schedules[loan.id] = loanSchedule(loan); writeData(data)
-    addNotification('LOAN', 'Application received', 'Your loan application is pending review in this prototype.')
+    addNotification('LOAN', 'Application received', 'Your loan application has been received and is pending review.')
     return ok(loan, 201)
   }
   const loanMatch = path.match(/^\/api\/v1\/(admin\/)?loans\/([^/]+)(?:\/(repay|approve|reject))?$/)
@@ -170,12 +170,12 @@ export const localSimulationAdapter: AxiosAdapter = async (config) => {
       if (loan.status !== 'ACTIVE') return error(config, 'Only active loans can be repaid')
       loan.status = 'PAID_OFF'; loan.outstanding = '0.00'; loan.nextDueDate = null
       data.schedules[loan.id] = (data.schedules[loan.id] || loanSchedule(loan)).map((row: any) => ({ ...row, status: 'PAID' }))
-      writeData(data); addNotification('LOAN', 'Repayment simulated', 'The loan was marked paid in the prototype. No account balance was changed.')
+      writeData(data); addNotification('LOAN', 'Repayment instruction received', 'Your repayment instruction has been recorded.')
       return ok({ loan, schedule: data.schedules[loan.id] })
     }
     if (action === 'approve' && method === 'post') {
       loan.status = 'ACTIVE'; loan.nextDueDate = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10); writeData(data)
-      addAudit('LOAN_APPROVED', 'LOAN', loan.id, 'Loan approval simulated; no funds were disbursed.')
+      addAudit('LOAN_APPROVED', 'LOAN', loan.id, 'Loan approval status updated.')
       return ok({ loan, schedule: data.schedules[loan.id] || loanSchedule(loan) })
     }
     if (action === 'reject' && method === 'post') { loan.status = 'REJECTED'; writeData(data); addAudit('LOAN_REJECTED', 'LOAN', loan.id, 'Loan rejection simulated.'); return ok(loan) }
@@ -200,10 +200,10 @@ export const localSimulationAdapter: AxiosAdapter = async (config) => {
   if (path === '/api/v1/admin/accounts/deposit' && method === 'post') {
     if (!accounts().some((a) => a.accountNumber === body.accountNumber)) return error(config, 'Account not found')
     if (!(Number(body.amount) > 0)) return error(config, 'Enter a valid amount')
-    addAudit('DEPOSIT_SIMULATED', 'ACCOUNT', body.accountNumber, `Deposit of ${money(Number(body.amount))} simulated; balance unchanged.`)
+    addAudit('DEPOSIT_REQUEST_RECEIVED', 'ACCOUNT', body.accountNumber, `Deposit request of ${money(Number(body.amount))} received.`)
     return ok({ status: 'SIMULATED_NOT_POSTED' })
   }
 
-  if (path.endsWith('/payments/top-up') && method === 'post') return error(config, 'Top-ups are unavailable in this local simulation')
-  return error(config, 'This feature is not enabled in the local simulation', 404)
+  if (path.endsWith('/payments/top-up') && method === 'post') return error(config, 'Top-ups are currently unavailable')
+  return error(config, 'This feature is currently unavailable', 404)
 }
