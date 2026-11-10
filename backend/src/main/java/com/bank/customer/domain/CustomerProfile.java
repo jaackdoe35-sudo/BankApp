@@ -14,7 +14,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -36,18 +35,6 @@ public class CustomerProfile {
 
     @Column(name = "last_name")
     private String lastName;
-
-    @Column(name = "date_of_birth")
-    private LocalDate dateOfBirth;
-
-    private String phone;
-
-    @Column(name = "address_line1")
-    private String addressLine1;
-
-    private String city;
-
-    private String country;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
