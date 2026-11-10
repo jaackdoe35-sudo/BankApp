@@ -20,8 +20,19 @@ function readData(): any { return readStore(STORE_KEY, { cards: [], loans: [], b
 function writeData(data: any) { localStorage.setItem(STORE_KEY, JSON.stringify(data)) }
 function updateData(fn: (data: any) => void) { const data = readData(); fn(data); writeData(data); return data }
 function readAccounts(): Account[] {
-  try { const x = JSON.parse(localStorage.getItem(ACCOUNT_KEY) || '{}'); if (Array.isArray(x.accounts) && x.accounts.length) return x.accounts } catch {}
-  const accounts: Account[] = [{ id: 'acct-northstar-001', accountNumber: '•••• 4821', type: 'CHECKING', currency: 'USD', balance: '1500000.00', status: 'ACTIVE', createdAt: now() }]
+  try {
+    const x = JSON.parse(localStorage.getItem(ACCOUNT_KEY) || '{}')
+    if (Array.isArray(x.accounts) && x.accounts.length) {
+      const accounts = x.accounts.map((account: Account) =>
+        account.id === 'acct-northstar-001' && account.balance === '1500000.00'
+          ? { ...account, balance: '5000000.00' }
+          : account,
+      )
+      if (accounts.some((account: Account, index: number) => account.balance !== x.accounts[index].balance)) writeAccounts(accounts)
+      return accounts
+    }
+  } catch {}
+  const accounts: Account[] = [{ id: 'acct-northstar-001', accountNumber: '•••• 4821', type: 'CHECKING', currency: 'USD', balance: '5000000.00', status: 'ACTIVE', createdAt: now() }]
   writeAccounts(accounts)
   return accounts
 }
@@ -68,6 +79,14 @@ export const localSimulationAdapter: AxiosAdapter = async (config) => {
   if (path.endsWith('/auth/login') && method === 'post') {
     if (!body.email || !body.password) return error(config, 'Enter your email and password', 401)
     localStorage.setItem('northstar.email', body.email)
+    const existing = profile()
+    const existingMatches = String(existing.email || '').toLowerCase() === String(body.email).toLowerCase()
+    const localPart = String(body.email).split('@')[0] || 'Client'
+    const derivedName = localPart.split(/[._-]+/).filter(Boolean).map((part: string) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ') || 'Client'
+    const nextProfile = existingMatches
+      ? { ...existing, email: body.email }
+      : { ...existing, email: body.email, firstName: derivedName, lastName: '' }
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(nextProfile))
     return ok({ accessToken: 'local-access', refreshToken: 'local-refresh', tokenType: 'Bearer', expiresInSeconds: 86400 })
   }
   if (path.endsWith('/auth/register') && method === 'post') {
