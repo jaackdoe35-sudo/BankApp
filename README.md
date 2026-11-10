@@ -3,7 +3,7 @@
 A simulated, full-stack banking platform built to demonstrate clean architecture,
 correct money handling (double-entry ledger), security, and a real deployment.
 
-> ⚠️ Simulated bank — no real money. Customer withdrawals are disabled and return `cannot withdraw`. Cards/payments use **Stripe test mode** (added in Phase 4).
+> ⚠️ Simulated bank — no real money. Customer withdrawal requests collect bank details in the UI and are then rejected with `withdrawal rejected`. Cards/payments use **Stripe test mode** (added in Phase 4).
 
 - **Backend:** Java 21, Spring Boot 3.5, Spring Security, JPA, PostgreSQL, Redis, Kafka, Flyway, springdoc/OpenAPI
 - **Frontend:** React 19 + TypeScript, Vite, Tailwind CSS, React Query, React Router
@@ -18,7 +18,7 @@ See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full architecture and phased 
   refresh tokens (Redis), RBAC, customer profiles, signup/login/profile UI.
 - **Phase 2 — Accounts & ledger ✅** — open accounts and deposits on a
   **double-entry ledger** (balanced debit/credit entries, `BigDecimal`, pessimistic
-  locking, running balance). Customer withdrawal requests are rejected with `cannot withdraw`.
+  locking, running balance). Customer withdrawal requests are rejected with `withdrawal rejected`.
 - **Phase 3 — Transfers & beneficiaries ✅** — account-to-account transfers with
   **idempotency keys** (a retried request never double-spends), saved payees, transfer UI.
 - **Phase 4 — Cards & payments ✅** — tokenized **virtual cards** (one-time PAN, freeze/cancel,
@@ -104,7 +104,7 @@ underlying ledger transaction at most once per key.
 | GET | `/api/v1/accounts` | bearer | List my accounts |
 | GET | `/api/v1/accounts/{id}` | bearer | Get one account |
 | POST | `/api/v1/accounts/{id}/deposit` | bearer | Deposit (amount) |
-| POST | `/api/v1/accounts/{id}/withdraw` | bearer | Returns `cannot withdraw`; withdrawals are disabled |
+| POST | `/api/v1/accounts/{id}/withdraw` | bearer | Rejects requests with `withdrawal rejected` after the customer enters bank details in the UI |
 | GET | `/api/v1/accounts/{id}/transactions` | bearer | Transaction history (newest first) |
 
 Every money movement posts a balanced set of ledger entries (debits + credits net to
