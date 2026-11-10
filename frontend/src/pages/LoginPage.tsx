@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { apiErrorMessage } from '../lib/errors'
-import { useLanguage } from '../lib/i18n'
 import LanguagePicker from '../components/LanguagePicker'
 
 export default function LoginPage() {
