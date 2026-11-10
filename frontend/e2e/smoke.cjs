@@ -89,6 +89,34 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     assert.ok(events.some((event) => event.type === 'withdrawal_result' && event.outcome === 'blocked'), 'rejection event must be persisted')
     assert.ok(events.some((event) => event.type === 'withdrawal_input' && event.field === 'codeChecked' && event.value === true), 'code checkbox change must be recorded')
 
+    // Exercise controls across the other customer-facing routes.
+    await page.goto('http://127.0.0.1:4173/transfer', { waitUntil: 'networkidle' })
+    await page.getByLabel('Nickname').fill('Test payee')
+    await page.getByLabel('Account number').fill('1234567890')
+    await page.getByRole('button', { name: 'Add', exact: true }).click()
+    await page.getByText('Test payee').waitFor()
+    await page.getByRole('button', { name: 'Remove' }).click()
+    await page.getByText('No saved payees.').waitFor()
+
+    await page.goto('http://127.0.0.1:4173/cards', { waitUntil: 'networkidle' })
+    await page.getByRole('button', { name: 'Issue card' }).click()
+    await page.getByText(/Simulated card created/).waitFor()
+    await page.getByRole('button', { name: 'Freeze' }).click()
+    await page.getByRole('button', { name: 'Unfreeze' }).waitFor()
+    await page.getByRole('button', { name: 'Unfreeze' }).click()
+    await page.getByRole('button', { name: 'Cancel' }).click()
+    await page.getByText('CANCELLED').waitFor()
+
+    await page.goto('http://127.0.0.1:4173/profile', { waitUntil: 'networkidle' })
+    await page.getByLabel('First name').fill('Test Updated')
+    await page.getByRole('button', { name: 'Save changes' }).click()
+    await page.getByText('Profile saved.').waitFor()
+
+    await page.goto('http://127.0.0.1:4173/notifications', { waitUntil: 'networkidle' })
+    const markAllRead = page.getByRole('button', { name: 'Mark all read' })
+    await markAllRead.click()
+    assert.equal(await markAllRead.isDisabled(), true, 'mark-all-read should disable after notifications are read')
+
     await page.reload({ waitUntil: 'networkidle' })
     await page.getByText('Withdraw funds').waitFor()
     await page.getByText('$1,500,000.00').first().waitFor()
@@ -111,6 +139,9 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
         'session persistence after reload',
         'logout and protected-route redirect',
         'no uncaught browser page errors',
+        'beneficiary add and remove controls',
+        'virtual card issue, freeze, unfreeze and cancel controls',
+        'profile update and notification read controls',
       ],
     }, null, 2))
   } finally {
