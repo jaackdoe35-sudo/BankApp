@@ -32,7 +32,7 @@ export default function TransferPage() {
     }),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['accounts'] })
-      setSuccess(`Sent ${formatMoney(res.amount)} to ${res.destinationAccountNumber} · ref ${res.reference}`)
+      setSuccess(`Payment request recorded · ${formatMoney(res.amount)} to ${res.destinationAccountNumber} · ref ${res.reference}. Simulation only: no funds were moved.`)
       setError(null)
       setAmount('')
       setNote('')
@@ -56,7 +56,7 @@ export default function TransferPage() {
       <div className="account-detail-grid">
         <section className="bank-panel">
           <h2 className="bank-panel-title">Payment details</h2>
-          <p className="bank-panel-description">Review the sending account and recipient information before continuing.</p>
+          <p className="bank-panel-description">Review the sending account and recipient information before continuing.</p>\n          <p className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 text-xs text-indigo-900">Prototype simulation: payment requests are recorded for testing only. No funds are transferred.</p>
           <form className="bank-form" onSubmit={(e) => { e.preventDefault(); setError(null); setSuccess(null); transferM.mutate() }}>
             <label>From account
               <select value={sourceAccountId} onChange={(e) => setSourceAccountId(e.target.value)} required>
@@ -181,7 +181,7 @@ function Beneficiaries() {
         >
           Add
         </button>
-        {error && <span className="text-sm text-red-600">{error}</span>}
+        {addM.isPending && <span className="text-sm text-slate-500">Saving payee…</span>}\n        {error && <span role="alert" className="text-sm text-red-600">{error}</span>}\n        {addM.isSuccess && <span role="status" className="text-sm text-emerald-700">Payee saved.</span>}\n        {delM.isError && <span role="alert" className="text-sm text-red-600">Unable to remove payee.</span>}
       </div>
 
       <ul className="mt-4 divide-y divide-slate-100">
