@@ -12,6 +12,7 @@ import com.bank.customer.repo.CustomerProfileRepository;
 import com.bank.loan.service.LoanService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.annotation.Order;
@@ -20,19 +21,12 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 
-/**
- * Seeds a ready-to-explore demo customer so the live deployment isn't empty:
- * a demo user with a funded account, a virtual card, and a pending loan
- * (for the admin to approve). Enabled with app.seed.demo=true. Idempotent.
- */
 @Component
-@Order(20) // after AdminSeeder
+@Order(20)
 @ConditionalOnProperty(name = "app.seed.demo", havingValue = "true")
 public class DemoDataSeeder implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DemoDataSeeder.class);
-    private static final String EMAIL = "demo@bank.local";
-    private static final String PASSWORD = "Demo123!";
 
     private final UserRepository userRepository;
     private final CustomerProfileRepository profileRepository;
@@ -40,27 +34,39 @@ public class DemoDataSeeder implements CommandLineRunner {
     private final AccountService accountService;
     private final CardService cardService;
     private final LoanService loanService;
+    private final String demoEmail;
+    private final String demoPassword;
 
     public DemoDataSeeder(UserRepository userRepository,
                           CustomerProfileRepository profileRepository,
                           PasswordEncoder passwordEncoder,
                           AccountService accountService,
                           CardService cardService,
-                          LoanService loanService) {
+                          LoanService loanService,
+                          @Value("${app.seed.demo.email:}") String demoEmail,
+                          @Value("${app.seed.demo.password:}") String demoPassword) {
         this.userRepository = userRepository;
         this.profileRepository = profileRepository;
         this.passwordEncoder = passwordEncoder;
         this.accountService = accountService;
         this.cardService = cardService;
         this.loanService = loanService;
+        this.demoEmail = demoEmail;
+        this.demoPassword = demoPassword;
     }
 
     @Override
     public void run(String... args) {
-        if (userRepository.existsByEmail(EMAIL)) {
+        if (demoEmail.isBlank() || demoPassword.length() < 20) {
+            throw new IllegalStateException(
+                    "Demo seeding is enabled but DEMO_EMAIL is blank or DEMO_PASSWORD is shorter than 20 characters");
+        }
+        if (userRepository.existsByEmail(demoEmail)) {
+            log.info("Demo seeding skipped: configured demo email already exists");
             return;
         }
-        User user = userRepository.save(new User(EMAIL, passwordEncoder.encode(PASSWORD), Role.CUSTOMER));
+        User user = userRepository.save(new User(
+                demoEmail, passwordEncoder.encode(demoPassword), Role.CUSTOMER));
 
         CustomerProfile profile = new CustomerProfile(user.getId(), "Demo", "User");
         profileRepository.save(profile);
@@ -70,6 +76,6 @@ public class DemoDataSeeder implements CommandLineRunner {
         cardService.issue(user.getId(), account.getId(), new BigDecimal("1000.00"));
         loanService.apply(user.getId(), account.getId(), new BigDecimal("2000.00"), 12);
 
-        log.info("Seeded demo customer {} (funded account + card + pending loan)", EMAIL);
+        log.info("Seeded configured demo customer with funded account, card, and pending loan");
     }
 }
