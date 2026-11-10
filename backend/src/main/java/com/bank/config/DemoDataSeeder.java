@@ -8,7 +8,6 @@ import com.bank.auth.domain.User;
 import com.bank.auth.repo.UserRepository;
 import com.bank.card.service.CardService;
 import com.bank.customer.domain.CustomerProfile;
-import com.bank.customer.domain.KycStatus;
 import com.bank.customer.repo.CustomerProfileRepository;
 import com.bank.loan.service.LoanService;
 import org.slf4j.Logger;
@@ -23,7 +22,7 @@ import java.math.BigDecimal;
 
 /**
  * Seeds a ready-to-explore demo customer so the live deployment isn't empty:
- * a KYC-verified user with a funded account, a virtual card, and a pending loan
+ * a demo user with a funded account, a virtual card, and a pending loan
  * (for the admin to approve). Enabled with app.seed.demo=true. Idempotent.
  */
 @Component
@@ -64,7 +63,6 @@ public class DemoDataSeeder implements CommandLineRunner {
         User user = userRepository.save(new User(EMAIL, passwordEncoder.encode(PASSWORD), Role.CUSTOMER));
 
         CustomerProfile profile = new CustomerProfile(user.getId(), "Demo", "User");
-        profile.setKycStatus(KycStatus.VERIFIED);
         profile.setCountry("UK");
         profileRepository.save(profile);
 
