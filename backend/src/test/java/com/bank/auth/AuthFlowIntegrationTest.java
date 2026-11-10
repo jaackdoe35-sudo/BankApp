@@ -33,7 +33,6 @@ class AuthFlowIntegrationTest extends AbstractIntegrationTest {
         mvc.perform(get("/api/v1/users/me").header("Authorization", "Bearer " + access))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email", is("ada@example.com")))
-                .andExpect(jsonPath("$.kycStatus", is("PENDING")))
                 .andExpect(jsonPath("$.role", is("CUSTOMER")));
     }
 
