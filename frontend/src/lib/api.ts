@@ -34,7 +34,6 @@ export interface Profile {
   addressLine1: string | null;
   city: string | null;
   country: string | null;
-  kycStatus: "PENDING" | "VERIFIED" | "REJECTED";
 }
 
 export interface RegisterPayload {
