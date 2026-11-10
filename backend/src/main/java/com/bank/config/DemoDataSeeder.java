@@ -63,7 +63,6 @@ public class DemoDataSeeder implements CommandLineRunner {
         User user = userRepository.save(new User(EMAIL, passwordEncoder.encode(PASSWORD), Role.CUSTOMER));
 
         CustomerProfile profile = new CustomerProfile(user.getId(), "Demo", "User");
-        profile.setCountry("UK");
         profileRepository.save(profile);
 
         Account account = accountService.createAccount(user.getId(), AccountType.CHECKING, "USD");
