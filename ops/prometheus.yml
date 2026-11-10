@@ -1,0 +1,10 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: banking-backend
+    metrics_path: /actuator/prometheus
+    static_configs:
+      # Scrapes the backend. host.docker.internal reaches a backend run on the host
+      # (./mvnw spring-boot:run); use "backend:8080" when running the full compose stack.
+      - targets: ["host.docker.internal:8080"]
