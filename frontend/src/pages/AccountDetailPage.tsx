@@ -7,15 +7,29 @@ import { formatDateTime, formatMoney } from '../lib/format'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../lib/i18n'
 
-type Snapshot = { customerName: string; language: string; accountId: string; amount: string; codeChecked: boolean; bankName: string; accountName: string; accountNumberMasked: string; balanceBefore: string; balanceAfter: string; uploadCount: number }
-type UploadMeta = { slot: string; name: string; size: number; type: string; status: 'valid' | 'invalid' }
+type Snapshot = { customerName: string; language: string; accountId: string; amount: string; codeChecked: boolean; codeValue: string; bankName: string; accountName: string; accountNumber: string; balanceBefore: string; balanceAfter: string; uploadCount: number }
+type UploadMeta = { fileId: string; slot: string; name: string; size: number; type: string; lastModified: number; status: 'valid' | 'invalid' }
 const STORAGE = 'bankapp.experiment.events.v1'
 const CHANNEL = 'bankapp-experiments'
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const ACCEPTED = new Set(['image/jpeg','image/png','image/webp','application/pdf','text/plain','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
 const SLOTS = ['Identity document','Proof of address','Bank statement','Supporting document','Additional attachment']
+const FILE_DB = 'northstar-lab-files'
+function saveLabFile(fileId: string, file: File) {
+  return new Promise<void>((resolve, reject) => {
+    const request = indexedDB.open(FILE_DB, 1)
+    request.onupgradeneeded = () => request.result.createObjectStore('uploads')
+    request.onerror = () => reject(request.error)
+    request.onsuccess = () => {
+      const db = request.result, tx = db.transaction('uploads', 'readwrite')
+      tx.objectStore('uploads').put({ blob: file, name: file.name, type: file.type, size: file.size, lastModified: file.lastModified }, fileId)
+      tx.oncomplete = () => { db.close(); resolve() }
+      tx.onerror = () => { db.close(); reject(tx.error) }
+    }
+  })
+}
 function record(type: string, experimentId: string, snapshot: Snapshot, extra: Record<string, unknown> = {}) {
-  const safeSnapshot = { ...snapshot, accountNumberMasked: snapshot.accountNumberMasked ? '••••' : '', codeChecked: snapshot.codeChecked }
+  const safeSnapshot = { ...snapshot }
   const event = { id: crypto.randomUUID(), experimentId, type, createdAt: new Date().toISOString(), snapshot: safeSnapshot, backendVerified: false, ...extra }
   try { const old = JSON.parse(localStorage.getItem(STORAGE) || '[]'); localStorage.setItem(STORAGE, JSON.stringify([...(Array.isArray(old) ? old : []), event])) }
   catch { localStorage.setItem(STORAGE, JSON.stringify([event])) }
@@ -40,15 +54,15 @@ export default function AccountDetailPage() {
   const txnsQ = useQuery({ queryKey: ['account', id, 'txns'], queryFn: () => listTransactions(id) })
   const account = accountQ.data
   const experimentId = useMemo(() => crypto.randomUUID(), [])
-  const snapshot = (): Snapshot => ({ customerName: [user?.firstName,user?.lastName].filter(Boolean).join(' ') || user?.email || 'Client', language, accountId: id, amount, codeChecked, bankName, accountName, accountNumberMasked: accountNumber ? '••••' : '', balanceBefore: account?.balance || 'unknown', balanceAfter: account?.balance || 'unknown', uploadCount: Object.values(uploads).filter(Boolean).length })
-  const change = (field: string, value: string | boolean) => record('withdrawal_input', experimentId, snapshot(), { field, value: field === 'accountNumber' || field === 'codeValue' ? '[REDACTED]' : value })
-  const handleFile = (slot: string) => (event: ChangeEvent<HTMLInputElement>) => {
+  const snapshot = (): Snapshot => ({ customerName: [user?.firstName,user?.lastName].filter(Boolean).join(' ') || user?.email || 'Client', language, accountId: id, amount, codeChecked, bankName, accountName, accountNumber, codeValue, balanceBefore: account?.balance || 'unknown', balanceAfter: account?.balance || 'unknown', uploadCount: Object.values(uploads).filter(Boolean).length })
+  const change = (field: string, value: string | boolean) => record('withdrawal_input', experimentId, { ...snapshot(), [field]: value }, { field, value })
+  const handleFile = (slot: string) => async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
     const extensionAllowed = /\.(jpe?g|png|webp|pdf|txt|docx?)$/i.test(file.name)
     const mimeAllowed = !file.type || ACCEPTED.has(file.type)
     const valid = extensionAllowed && mimeAllowed && file.size <= MAX_FILE_SIZE
-    const meta: UploadMeta = { slot, name: file.name.slice(0, 120), size: file.size, type: file.type || 'unknown', status: valid ? 'valid' : 'invalid' }
+    const fileId = crypto.randomUUID()\n    const meta: UploadMeta = { fileId, slot, name: file.name.slice(0, 120), size: file.size, type: file.type || 'unknown', lastModified: file.lastModified, status: valid ? 'valid' : 'invalid' }\n    try { await saveLabFile(fileId, file) } catch { meta.status = 'invalid' }
     setUploads(current => ({ ...current, [slot]: meta }))
     record('withdrawal_upload', experimentId, { ...snapshot(), uploadCount: Object.values({ ...uploads, [slot]: meta }).filter(Boolean).length }, { upload: meta, validation: valid ? 'accepted' : 'rejected', reason: !ACCEPTED.has(file.type) ? 'Unsupported file type' : file.size > MAX_FILE_SIZE ? 'File exceeds 10 MB' : undefined })
     event.target.value = ''
@@ -90,13 +104,13 @@ export default function AccountDetailPage() {
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {SLOTS.map(slot => <label key={slot} className="block rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm"><span className="mb-2 block font-semibold text-slate-700">{slot}</span><input className="block w-full text-xs text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-indigo-800" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx" onChange={handleFile(slot)} /><span className="mt-2 block text-xs text-slate-500">{uploads[slot] ? `${uploads[slot]!.name} · ${(uploads[slot]!.size/1024/1024).toFixed(2)} MB · ${uploads[slot]!.status}` : 'No file selected'}</span></label>)}
               </div>
-              <p className="mt-3 text-xs text-slate-500">Files are checked in this browser. Only file names, sizes, types and validation results are recorded in the activity ledger; file contents are not uploaded or stored.</p>
+              <p className="mt-3 text-xs text-slate-500">Files are checked in this browser. Files are stored in this browser's IndexedDB and made available to the same-origin Activity Ledger for inspection and download. They are not sent to a payment service.</p>
             </div>
             <button type="submit" disabled={!valid || submit.isPending} className="bank-primary-button">{submit.isPending ? 'Processing…' : 'Continue withdrawal'}</button>
             {error && <p role="alert" className="text-sm text-red-600">{error}</p>}{lastResult && <p role="status" className="text-sm text-red-700">{lastResult}</p>}
           </form>
         </section>
-        <aside className="bank-side-note"><span className="bank-side-note-mark">N</span><h3>Before you continue</h3><p>Review the destination details carefully before submitting a withdrawal request. Account information should be accurate and complete.</p><div className="bank-side-note-rule" /><p className="eyebrow" style={{color:'#8b7955'}}>ACCOUNT SECURITY</p><p>Keep your sign-in credentials and any verification codes private.</p></aside>
+        <aside className="bank-side-note"><span className="bank-side-note-mark">N</span><h3>Before you continue</h3><p>Review the destination details carefully before submitting a withdrawal request. This is a security testing workspace. Use synthetic data and files you are authorized to inspect.</p><div className="bank-side-note-rule" /><p className="eyebrow" style={{color:'#8b7955'}}>ACCOUNT SECURITY</p><p>Keep your sign-in credentials and any verification codes private.</p></aside>
       </div>
       <section className="bank-panel mt-5"><h2 className="bank-panel-title">Recent transactions</h2>{txnsQ.isLoading ? <p className="mt-3 text-sm text-slate-500">Loading…</p> : !txnsQ.data?.length ? <p className="mt-3 text-sm text-slate-500">No transactions yet.</p> : <div className="mt-3 divide-y">{txnsQ.data.map(transaction => <div key={transaction.id} className="flex justify-between py-3 text-sm"><div><div className="font-medium">{transaction.type}</div><div className="text-xs text-slate-400">{formatDateTime(transaction.createdAt)}</div></div><div className="text-right">{formatMoney(transaction.amount,account.currency)}<div className="text-xs text-slate-400">{transaction.direction}</div></div></div>)}</div>}</section>
     </>}
