@@ -116,7 +116,7 @@ export default function AccountDetailPage() {
                 </label>
                 <label className="block text-sm font-medium text-slate-700">
                   Account number
-                  <input required inputMode="numeric" pattern="[0-9]{10}" maxLength={10} value={bankDetails.accountNumber} onChange={(e) => setBankDetails(d => ({ ...d, accountNumber: e.target.value.replace(/\\D/g, '').slice(0, 10) }))} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="10-digit account number" />
+                  <input required inputMode="numeric" pattern="[0-9]{10}" maxLength={10} value={bankDetails.accountNumber} onChange={(e) => setBankDetails(d => ({ ...d, accountNumber: e.target.value.replace(/\D/g, '').slice(0, 10) }))} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="10-digit account number" />
                 </label>
                 <div className="flex flex-wrap gap-2">
                   <button type="submit" disabled={busy} className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-800 disabled:opacity-50">
