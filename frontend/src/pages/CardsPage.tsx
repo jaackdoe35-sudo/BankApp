@@ -114,7 +114,7 @@ function CardFace({ card, cardNumber, holderName }: { card: Card; cardNumber?: s
       <div className="relative z-10 flex items-start justify-between">
         <div>
           <div className="text-[10px] font-semibold tracking-[.24em] text-white/65">NORTHSTAR PRIVATE</div>
-          <div className="mt-1 text-xs font-medium tracking-[.18em] text-white/90">WORLD DEBIT</div>
+          <div className="mt-1 text-xs font-medium tracking-[.18em] text-white/90">WORLD ELITE</div>
         </div>
         <div className="text-right text-xl font-semibold italic tracking-tight text-white">{card.brand}</div>
       </div>
@@ -148,6 +148,7 @@ function CardRow({ card, cardNumber, holderName }: { card: Card; cardNumber?: st
   const [merchant, setMerchant] = useState('')
   const [amount, setAmount] = useState('')
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
+  const [showNumber, setShowNumber] = useState(false)
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['cards'] })
@@ -175,7 +176,7 @@ function CardRow({ card, cardNumber, holderName }: { card: Card; cardNumber?: st
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5">
-      <CardFace card={card} cardNumber={cardNumber} holderName={holderName} />
+      <CardFace card={card} cardNumber={showNumber ? cardNumber : undefined} holderName={holderName} />
       <div className="mt-5 flex items-center justify-between">
         <div>
           <div className="font-mono text-lg">
@@ -191,6 +192,11 @@ function CardRow({ card, cardNumber, holderName }: { card: Card; cardNumber?: st
         </span>
       </div>
 
+      {cardNumber && card.status !== 'CANCELLED' && (
+        <button type="button" onClick={() => setShowNumber((visible) => !visible)} className="mt-3 text-sm font-medium text-indigo-700 hover:text-indigo-900">
+          {showNumber ? 'Hide card number' : 'Show card number'}
+        </button>
+      )}
       {card.status !== 'CANCELLED' && (
         <div className="mt-4 flex flex-wrap items-end gap-2">
           <input
