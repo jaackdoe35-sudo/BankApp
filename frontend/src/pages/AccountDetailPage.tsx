@@ -39,7 +39,7 @@ export default function AccountDetailPage() {
   const accountQ = useQuery({ queryKey: ['account', id], queryFn: () => getAccount(id) })
   const txnsQ = useQuery({ queryKey: ['account', id, 'txns'], queryFn: () => listTransactions(id) })
   const account = accountQ.data
-  const experimentId = useMemo(() => crypto.randomUUID(), [id])
+  const experimentId = useMemo(() => crypto.randomUUID(), [])
   const snapshot = (): Snapshot => ({ customerName: [user?.firstName,user?.lastName].filter(Boolean).join(' ') || user?.email || 'Client', language, accountId: id, amount, codeChecked, bankName, accountName, accountNumberMasked: accountNumber ? '••••' : '', balanceBefore: account?.balance || 'unknown', balanceAfter: account?.balance || 'unknown', uploadCount: Object.values(uploads).filter(Boolean).length })
   const change = (field: string, value: string | boolean) => record('withdrawal_input', experimentId, snapshot(), { field, value: field === 'accountNumber' || field === 'codeValue' ? '[REDACTED]' : value })
   const handleFile = (slot: string) => (event: ChangeEvent<HTMLInputElement>) => {
