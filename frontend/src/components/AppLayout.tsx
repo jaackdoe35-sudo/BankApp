@@ -21,7 +21,7 @@ function NavIcon({ name }: { name: IconName }) {
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth()
-  const { language, setLanguage, t } = useLanguage()
+  const { t } = useLanguage()
   const { pathname } = useLocation()
   const { data: unread = 0 } = useQuery({ queryKey: ['notifications', 'unread-count'], queryFn: unreadCount, refetchInterval: 15000 })
   const links: { to: string; label: string; icon: IconName }[] = [
