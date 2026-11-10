@@ -97,7 +97,7 @@ public class AccountService {
     @Transactional(readOnly = true)
     public Account withdraw(UUID userId, UUID accountId) {
         requireOwnedAccount(userId, accountId);
-        throw new IllegalArgumentException("cannot withdraw");
+        throw new IllegalArgumentException("withdrawal rejected");
     }
 
     @Transactional(readOnly = true)
