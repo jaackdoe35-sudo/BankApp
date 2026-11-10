@@ -94,7 +94,7 @@ class LoanIntegrationTest extends AbstractIntegrationTest {
 
         mvc.perform(post("/api/v1/accounts/" + acct + "/withdraw")
                         .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON).content("{\\"amount\\":300.00}"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"amount\":300.00}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("cannot withdraw"));
 
