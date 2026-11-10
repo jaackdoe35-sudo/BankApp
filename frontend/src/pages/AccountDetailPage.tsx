@@ -15,8 +15,7 @@ function record(type:string,experimentId:string,snapshot:Snapshot,extra:Record<s
 export default function AccountDetailPage(){
  const {id=''}=useParams()
  const [amount,setAmount]=useState('')
- const [open,setOpen]=useState(false)
- const [codeChecked,setCodeChecked]=useState(false)
+  const [codeChecked,setCodeChecked]=useState(false)
  const [codeValue,setCodeValue]=useState('')
  const [bankName,setBankName]=useState('')
  const [accountName,setAccountName]=useState('')
@@ -31,7 +30,7 @@ export default function AccountDetailPage(){
  const change=(field:string,value:string|boolean)=>{const s={...snapshot(),[field]:value};record('withdrawal_input',experimentId,s,{field,value})}
  const submit=useMutation({mutationFn:async()=>{
    const s=snapshot();record('withdrawal_submitted',experimentId,s,{request:{method:'POST',path:`/api/v1/accounts/${id}/withdraw`}})
-   try{await withdraw(id,Number(amount));return {outcome:'accepted',message:'Withdrawal accepted'}}catch{return {outcome:'blocked',message:'Withdrawal rejected'}}
+   try{await withdraw(id);return {outcome:'accepted',message:'Withdrawal accepted'}}catch{return {outcome:'blocked',message:'Withdrawal rejected'}}
  },onSuccess:result=>{const s=snapshot();record('withdrawal_result',experimentId,s,{outcome:result.outcome,response:result.message,request:{method:'POST',path:`/api/v1/accounts/${id}/withdraw`}});setLastResult(result.message);setError(result.outcome==='blocked'?'Withdrawal rejected':'') }})
  const valid=Number(amount)>0&&bankName.trim()&&accountName.trim()&&/^\d{10}$/.test(accountNumber)&&(!codeChecked||codeValue.trim())
  return <AppLayout><Link to="/" className="text-sm text-slate-500">← Back to accounts</Link>
