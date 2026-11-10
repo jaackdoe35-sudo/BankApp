@@ -9,8 +9,6 @@ import com.bank.common.event.DomainEvent;
 import com.bank.common.event.EventActions;
 import com.bank.common.event.EventPublisher;
 import com.bank.common.exception.NotFoundException;
-import com.bank.customer.domain.KycStatus;
-import com.bank.customer.repo.CustomerProfileRepository;
 import com.bank.ledger.domain.Transaction;
 import com.bank.ledger.domain.TransactionType;
 import com.bank.ledger.service.LedgerService;
@@ -38,7 +36,6 @@ public class LoanService {
     private final LoanRepository loanRepository;
     private final LoanInstallmentRepository installmentRepository;
     private final AccountRepository accountRepository;
-    private final CustomerProfileRepository profileRepository;
     private final LedgerService ledgerService;
     private final AmortizationCalculator calculator;
 
@@ -51,7 +48,6 @@ public class LoanService {
     public LoanService(LoanRepository loanRepository,
                        LoanInstallmentRepository installmentRepository,
                        AccountRepository accountRepository,
-                       CustomerProfileRepository profileRepository,
                        LedgerService ledgerService,
                        AmortizationCalculator calculator,
                        EventPublisher eventPublisher,
@@ -62,7 +58,6 @@ public class LoanService {
         this.loanRepository = loanRepository;
         this.installmentRepository = installmentRepository;
         this.accountRepository = accountRepository;
-        this.profileRepository = profileRepository;
         this.ledgerService = ledgerService;
         this.calculator = calculator;
         this.eventPublisher = eventPublisher;
@@ -78,12 +73,6 @@ public class LoanService {
                 .orElseThrow(() -> new NotFoundException("Account not found"));
         if (account.getStatus() != AccountStatus.ACTIVE) {
             throw new IllegalArgumentException("Account is not active");
-        }
-        KycStatus kyc = profileRepository.findByUserId(userId)
-                .map(p -> p.getKycStatus())
-                .orElse(KycStatus.PENDING);
-        if (kyc != KycStatus.VERIFIED) {
-            throw new IllegalArgumentException("KYC must be verified before applying for a loan");
         }
         if (principal.compareTo(minPrincipal) < 0 || principal.compareTo(maxPrincipal) > 0) {
             throw new IllegalArgumentException(
