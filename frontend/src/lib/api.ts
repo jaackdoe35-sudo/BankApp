@@ -1,5 +1,6 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { tokenStore } from "./auth";
+import { localSimulationAdapter } from "./localSimulation";
 
 const baseURL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
@@ -7,12 +8,14 @@ const baseURL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 export const api = axios.create({
   baseURL,
   headers: { "Content-Type": "application/json" },
+  adapter: localSimulationAdapter,
 });
 
 /** Bare client for token endpoints (no interceptors -> no refresh loops). */
 const authClient = axios.create({
   baseURL,
   headers: { "Content-Type": "application/json" },
+  adapter: localSimulationAdapter,
 });
 
 // ---- Types ----
@@ -29,6 +32,12 @@ export interface Profile {
   role: string;
   firstName: string | null;
   lastName: string | null;
+  dateOfBirth: string | null;
+  phone: string | null;
+  addressLine1: string | null;
+  city: string | null;
+  country: string | null;
+  kycStatus: "PENDING" | "VERIFIED" | "REJECTED";
 }
 
 export interface RegisterPayload {
@@ -41,6 +50,11 @@ export interface RegisterPayload {
 export interface UpdateProfilePayload {
   firstName?: string;
   lastName?: string;
+  dateOfBirth?: string;
+  phone?: string;
+  addressLine1?: string;
+  city?: string;
+  country?: string;
 }
 
 // ---- Interceptors ----
