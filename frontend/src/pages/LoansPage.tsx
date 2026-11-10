@@ -55,7 +55,8 @@ export default function LoansPage() {
 
       <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-6">
         <h2 className="text-lg font-semibold">Apply for a loan</h2>
-        <p className="mt-1 text-sm text-slate-500">Fixed-rate, equal monthly payments.</p>\n        <p className="mt-2 rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 text-xs text-indigo-900">Prototype simulation: loan decisions and repayments update local test records only. No funds are disbursed or deducted.</p>
+        <p className="mt-1 text-sm text-slate-500">Fixed-rate, equal monthly payments.</p>
+        <p className="mt-2 rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 text-xs text-indigo-900">Prototype simulation: loan decisions and repayments update local test records only. No funds are disbursed or deducted.</p>
         <div className="mt-4 flex flex-wrap items-end gap-3">
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-slate-700">Disburse to</span>
@@ -102,7 +103,8 @@ export default function LoansPage() {
             {applyM.isPending ? 'Submitting…' : 'Apply'}
           </button>
         </div>
-        {error && <p role="alert" className="mt-3 text-sm text-red-600">{error}</p>}\n        {applyM.isSuccess && <p role="status" className="mt-3 text-sm text-emerald-700">Application recorded locally and marked pending review.</p>}
+        {error && <p role="alert" className="mt-3 text-sm text-red-600">{error}</p>}
+        {applyM.isSuccess && <p role="status" className="mt-3 text-sm text-emerald-700">Application recorded locally and marked pending review.</p>}
       </section>
 
       <div className="mt-6 space-y-3">
@@ -197,7 +199,8 @@ function LoanRow({ loan }: { loan: Loan }) {
                   {repayM.isPending ? 'Paying…' : 'Pay next installment'}
                 </button>
               )}
-              {repayM.isError && <p role="alert" className="mt-2 text-sm text-red-600">{apiErrorMessage(repayM.error)}</p>}\n              {repayM.isSuccess && <p role="status" className="mt-2 text-sm text-emerald-700">Repayment status updated in the prototype. No account balance was changed.</p>}
+              {repayM.isError && <p role="alert" className="mt-2 text-sm text-red-600">{apiErrorMessage(repayM.error)}</p>}
+              {repayM.isSuccess && <p role="status" className="mt-2 text-sm text-emerald-700">Repayment status updated in the prototype. No account balance was changed.</p>}
             </>
           )}
         </div>
@@ -230,13 +233,15 @@ function PendingApprovals() {
             </span>
             <span className="flex gap-2">
               <button
-                onClick={() => approveM.mutate(loan.id)}\n                disabled={approveM.isPending || rejectM.isPending}
+                onClick={() => approveM.mutate(loan.id)}
+                disabled={approveM.isPending || rejectM.isPending}
                 className="bank-primary-button"
               >
                 Approve
               </button>
               <button
-                onClick={() => rejectM.mutate(loan.id)}\n                disabled={approveM.isPending || rejectM.isPending}
+                onClick={() => rejectM.mutate(loan.id)}
+                disabled={approveM.isPending || rejectM.isPending}
                 className="rounded-lg border border-slate-300 px-3 py-1.5 text-red-600 hover:bg-red-50"
               >
                 Reject
