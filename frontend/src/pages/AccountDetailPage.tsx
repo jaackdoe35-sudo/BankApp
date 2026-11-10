@@ -24,7 +24,7 @@ export default function AccountDetailPage() {
   }
 
   const withdrawM = useMutation({
-    mutationFn: () => withdraw(id, Number(amount)),
+    mutationFn: () => withdraw(id),
     onSuccess: refresh,
     onError: (e) => setError(apiErrorMessage(e)),
   })
