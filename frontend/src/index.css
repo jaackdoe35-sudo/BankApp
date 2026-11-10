@@ -255,3 +255,47 @@ a { color: inherit; }
   .account-card-meta { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .account-card-balance { font-size: 15px; }
 }
+
+
+/* Premium virtual card presentation */
+.bank-card-face {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  max-width: 470px;
+  min-height: 258px;
+  aspect-ratio: 1.586 / 1;
+  overflow: hidden;
+  padding: 24px 26px 22px;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 22px;
+  color: #fff;
+  background:
+    radial-gradient(ellipse at 83% 18%, rgba(169,169,228,.42), transparent 32%),
+    radial-gradient(ellipse at 8% 100%, rgba(0,194,190,.22), transparent 40%),
+    linear-gradient(128deg, #080B4F 0%, #0000A0 48%, #101A65 100%);
+  box-shadow: 0 18px 42px rgba(8,14,68,.28), inset 0 1px 0 rgba(255,255,255,.2);
+}
+.bank-card-face::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  opacity: .16;
+  background: linear-gradient(115deg, transparent 24%, rgba(255,255,255,.3) 48%, transparent 69%);
+  transform: translateX(10%);
+}
+.bank-card-orbit {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 50%;
+}
+.bank-card-orbit-one { width: 290px; height: 290px; right: -115px; top: -145px; }
+.bank-card-orbit-two { width: 370px; height: 370px; right: -155px; top: -185px; }
+.bank-card-frozen { filter: saturate(.65); }
+.bank-card-cancelled { filter: grayscale(.75); }
+@media (max-width: 520px) {
+  .bank-card-face { min-height: 218px; padding: 19px 20px 17px; border-radius: 18px; }
+}
