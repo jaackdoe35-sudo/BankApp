@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import AppLayout from '../components/AppLayout'
 import { useAuth } from '../context/AuthContext'
@@ -13,7 +13,6 @@ function AccountMark() {
 
 export default function DashboardPage() {
   const qc = useQueryClient()
-  const navigate = useNavigate()
   const { user } = useAuth()
   const [type, setType] = useState<AccountType>('CHECKING')
   const { data: accounts, isLoading, isError } = useQuery({ queryKey: ['accounts'], queryFn: listAccounts })
