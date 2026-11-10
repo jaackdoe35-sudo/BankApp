@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { apiErrorMessage } from '../lib/errors'
-import { languages, useLanguage, type Language } from '../lib/i18n'
+import { languages, useLanguage } from '../lib/i18n'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -50,7 +50,7 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
       </section>
       <section className="auth-form-panel">
         <div className="auth-form-card">
-          <label className="mb-4 flex items-center justify-end gap-2 text-xs text-slate-600"><span>{t('language')}</span><select aria-label={t('language')} value={language} onChange={e => setLanguage(e.target.value as Language)} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5">{languages.map(item => <option key={item.code} value={item.code}>{item.label}</option>)}</select></label>
+          <label className="mb-4 flex items-center justify-end gap-2 text-xs text-slate-600"><span>{t('language')}</span><><input aria-label={t('language')} list="northstar-languages" value={language} onChange={e => setLanguage(e.target.value)} placeholder="en / fr / ja / sw / zh-CN" className="w-36 rounded-lg border border-slate-200 bg-white px-2 py-1.5 "/><datalist id="northstar-languages">{languages.map(item => <option key={item.code} value={item.code}>{item.label}</option>)}</datalist></></label>
           <p className="page-eyebrow">NORTHSTAR PRIVATE · CLIENT ACCESS</p>
           <h1>{title}</h1>
           <p>{subtitle}</p>
