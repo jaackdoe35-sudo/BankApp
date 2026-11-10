@@ -97,6 +97,7 @@ export default function AccountDetailPage() {
                     <span>{uploads[slot] ? 'Replace selected file' : 'Tap to choose an image or file'}</span>
                     <small>JPG · PNG · WebP · PDF · DOC · TXT</small>
                     <input className="withdrawal-file-input" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,image/*,application/pdf" onChange={handleFile(slot)} aria-label={slot} />
+                    <span className="withdrawal-upload-button" aria-hidden="true">Choose image or file</span>
                   </label>
                   {uploads[slot] && <div className="withdrawal-upload-selected">
                     {previews[slot] && <img className="withdrawal-upload-preview" src={previews[slot]!} alt={slot + ' preview'} />}
