@@ -150,5 +150,6 @@ export function useLanguage() {
   const language = useSyncExternalStore<Language>(subscribe, snapshot, () => 'en')
   const active = messages[language] || translated[language] || {}
   const fallback = messages.en
+  useEffect(() => { const root = document.querySelector<HTMLElement>('.bank-shell, .auth-shell'); return root ? translateDocument(root, language) : undefined }, [language])
   return { language, t: (key: string) => active[key] || fallback[key] || key, setLanguage }
 }
