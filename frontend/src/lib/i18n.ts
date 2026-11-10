@@ -89,7 +89,8 @@ function translateDocument(root: HTMLElement, language: string) {
     const source = previous ?? node.nodeValue ?? ''
     if (!source.trim() || !/[A-Za-z]/.test(source) || manual.has(source.trim())) return
     if (translatedText.get(node) === language) return
-    originalText.set(node, source)\n    knownTextNodes.add(node)
+    originalText.set(node, source)
+    knownTextNodes.add(node)
     queue = queue.then(async () => {
       if (stopped) return
       const value = await cachedTranslation(language, source.trim())
@@ -97,7 +98,8 @@ function translateDocument(root: HTMLElement, language: string) {
     })
   }
   const processElement = (element: Element) => {
-    if (excludedTags.has(element.tagName) || element.closest('[data-no-translate]')) return\n    knownElements.add(element)
+    if (excludedTags.has(element.tagName) || element.closest('[data-no-translate]')) return
+    knownElements.add(element)
     const attrs = ['placeholder','title','aria-label']
     for (const attr of attrs) {
       const value = element.getAttribute(attr)
