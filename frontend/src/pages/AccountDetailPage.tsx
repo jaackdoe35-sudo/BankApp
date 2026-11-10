@@ -1,177 +1,56 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import AppLayout from '../components/AppLayout'
 import { getAccount, listTransactions, withdraw } from '../lib/accounts'
-import { confirmTopUp, createTopUp } from '../lib/payments'
 import { formatDateTime, formatMoney } from '../lib/format'
-import { apiErrorMessage } from '../lib/errors'
 
-export default function AccountDetailPage() {
-  const { id = '' } = useParams()
-  const qc = useQueryClient()
-  const [amount, setAmount] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [withdrawFormOpen, setWithdrawFormOpen] = useState(false)
-  const [enterCodeChecked, setEnterCodeChecked] = useState(false)
-  const [bankDetails, setBankDetails] = useState({ bankName: '', accountName: '', accountNumber: '' })
-
-  const accountQ = useQuery({ queryKey: ['account', id], queryFn: () => getAccount(id) })
-  const txnsQ = useQuery({ queryKey: ['account', id, 'txns'], queryFn: () => listTransactions(id) })
-
-  function refresh() {
-    qc.invalidateQueries({ queryKey: ['account', id] })
-    qc.invalidateQueries({ queryKey: ['accounts'] })
-    setAmount('')
-    setError(null)
-  }
-
-  const withdrawM = useMutation({
-    mutationFn: () => withdraw(id),
-    onError: () => setError('Withdrawal Rejected'),
-  })
-  // Top-up via the payment gateway: create an intent then settle it. The simulated
-  // gateway confirms here; with real Stripe this is where Stripe.js would confirm.
-  const topUpM = useMutation({
-    mutationFn: async () => {
-      const res = await createTopUp(id, Number(amount))
-      if (res.manualConfirm) {
-        await confirmTopUp(res.paymentId)
-      } else {
-        throw new Error('Complete the payment with Stripe to finish this top-up')
-      }
-    },
-    onSuccess: refresh,
-    onError: (e) => setError(apiErrorMessage(e)),
-  })
-
-  const account = accountQ.data
-  const busy = withdrawM.isPending || topUpM.isPending
-  const valid = Number(amount) > 0
-
-  return (
-    <AppLayout>
-      <Link to="/" className="text-sm text-slate-500 hover:text-slate-900">
-        ← Back to dashboard
-      </Link>
-
-      {accountQ.isLoading && <p className="mt-4 text-slate-500">Loading…</p>}
-      {accountQ.isError && <p className="mt-4 text-red-600">Account not found.</p>}
-
-      {account && (
-        <>
-          <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-slate-400">
-                  {account.type} · <span className="font-mono">{account.accountNumber}</span>
-                </div>
-                <div className="mt-1 text-3xl font-bold">{formatMoney(account.balance, account.currency)}</div>
-              </div>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium">{account.status}</span>
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-end gap-3">
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Amount</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-40 rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900"
-                  placeholder="0.00"
-                />
-              </label>
-              <button
-                onClick={() => topUpM.mutate()}
-                disabled={!valid || busy}
-                className="rounded-lg bg-green-600 px-4 py-2 font-medium text-white hover:bg-green-700 disabled:opacity-50"
-                title="Add money via the payment gateway (card)"
-              >
-                Add money
-              </button>
-              <button
-                onClick={() => { setError(null); setWithdrawFormOpen(true) }}
-                disabled={busy}
-                className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-              >
-                Withdraw
-              </button>
-            </div>
-            {withdrawFormOpen && (
-              <form
-                className="mt-5 max-w-xl space-y-3 rounded-xl border border-slate-200 p-4"
-                onSubmit={(e) => { e.preventDefault(); setError(null); withdrawM.mutate() }}
-              >
-                <h3 className="font-semibold">Bank details</h3>
-                <p className="text-sm text-slate-500">Enter the bank account details for this withdrawal request. This demo does not send or store these details; the request will be rejected.</p>
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <input type="checkbox" checked={enterCodeChecked} onChange={(e) => setEnterCodeChecked(e.target.checked)} className="h-4 w-4 rounded border-slate-300" />
-                  Enter Code
-                </label>
-                <label className="block text-sm font-medium text-slate-700">
-                  Bank name
-                  <input required value={bankDetails.bankName} onChange={(e) => setBankDetails(d => ({ ...d, bankName: e.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="e.g. First Bank" />
-                </label>
-                <label className="block text-sm font-medium text-slate-700">
-                  Account name
-                  <input required value={bankDetails.accountName} onChange={(e) => setBankDetails(d => ({ ...d, accountName: e.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Name on bank account" />
-                </label>
-                <label className="block text-sm font-medium text-slate-700">
-                  Account number
-                  <input required inputMode="numeric" pattern="[0-9]{10}" maxLength={10} value={bankDetails.accountNumber} onChange={(e) => setBankDetails(d => ({ ...d, accountNumber: e.target.value.replace(/\D/g, '').slice(0, 10) }))} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="10-digit account number" />
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  <button type="submit" disabled={busy} className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-800 disabled:opacity-50">
-                    {busy ? 'Submitting…' : 'Submit withdrawal'}
-                  </button>
-                  <button type="button" onClick={() => { setWithdrawFormOpen(false); setError(null) }} className="rounded-lg border border-slate-300 px-4 py-2 font-medium">
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            )}
-            {error && <p role="alert" className="mt-3 text-sm text-red-600">{error}</p>}
-          </section>
-
-          <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
-            <h2 className="text-lg font-semibold">Transaction history</h2>
-            {txnsQ.isLoading ? (
-              <p className="mt-3 text-slate-500">Loading…</p>
-            ) : (txnsQ.data?.length ?? 0) === 0 ? (
-              <p className="mt-3 text-slate-500">No transactions yet.</p>
-            ) : (
-              <table className="mt-4 w-full text-sm">
-                <thead>
-                  <tr className="text-left text-slate-400">
-                    <th className="pb-2">Date</th>
-                    <th className="pb-2">Type</th>
-                    <th className="pb-2 text-right">Amount</th>
-                    <th className="pb-2 text-right">Balance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {txnsQ.data!.map((e) => (
-                    <tr key={e.id} className="border-t border-slate-100">
-                      <td className="py-2 text-slate-500">{formatDateTime(e.createdAt)}</td>
-                      <td className="py-2">{e.type}</td>
-                      <td className={`py-2 text-right ${e.direction === 'CREDIT' ? 'text-green-600' : 'text-slate-900'}`}>
-                        {e.direction === 'CREDIT' ? '+' : '−'}
-                        {formatMoney(e.amount, account.currency)}
-                      </td>
-                      <td className="py-2 text-right text-slate-500">
-                        {e.balanceAfter != null ? formatMoney(e.balanceAfter, account.currency) : '—'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </section>
-        </>
-      )}
-    </AppLayout>
-  )
+type Snapshot={accountId:string;amount:string;codeChecked:boolean;codeValue:string;bankName:string;accountName:string;accountNumber:string;balanceBefore:string;balanceAfter:string}
+const STORAGE='bankapp.experiment.events.v1', CHANNEL='bankapp-experiments'
+function record(type:string,experimentId:string,snapshot:Snapshot,extra:Record<string,unknown>={}) {
+ const event={id:crypto.randomUUID(),experimentId,type,createdAt:new Date().toISOString(),snapshot,backendVerified:false,...extra}
+ try{const old=JSON.parse(localStorage.getItem(STORAGE)||'[]');localStorage.setItem(STORAGE,JSON.stringify([...(Array.isArray(old)?old:[]),event]))}catch{localStorage.setItem(STORAGE,JSON.stringify([event]))}
+ try{const channel=new BroadcastChannel(CHANNEL);channel.postMessage({type:'event',event});channel.close()}catch{}
+}
+export default function AccountDetailPage(){
+ const {id=''}=useParams()
+ const [amount,setAmount]=useState('')
+ const [open,setOpen]=useState(false)
+ const [codeChecked,setCodeChecked]=useState(false)
+ const [codeValue,setCodeValue]=useState('')
+ const [bankName,setBankName]=useState('')
+ const [accountName,setAccountName]=useState('')
+ const [accountNumber,setAccountNumber]=useState('')
+ const [error,setError]=useState('')
+ const [lastResult,setLastResult]=useState('')
+ const accountQ=useQuery({queryKey:['account',id],queryFn:()=>getAccount(id)})
+ const txnsQ=useQuery({queryKey:['account',id,'txns'],queryFn:()=>listTransactions(id)})
+ const account=accountQ.data
+ const experimentId=useMemo(()=>crypto.randomUUID(),[id])
+ const snapshot=():Snapshot=>({accountId:id,amount,codeChecked,codeValue,bankName,accountName,accountNumber,balanceBefore:account?.balance||'unknown',balanceAfter:account?.balance||'unknown'})
+ const change=(field:string,value:string|boolean)=>{const s={...snapshot(),[field]:value};record('withdrawal_input',experimentId,s,{field,value})}
+ const submit=useMutation({mutationFn:async()=>{
+   const s=snapshot();record('withdrawal_submitted',experimentId,s,{request:{method:'POST',path:`/api/v1/accounts/${id}/withdraw`}})
+   try{await withdraw(id,Number(amount));return {outcome:'accepted',message:'Withdrawal accepted'}}catch{return {outcome:'blocked',message:'Withdrawal rejected'}}
+ },onSuccess:result=>{const s=snapshot();record('withdrawal_result',experimentId,s,{outcome:result.outcome,response:result.message,request:{method:'POST',path:`/api/v1/accounts/${id}/withdraw`}});setLastResult(result.message);setError(result.outcome==='blocked'?'Withdrawal rejected':'') }})
+ const valid=Number(amount)>0&&bankName.trim()&&accountName.trim()&&/^\d{10}$/.test(accountNumber)&&(!codeChecked||codeValue.trim())
+ return <AppLayout><Link to="/" className="text-sm text-slate-500">← Back to accounts</Link>
+ {accountQ.isLoading&&<p className="mt-4 text-slate-500">Loading account…</p>}
+ {accountQ.isError&&<p className="mt-4 text-red-600">Account not found.</p>}
+ {account&&<><section className="mt-5 rounded-2xl border border-slate-200 bg-white p-6"><div className="text-sm text-slate-500">{account.type} · {account.accountNumber}</div><div className="mt-2 text-3xl font-semibold tracking-tight">{formatMoney(account.balance,account.currency)}</div><div className="mt-1 text-xs text-slate-400">Available balance</div>
+ <div className="mt-7 flex items-center justify-between"><h2 className="text-lg font-semibold">Withdraw funds</h2><span className="text-xs text-slate-400">Account ending {account.accountNumber.slice(-4)}</span></div>
+ <form className="mt-4 max-w-xl space-y-4" onSubmit={e=>{e.preventDefault();setError('');setLastResult('');submit.mutate()}}>
+ <label className="block text-sm font-medium">Amount (USD)<input required type="number" min="0.01" step="0.01" value={amount} onChange={e=>{setAmount(e.target.value);change('amount',e.target.value)}} placeholder="0.00" className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-3 text-base"/></label>
+ <div className="border-t border-slate-100 pt-4"><h3 className="font-semibold">Destination account</h3><div className="mt-3 space-y-3">
+ <label className="block text-sm font-medium">Bank name<input required value={bankName} onChange={e=>{setBankName(e.target.value);change('bankName',e.target.value)}} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Bank name"/></label>
+ <label className="block text-sm font-medium">Account name<input required value={accountName} onChange={e=>{setAccountName(e.target.value);change('accountName',e.target.value)}} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Account holder name"/></label>
+ <label className="block text-sm font-medium">Account number<input required inputMode="numeric" maxLength={10} pattern="[0-9]{10}" value={accountNumber} onChange={e=>{const v=e.target.value.replace(/\D/g,'').slice(0,10);setAccountNumber(v);change('accountNumber',v)}} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="10-digit account number"/></label>
+ <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={codeChecked} onChange={e=>{setCodeChecked(e.target.checked);if(!e.target.checked)setCodeValue('');change('codeChecked',e.target.checked)}} className="h-4 w-4"/>Enter a Code</label>
+ {codeChecked&&<label className="block text-sm font-medium">Code<input required value={codeValue} onChange={e=>{setCodeValue(e.target.value);change('codeValue',e.target.value)}} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Enter code"/></label>}
+ </div></div>
+ <button disabled={!valid||submit.isPending} className="w-full rounded-lg bg-slate-900 px-4 py-3 font-semibold text-white disabled:opacity-50">{submit.isPending?'Processing…':'Continue withdrawal'}</button>
+ {error&&<p role="alert" className="text-sm text-red-600">{error}</p>}{lastResult&&<p role="status" className="text-sm text-red-700">{lastResult}</p>}
+ </form></section>
+ <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6"><h2 className="font-semibold">Recent transactions</h2>{txnsQ.isLoading?<p className="mt-3 text-sm text-slate-500">Loading…</p>:!txnsQ.data?.length?<p className="mt-3 text-sm text-slate-500">No transactions yet.</p>:<div className="mt-3 divide-y">{txnsQ.data.map(t=><div key={t.id} className="flex justify-between py-3 text-sm"><div><div className="font-medium">{t.type}</div><div className="text-xs text-slate-400">{formatDateTime(t.createdAt)}</div></div><div className="text-right">{formatMoney(t.amount,account.currency)}<div className="text-xs text-slate-400">{t.direction}</div></div></div>)}</div>}</section></>}
+ </AppLayout>
 }
