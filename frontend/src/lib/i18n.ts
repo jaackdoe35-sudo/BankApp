@@ -17,7 +17,6 @@ yo:{overview:'Àkótán',payments:'Ìsanwó',cards:'Káàdì',loans:'Àwìn',pro
 }
 const stored = typeof localStorage === 'undefined' ? null : localStorage.getItem(KEY)
 let current: Language = stored || 'en'
-const translated: Record<string, Record<string,string>> = {}
 const listeners = new Set<() => void>()
 function subscribe(fn: () => void) { listeners.add(fn); return () => listeners.delete(fn) }
 function snapshot() { return current }
@@ -29,7 +28,6 @@ export function setLanguage(language: Language) {
   document.documentElement.lang = normalized
   document.documentElement.dir = /^(ar|he|fa|ur)(-|$)/i.test(normalized) ? 'rtl' : 'ltr'
   listeners.forEach(fn => fn())
-  void loadTranslations(normalized)
 }
 
 const originalText = new WeakMap<Text, string>()
