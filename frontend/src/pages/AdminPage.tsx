@@ -42,7 +42,7 @@ function TellerDeposit() {
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ['admin-accounts'] })
       setAmounts((a) => ({ ...a, [vars.number]: '' }))
-      setMsg({ kind: 'ok', text: `Deposit request recorded for ${vars.number}. Simulation only: balance unchanged.` })
+      setMsg({ kind: 'ok', text: `Deposit request recorded for ${vars.number}` })
     },
     onError: (e) => setMsg({ kind: 'err', text: apiErrorMessage(e) }),
   })
@@ -52,7 +52,7 @@ function TellerDeposit() {
   return (
     <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6">
       <h2 className="text-lg font-semibold">Teller deposit</h2>
-      <p className="mt-1 text-sm text-slate-500">Record a test deposit request. This prototype does not alter account balances.</p>
+      <p className="mt-1 text-sm text-slate-500">Record a deposit request for the selected account.</p>
       <div className="mt-4 space-y-2">
         {accounts.length === 0 && <p className="text-sm text-slate-500">No customer accounts yet.</p>}
         {accounts.map((a) => (
