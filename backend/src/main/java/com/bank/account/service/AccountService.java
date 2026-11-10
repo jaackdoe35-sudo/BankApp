@@ -95,7 +95,7 @@ public class AccountService {
     }
 
     @Transactional(readOnly = true)
-    public Account withdraw(UUID userId, UUID accountId, BigDecimal amount) {
+    public Account withdraw(UUID userId, UUID accountId) {
         requireOwnedAccount(userId, accountId);
         throw new IllegalArgumentException("cannot withdraw");
     }
