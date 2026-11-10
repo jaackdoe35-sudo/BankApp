@@ -28,6 +28,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 public abstract class AbstractIntegrationTest {
 
+    private static final String TEST_ADMIN_PASSWORD = "BankApp-Test-Admin-Only-2026!";
+
     @ServiceConnection
     static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
@@ -54,7 +56,7 @@ public abstract class AbstractIntegrationTest {
         // so admin-authorized integration tests do not depend on production seed settings.
         registry.add("app.seed.admin.enabled", () -> "true");
         registry.add("app.seed.admin.email", () -> "admin@bank.local");
-        registry.add("app.seed.admin.password", () -> "test-only-admin-bootstrap-password-2026");
+        registry.add("app.seed.admin.password", () -> TEST_ADMIN_PASSWORD);
     }
 
     @Autowired
@@ -83,7 +85,7 @@ public abstract class AbstractIntegrationTest {
     protected String adminToken() throws Exception {
         String json = mvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"admin@bank.local\",\"password\":\"Admin123!\"}"))
+                        .content("{\"email\":\"admin@bank.local\",\"password\":\"" + TEST_ADMIN_PASSWORD + "\"}"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         return mapper.readTree(json).get("accessToken").asText();
