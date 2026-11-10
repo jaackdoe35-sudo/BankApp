@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext'
 import { useState } from 'react'
 import {
   listAdminAccounts,
-  listAllUsers,
   listAudit,
   tellerDeposit,
 } from '../lib/admin'
@@ -13,8 +12,6 @@ import { apiErrorMessage } from '../lib/errors'
 
 export default function AdminPage() {
   const { user } = useAuth()
-  const qc = useQueryClient()
-  const usersQ = useQuery({ queryKey: ['admin-users'], queryFn: listAllUsers, enabled: user?.role === 'ADMIN' })
 
   if (user?.role !== 'ADMIN') {
     return (
@@ -23,8 +20,6 @@ export default function AdminPage() {
       </AppLayout>
     )
   }
-
-  const users = usersQ.data ?? []
 
   return (
     <AppLayout>
