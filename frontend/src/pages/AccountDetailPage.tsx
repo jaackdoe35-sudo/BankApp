@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
+import { useMemo, useState, type ChangeEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import AppLayout from '../components/AppLayout'
@@ -30,7 +30,6 @@ export default function AccountDetailPage() {
   const [accountNumber, setAccountNumber] = useState('')
   const [uploads, setUploads] = useState<Record<string, UploadMeta | null>>({})
   const [previews, setPreviews] = useState<Record<string, string | null>>({})
-  useEffect(() => () => { Object.values(previews).forEach(url => { if (url) URL.revokeObjectURL(url) }) }, [previews])
   const [testCategory, setTestCategory] = useState('File upload validation')
   const [testNotes, setTestNotes] = useState('')
   const [error, setError] = useState('')
