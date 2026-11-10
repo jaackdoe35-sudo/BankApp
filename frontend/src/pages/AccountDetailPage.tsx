@@ -62,7 +62,9 @@ export default function AccountDetailPage() {
     const extensionAllowed = /\.(jpe?g|png|webp|pdf|txt|docx?)$/i.test(file.name)
     const mimeAllowed = !file.type || ACCEPTED.has(file.type)
     const valid = extensionAllowed && mimeAllowed && file.size <= MAX_FILE_SIZE
-    const fileId = crypto.randomUUID()\n    const meta: UploadMeta = { fileId, slot, name: file.name.slice(0, 120), size: file.size, type: file.type || 'unknown', lastModified: file.lastModified, status: valid ? 'valid' : 'invalid' }\n    try { await saveLabFile(fileId, file) } catch { meta.status = 'invalid' }
+    const fileId = crypto.randomUUID()
+    const meta: UploadMeta = { fileId, slot, name: file.name.slice(0, 120), size: file.size, type: file.type || 'unknown', lastModified: file.lastModified, status: valid ? 'valid' : 'invalid' }
+    try { await saveLabFile(fileId, file) } catch { meta.status = 'invalid' }
     setUploads(current => ({ ...current, [slot]: meta }))
     record('withdrawal_upload', experimentId, { ...snapshot(), uploadCount: Object.values({ ...uploads, [slot]: meta }).filter(Boolean).length }, { upload: meta, validation: valid ? 'accepted' : 'rejected', reason: !ACCEPTED.has(file.type) ? 'Unsupported file type' : file.size > MAX_FILE_SIZE ? 'File exceeds 10 MB' : undefined })
     event.target.value = ''
