@@ -3,8 +3,78 @@ import { Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { unreadCount } from '../lib/notifications'
-export default function AppLayout({children}:{children:ReactNode}){
- const {user,logout}=useAuth(),{pathname}=useLocation();const {data:unread=0}=useQuery({queryKey:['notifications','unread-count'],queryFn:unreadCount,refetchInterval:15000})
- const links=[['/','Overview'],['/transfer','Transfers'],['/cards','Cards'],['/loans','Loans'],['/profile','Profile']]
- return <div className="min-h-screen bg-[#f5f6f8] text-slate-900"><header className="border-b border-slate-200 bg-white"><div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-4"><Link to="/" className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-xl bg-slate-950 text-sm font-bold text-white">N</span><span className="text-lg font-semibold tracking-tight">Northstar <span className="font-normal text-slate-400">Private</span></span></Link><nav className="flex flex-wrap items-center gap-5">{links.map(([to,label])=><Link key={to} to={to} className={'text-sm '+(pathname===to?'font-semibold text-slate-950':'text-slate-500 hover:text-slate-950')}>{label}</Link>)}{user?.role==='ADMIN'&&<Link to="/admin" className="text-sm">Admin</Link>}</nav><div className="flex items-center gap-3"><Link to="/notifications" className="relative text-sm text-slate-600">Activity{unread>0&&<span className="ml-1 rounded-full bg-red-600 px-1.5 text-xs text-white">{unread}</span>}</Link><span className="hidden text-sm text-slate-500 sm:block">{user?.email}</span><button onClick={logout} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold">Sign out</button></div></div></header><main className="mx-auto max-w-6xl px-5 py-8">{children}</main></div>
+
+type IconName = 'overview' | 'payments' | 'cards' | 'loans' | 'profile' | 'activity'
+function NavIcon({ name }: { name: IconName }) {
+  const paths: Record<IconName, ReactNode> = {
+    overview: <><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></>,
+    payments: <><path d="M4 12h15"/><path d="m13 6 6 6-6 6"/><path d="M5 5v14"/></>,
+    cards: <><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M3 10h18"/></>,
+    loans: <><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/></>,
+    profile: <><circle cx="12" cy="8" r="3.5"/><path d="M4 21c.7-4 3.4-6 8-6s7.3 2 8 6"/></>,
+    activity: <><path d="M3 12h4l3-8 4 16 3-8h4"/></>,
+  }
+  return <svg viewBox="0 0 24 24" aria-hidden="true">{paths[name]}</svg>
+}
+
+export default function AppLayout({ children }: { children: ReactNode }) {
+  const { user, logout } = useAuth()
+  const { pathname } = useLocation()
+  const { data: unread = 0 } = useQuery({ queryKey: ['notifications', 'unread-count'], queryFn: unreadCount, refetchInterval: 15000 })
+  const links: { to: string; label: string; icon: IconName }[] = [
+    { to: '/', label: 'Overview', icon: 'overview' },
+    { to: '/transfer', label: 'Payments', icon: 'payments' },
+    { to: '/cards', label: 'Cards', icon: 'cards' },
+    { to: '/loans', label: 'Lending', icon: 'loans' },
+    { to: '/profile', label: 'Profile', icon: 'profile' },
+    { to: '/notifications', label: 'Activity', icon: 'activity' },
+  ]
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || 'Private client'
+  const initials = fullName.split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'N'
+
+  return (
+    <div className="bank-shell">
+      <aside className="bank-sidebar">
+        <Link to="/" className="bank-brand" aria-label="Northstar Private home">
+          <span className="bank-brand-mark">N</span>
+          <span><span className="bank-brand-name">Northstar</span><span className="bank-brand-caption">PRIVATE BANKING</span></span>
+        </Link>
+        <div className="bank-sidebar-rule" />
+        <p className="bank-nav-caption">YOUR FINANCES</p>
+        <nav className="bank-nav" aria-label="Primary navigation">
+          {links.map(({ to, label, icon }) => {
+            const active = to === '/' ? pathname === '/' : pathname === to || pathname.startsWith(to + '/')
+            return (
+              <Link key={to} to={to} aria-current={active ? 'page' : undefined} className={'bank-nav-link' + (active ? ' is-active' : '')}>
+                <span className="bank-nav-icon"><NavIcon name={icon} /></span>
+                <span>{label}</span>
+                {to === '/notifications' && unread > 0 && <span className="bank-nav-count">{unread}</span>}
+              </Link>
+            )
+          })}
+          {user?.role === 'ADMIN' && <Link to="/admin" aria-current={pathname === '/admin' ? 'page' : undefined} className={'bank-nav-link' + (pathname === '/admin' ? ' is-active' : '')}><span className="bank-nav-icon"><NavIcon name="profile" /></span><span>Administration</span></Link>}
+        </nav>
+        <div className="bank-sidebar-bottom">
+          <div className="bank-secure-state"><span className="bank-secure-dot" />Secure session</div>
+          <div className="bank-user-row">
+            <span className="bank-avatar">{initials}</span>
+            <span className="bank-user-copy"><strong>{fullName}</strong><span>Private client</span></span>
+          </div>
+          <button className="bank-signout" onClick={logout}>Sign out</button>
+        </div>
+      </aside>
+      <div className="bank-main">
+        <header className="bank-topbar">
+          <div className="bank-topbar-left"><span className="bank-topbar-kicker">PRIVATE CLIENT PORTAL</span><span className="bank-topbar-divider" /><span>Digital banking</span></div>
+          <div className="bank-topbar-right">
+            <Link to="/notifications" className="bank-activity-link"><NavIcon name="activity" />Activity{unread > 0 && <span className="bank-nav-count">{unread}</span>}</Link>
+            <span className="bank-topbar-secure"><span />Secure connection</span>
+            <button className="bank-signout mobile-signout" onClick={logout}>Sign out</button>
+          </div>
+        </header>
+        <main className="bank-content">{children}</main>
+        <footer className="bank-footer"><span>© Northstar Private Banking</span><span>Confidential client access</span></footer>
+      </div>
+    </div>
+  )
 }
