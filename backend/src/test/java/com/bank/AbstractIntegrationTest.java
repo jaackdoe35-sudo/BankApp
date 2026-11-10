@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Shared base for integration tests: real Postgres + Redis + Kafka via Testcontainers
  * (singleton pattern so the cached Spring context stays valid across classes), plus
- * common HTTP helpers (auth, KYC verification, account opening, teller deposits).
+ * common HTTP helpers (auth, account opening, teller deposits).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -58,7 +58,7 @@ public abstract class AbstractIntegrationTest {
     @Autowired
     protected ObjectMapper mapper;
 
-    /** Registers a customer (KYC still PENDING) and returns the access token. */
+    /** Registers a customer and returns the access token. */
     protected String register(String email) throws Exception {
         String body = """
                 {"email":"%s","password":"Secret123","firstName":"Test","lastName":"User"}
@@ -70,11 +70,9 @@ public abstract class AbstractIntegrationTest {
         return mapper.readTree(json).get("accessToken").asText();
     }
 
-    /** Registers a customer and verifies their KYC (so they can open accounts). */
+    /** Backwards-compatible test helper; customer accounts no longer require KYC. */
     protected String registerVerified(String email) throws Exception {
-        String token = register(email);
-        verifyKyc(meId(token));
-        return token;
+        return register(email);
     }
 
     protected String adminToken() throws Exception {
@@ -90,13 +88,6 @@ public abstract class AbstractIntegrationTest {
         String json = mvc.perform(get("/api/v1/users/me").header("Authorization", "Bearer " + token))
                 .andReturn().getResponse().getContentAsString();
         return mapper.readTree(json).get("userId").asText();
-    }
-
-    protected void verifyKyc(String userId) throws Exception {
-        mvc.perform(post("/api/v1/admin/users/" + userId + "/kyc")
-                        .header("Authorization", "Bearer " + adminToken())
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"VERIFIED\"}"))
-                .andExpect(status().isOk());
     }
 
     /** Opens a CHECKING account; returns the account JSON (id, accountNumber, balance, ...). */
