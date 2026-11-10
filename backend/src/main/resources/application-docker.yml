@@ -1,0 +1,8 @@
+# Activated with SPRING_PROFILES_ACTIVE=docker (set in docker-compose).
+# Service hostnames match the compose service names; env vars still override.
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://postgres:5432/banking}
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}

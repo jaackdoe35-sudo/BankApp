@@ -1,0 +1,14 @@
+# Production profile (SPRING_PROFILES_ACTIVE=prod). Everything is env-driven; the
+# hosting platform supplies DB/Redis/Kafka URLs and terminates TLS.
+spring:
+  jpa:
+    show-sql: false
+
+server:
+  # Trust the platform's proxy headers (X-Forwarded-Proto/For) for correct URLs/HTTPS.
+  forward-headers-strategy: framework
+
+# Tighter auth rate limit in production (override with RATELIMIT_AUTH_PER_MINUTE).
+app:
+  ratelimit:
+    auth-per-minute: ${RATELIMIT_AUTH_PER_MINUTE:10}
