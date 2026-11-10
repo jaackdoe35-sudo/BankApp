@@ -32,7 +32,6 @@ export default function LoginPage() {
 }
 
 export function AuthShell({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
-  const { t } = useLanguage()
   return (
     <div className="auth-shell">
       <section className="auth-brand-panel">
