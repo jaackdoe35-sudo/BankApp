@@ -3,7 +3,6 @@ spring:
     name: banking-backend
 
   datasource:
-    # Use DB_URL if given; otherwise compose from DB_HOST/PORT/NAME (managed hosts give parts).
     url: ${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:banking}}
     username: ${DB_USERNAME:banking}
     password: ${DB_PASSWORD:banking}
@@ -25,7 +24,6 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      # Managed Redis (e.g. Upstash) needs a password + TLS; blank/false locally.
       password: ${REDIS_PASSWORD:}
       ssl:
         enabled: ${REDIS_SSL:false}
@@ -43,11 +41,6 @@ spring:
         spring.json.trusted.packages: "com.bank.*"
         spring.json.value.default.type: com.bank.common.event.DomainEvent
 
-  # Real email activates only when SPRING_MAIL_HOST is set (e.g. Mailtrap) — Boot then
-  # auto-configures a JavaMailSender and EmailConfig switches to SMTP. Otherwise the
-  # SimulatedEmailSender logs messages. (No spring.mail defaults here on purpose, so an
-  # empty host doesn't trip the mail health check.)
-
 server:
   port: 8080
 
@@ -60,7 +53,6 @@ management:
     health:
       show-details: when_authorized
   health:
-    # Email is best-effort; don't let a mail-server check fail the app's health.
     mail:
       enabled: false
 
@@ -74,22 +66,24 @@ app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
   jwt:
-    # Override in any real environment. Must be >= 32 chars for HS256.
     secret: ${JWT_SECRET:dev-only-secret-change-me-0123456789-banking-system-hs256-key}
     issuer: banking-system
     access-token-ttl: ${JWT_ACCESS_TTL:15m}
     refresh-token-ttl: ${JWT_REFRESH_TTL:7d}
   seed:
-    admin-email: ${ADMIN_EMAIL:admin@bank.local}
-    admin-password: ${ADMIN_PASSWORD:Admin123!}
-    demo: ${SEED_DEMO:false}
+    admin:
+      enabled: ${SEED_ADMIN:false}
+      email: ${ADMIN_EMAIL:}
+      password: ${ADMIN_PASSWORD:}
+    demo:
+      enabled: ${SEED_DEMO:false}
+      email: ${DEMO_EMAIL:}
+      password: ${DEMO_PASSWORD:}
   stripe:
-    # When secret-key is blank the app uses the simulated payment gateway.
     secret-key: ${STRIPE_SECRET_KEY:}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
   events:
     topic: ${EVENTS_TOPIC:banking.events}
-    # Set EVENTS_ENABLED=false to run without Kafka (publisher no-ops, consumers off).
     enabled: ${EVENTS_ENABLED:true}
   mail:
     from: ${MAIL_FROM:no-reply@bank.local}
