@@ -54,7 +54,7 @@ a { color: inherit; }
 .bank-signout:hover { color: white; }
 .mobile-signout { display: none; }
 .bank-main { min-width: 0; }
-.bank-topbar { height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 0 clamp(22px, 4vw, 58px); border-bottom: 1px solid var(--line); background: rgba(255,254,250,.88); }
+.bank-topbar { height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 0 clamp(22px, 4vw, 58px); border-bottom: 1px solid var(--line); background: rgba(255,255,255,.94); }
 .bank-topbar-left { display: flex; align-items: center; gap: 12px; color: #65708E; font-size: 11px; }
 .bank-topbar-kicker { color: #828AA4; font-size: 9px; font-weight: 700; letter-spacing: 1.5px; }
 .bank-topbar-divider { width: 1px; height: 15px; background: var(--line); }
@@ -78,15 +78,15 @@ a { color: inherit; }
 
 /* Overview */
 .overview-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(240px, .85fr); gap: 17px; }
-.wealth-card { position: relative; min-height: 250px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; padding: 27px 30px 22px; border: 1px solid #29483e; border-radius: 16px; background: radial-gradient(ellipse at 85% 15%, rgba(122,122,204,.16), transparent 35%), linear-gradient(135deg, #1d4035, #112c24 72%); color: #f8f5ed; box-shadow: 0 12px 30px rgba(0,0,100,.10); }
-.wealth-card:after { position: absolute; right: -70px; bottom: -155px; width: 330px; height: 330px; border: 1px solid rgba(169,169,228,.2); border-radius: 50%; box-shadow: 0 0 0 22px rgba(169,169,228,.035), 0 0 0 48px rgba(169,169,228,.035), 0 0 0 76px rgba(207,190,151,.02); content: ""; pointer-events: none; }
+.wealth-card { position: relative; min-height: 250px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; padding: 27px 30px 22px; border: 1px solid #17177A; border-radius: 16px; background: radial-gradient(ellipse at 85% 15%, rgba(122,122,204,.28), transparent 38%), linear-gradient(135deg, #0000A0, #00006F 76%); color: #FFFFFF; box-shadow: 0 12px 30px rgba(0,0,100,.16); }
+.wealth-card:after { position: absolute; right: -70px; bottom: -155px; width: 330px; height: 330px; border: 1px solid rgba(169,169,228,.2); border-radius: 50%; box-shadow: 0 0 0 22px rgba(169,169,228,.035), 0 0 0 48px rgba(169,169,228,.035), 0 0 0 76px rgba(169,169,228,.035); content: ""; pointer-events: none; }
 .wealth-card-top, .wealth-card-main, .wealth-card-bottom { position: relative; z-index: 1; }
 .wealth-card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .wealth-card-label { color: #D1D5EC; font-size: 10px; font-weight: 600; letter-spacing: 1.3px; text-transform: uppercase; }
 .wealth-card-status { display: flex; align-items: center; gap: 7px; color: #E0E2F7; font-size: 10px; }
 .wealth-card-status:before { width: 6px; height: 6px; border-radius: 50%; background: #A9AAE2; content: ""; }
 .wealth-card-main { margin: 28px 0 26px; }
-.wealth-card-caption { margin: 0 0 7px; color: #c0cdc5; font-size: 12px; }
+.wealth-card-caption { margin: 0 0 7px; color: #D8D9F5; font-size: 12px; }
 .wealth-card-amount { margin: 0; color: #fffdf7; font-family: Georgia, "Times New Roman", serif; font-size: clamp(36px, 4vw, 49px); font-weight: 400; letter-spacing: -1.4px; line-height: 1.15; }
 .wealth-card-support { margin: 10px 0 0; color: #C3C9E6; font-size: 11px; }
 .wealth-card-bottom { display: flex; justify-content: space-between; gap: 12px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,.15); color: #C4CAE7; font-size: 9px; letter-spacing: .8px; text-transform: uppercase; }
@@ -149,7 +149,7 @@ a { color: inherit; }
 /* Authentication */
 .auth-shell { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(400px, .95fr); background: var(--paper); }
 .auth-brand-panel { position: relative; display: flex; flex-direction: column; justify-content: space-between; min-height: 100vh; overflow: hidden; padding: clamp(35px, 6vw, 82px); background: var(--forest-deep); color: #FFFFFF; }
-.auth-brand-panel:after { position: absolute; right: -180px; bottom: -250px; width: 650px; height: 650px; border: 1px solid rgba(169,169,228,.2); border-radius: 50%; box-shadow: 0 0 0 35px rgba(204,185,145,.025), 0 0 0 75px rgba(204,185,145,.025), 0 0 0 120px rgba(204,185,145,.02); content: ""; }
+.auth-brand-panel:after { position: absolute; right: -180px; bottom: -250px; width: 650px; height: 650px; border: 1px solid rgba(169,169,228,.2); border-radius: 50%; box-shadow: 0 0 0 35px rgba(169,169,228,.035), 0 0 0 75px rgba(169,169,228,.035), 0 0 0 120px rgba(204,185,145,.02); content: ""; }
 .auth-brand-top, .auth-brand-message, .auth-brand-bottom { position: relative; z-index: 1; }
 .auth-brand-wordmark { display: flex; align-items: center; gap: 12px; }
 .auth-brand-wordmark .bank-brand-mark { width: 43px; height: 43px; }
@@ -183,6 +183,17 @@ a { color: inherit; }
   .account-detail-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 700px) {
+  .section-heading { flex-wrap: wrap; }
+  .section-heading > div:last-child { width: 100%; flex-wrap: wrap; }
+  .section-heading > div:last-child select { flex: 1 1 120px; max-width: none; }
+  .section-heading > div:last-child button { flex: 0 0 auto; }
+  .bank-content section.rounded-2xl, .bank-content section.rounded-xl { padding: 18px; }
+  .bank-content .flex.items-center.justify-between { gap: 12px; }
+  .bank-content table { display: block; max-width: 100%; overflow-x: auto; white-space: nowrap; }
+  .bank-content .grid.grid-cols-2 { grid-template-columns: 1fr; }
+  .bank-content .col-span-2 { grid-column: auto; }
+  .bank-content input, .bank-content select, .bank-content textarea { max-width: 100%; }
+
   .bank-shell { display: block; }
   .mobile-signout { display: inline-flex; align-items: center; margin: 0; padding: 5px 0; }
   .bank-sidebar { position: relative; height: auto; padding: 14px 16px 10px; }
