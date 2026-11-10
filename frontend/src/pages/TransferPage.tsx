@@ -122,7 +122,7 @@ export default function TransferPage() {
           <p>Confirm the recipient details and payment amount before submitting. Payments should only be sent to recipients you trust.</p>
           <div className="bank-side-note-rule" />
           <p className="eyebrow" style={{ color: '#8b7955' }}>PAYMENT SECURITY</p>
-          <p>Keep any verification codes private. The optional code field is currently a UI experiment and is not validated or transmitted to the payment service.</p>
+          <p>Keep any verification codes private. Only enter verification codes when you are certain the request is legitimate. Never share a code with another person.</p>
         </aside>
       </div>
 
