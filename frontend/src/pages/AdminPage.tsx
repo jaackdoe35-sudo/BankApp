@@ -42,7 +42,7 @@ function TellerDeposit() {
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ['admin-accounts'] })
       setAmounts((a) => ({ ...a, [vars.number]: '' }))
-      setMsg({ kind: 'ok', text: `Deposited to ${vars.number}` })
+      setMsg({ kind: 'ok', text: `Deposit request recorded for ${vars.number}. Simulation only: balance unchanged.` })
     },
     onError: (e) => setMsg({ kind: 'err', text: apiErrorMessage(e) }),
   })
@@ -52,7 +52,7 @@ function TellerDeposit() {
   return (
     <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6">
       <h2 className="text-lg font-semibold">Teller deposit</h2>
-      <p className="mt-1 text-sm text-slate-500">Record a cash deposit into a customer's account.</p>
+      <p className="mt-1 text-sm text-slate-500">Record a test deposit request. This prototype does not alter account balances.</p>
       <div className="mt-4 space-y-2">
         {accounts.length === 0 && <p className="text-sm text-slate-500">No customer accounts yet.</p>}
         {accounts.map((a) => (
@@ -76,7 +76,7 @@ function TellerDeposit() {
                   depositM.mutate({ number: a.accountNumber, amount: Number(amounts[a.accountNumber]) })
                 }
                 disabled={!(Number(amounts[a.accountNumber]) > 0) || depositM.isPending}
-                className="rounded-lg bg-green-600 px-3 py-1.5 font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                className="bank-primary-button"
               >
                 Deposit
               </button>
