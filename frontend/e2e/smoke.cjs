@@ -52,7 +52,13 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.getByLabel('Account name').fill('Test Customer')
     await page.getByRole('textbox', { name: 'Account number', exact: true }).fill('1234567890')
     await page.getByLabel('Enter a Code').check()
-    await page.getByPlaceholder('Enter code').fill('482913')
+    await page.getByPlaceholder('Enter code').fill('739201')
+    const fileInputs = page.locator('input[type="file"]')
+    assert.equal(await fileInputs.count(), 5, 'withdrawal page must expose five upload slots')
+    for (let index = 0; index < 5; index++) {
+      await fileInputs.nth(index).setInputFiles({ name: `support-${index + 1}.pdf`, mimeType: 'application/pdf', buffer: Buffer.from(`Synthetic document ${index + 1}`) })
+    }
+    await page.getByText('support-5.pdf').waitFor()
 
     const ledger = await context.newPage()
     await ledger.goto('http://127.0.0.1:4173/test-ledger/', { waitUntil: 'networkidle' })
@@ -60,8 +66,10 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
 
     await page.getByRole('button', { name: 'Continue withdrawal' }).click()
     await page.getByRole('status').getByText('Withdrawal rejected').waitFor()
-    await ledger.getByText('Observed result').waitFor()
-    await ledger.getByText('482913').first().waitFor()
+    await ledger.getByText('Request outcome').waitFor()
+    await ledger.getByText('Protected / not recorded').first().waitFor()
+    await ledger.getByText('support-1.pdf').first().waitFor()
+    assert.equal(await ledger.getByText('739201').count(), 0, 'ledger must not display verification codes')
     await ledger.getByText('Synthetic Test Bank').first().waitFor()
 
     const [jsonDownload] = await Promise.all([
@@ -70,6 +78,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     ])
     const exported = JSON.parse(fs.readFileSync(await jsonDownload.path(), 'utf8'))
     assert.ok(exported.events.some((event) => event.type === 'withdrawal_result'), 'JSON export must include the result event')
+    assert.ok(!JSON.stringify(exported).includes('739201'), 'JSON export must not contain verification codes')
 
     const [csvDownload] = await Promise.all([
       ledger.waitForEvent('download'),
@@ -77,6 +86,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     ])
     const csv = fs.readFileSync(await csvDownload.path(), 'utf8')
     assert.ok(csv.includes('withdrawal_result'), 'CSV export must include the result event')
+    assert.ok(!csv.includes('739201'), 'CSV export must not contain verification codes')
 
     const accountState = await page.evaluate(() => {
       const state = JSON.parse(localStorage.getItem('northstar.local-simulation.v1') || '{}')
@@ -86,6 +96,8 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
 
     const events = await page.evaluate(() => JSON.parse(localStorage.getItem('bankapp.experiment.events.v1') || '[]'))
     assert.ok(events.some((event) => event.type === 'withdrawal_submitted'), 'submission event must be persisted')
+    assert.ok(!JSON.stringify(events).includes('739201'), 'stored events must not contain verification codes')
+    assert.ok(events.some((event) => event.type === 'withdrawal_upload'), 'upload events must be persisted')
     assert.ok(events.some((event) => event.type === 'withdrawal_result' && event.outcome === 'blocked'), 'rejection event must be persisted')
     assert.ok(events.some((event) => event.type === 'withdrawal_input' && event.field === 'codeChecked' && event.value === true), 'code checkbox change must be recorded')
 
