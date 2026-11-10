@@ -96,9 +96,9 @@ function translateDocument(root: HTMLElement, language: string) {
     })
   }
   const processElement = (element: Element) => {
-    if (excludedTags.has(element.tagName) || element.closest('[data-no-translate]')) return
+    if (['SCRIPT','STYLE','NOSCRIPT','CODE','PRE','SVG'].includes(element.tagName) || element.closest('[data-no-translate]')) return
     knownElements.add(element)
-    const attrs = ['placeholder','title','aria-label']
+    const attrs = ['placeholder','title','aria-label','alt']
     for (const attr of attrs) {
       const value = element.getAttribute(attr)
       if (!value || !/[A-Za-z]/.test(value)) continue
@@ -126,14 +126,14 @@ function translateDocument(root: HTMLElement, language: string) {
   scan(root)
   const observer = new MutationObserver(records => {
     for (const item of records) {
-      if (item.type === 'characterData' && item.target instanceof Text) processText(item.target)
+      if (item.type === 'characterData' && item.target instanceof Text) processText(item.target)\n      if (item.type === 'attributes' && item.target instanceof Element) processElement(item.target)
       item.addedNodes.forEach(node => {
         if (node instanceof Text) processText(node)
         else if (node instanceof Element) scan(node)
       })
     }
   })
-  observer.observe(root, { childList: true, subtree: true, characterData: true })
+  observer.observe(root, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['placeholder','title','aria-label','alt'] })
   return () => { stopped = true; observer.disconnect() }
 }
 
