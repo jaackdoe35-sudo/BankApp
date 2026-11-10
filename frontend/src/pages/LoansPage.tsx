@@ -55,7 +55,7 @@ export default function LoansPage() {
 
       <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-6">
         <h2 className="text-lg font-semibold">Apply for a loan</h2>
-        <p className="mt-1 text-sm text-slate-500">Requires verified KYC. Fixed-rate, equal monthly payments.</p>
+        <p className="mt-1 text-sm text-slate-500">Fixed-rate, equal monthly payments.</p>
         <div className="mt-4 flex flex-wrap items-end gap-3">
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-slate-700">Disburse to</span>
