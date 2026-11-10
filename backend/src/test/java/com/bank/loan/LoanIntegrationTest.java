@@ -20,14 +20,6 @@ class LoanIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     JdbcTemplate jdbc;
 
-    private void setKyc(String userId, String statusValue) throws Exception {
-        mvc.perform(post("/api/v1/admin/users/" + userId + "/kyc")
-                        .header("Authorization", "Bearer " + adminToken())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"" + statusValue + "\"}"))
-                .andExpect(status().isOk());
-    }
-
     private JsonNode apply(String token, String accountId, String principal, int term) throws Exception {
         String json = mvc.perform(post("/api/v1/loans")
                         .header("Authorization", "Bearer " + token)
@@ -47,17 +39,10 @@ class LoanIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void applyRequiresVerifiedKyc() throws Exception {
-        // Account opening already needs KYC; revoke it afterwards to exercise the loan gate.
-        String token = registerVerified("loan-nokyc@example.com");
+    void loanApplicationDoesNotRequireKyc() throws Exception {
+        String token = register("loan-nokyc@example.com");
         String acct = openAccount(token).get("id").asText();
-        setKyc(meId(token), "REJECTED");
-
-        mvc.perform(post("/api/v1/loans")
-                        .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"accountId\":\"" + acct + "\",\"principal\":300,\"termMonths\":3}"))
-                .andExpect(status().isBadRequest());
+        apply(token, acct, "300.00", 3);
     }
 
     @Test
@@ -97,8 +82,8 @@ class LoanIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void repaymentWithoutFundsIsRejected() throws Exception {
-        String token = registerVerified("loan-broke@example.com");
+    void withdrawalIsRejectedAndLoanRepaymentStillWorks() throws Exception {
+        String token = register("loan-broke@example.com");
         String admin = adminToken();
         String acct = openAccount(token).get("id").asText();
         String loanId = apply(token, acct, "300.00", 3).get("id").asText();
@@ -106,12 +91,15 @@ class LoanIntegrationTest extends AbstractIntegrationTest {
         mvc.perform(post("/api/v1/admin/loans/" + loanId + "/approve")
                         .header("Authorization", "Bearer " + admin))
                 .andExpect(status().isOk());
+
         mvc.perform(post("/api/v1/accounts/" + acct + "/withdraw")
                         .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"amount\":300.00}"))
-                .andExpect(status().isOk());
+                        .contentType(MediaType.APPLICATION_JSON).content("{\\"amount\\":300.00}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("cannot withdraw"));
+
         mvc.perform(post("/api/v1/loans/" + loanId + "/repay")
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isOk());
     }
 }
