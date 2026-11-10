@@ -1,9 +1,6 @@
-# Render Blueprint — backend Web Service only (no managed DB, so no card required).
-# Use external free, card-free services for data:
-#   - Postgres: Neon (neon.tech)   -> DB_URL / DB_USERNAME / DB_PASSWORD
-#   - Redis:    Upstash (upstash.com) -> REDIS_HOST / REDIS_PORT / REDIS_PASSWORD / REDIS_SSL
-# Render has no managed Kafka, so the event pipeline is disabled (EVENTS_ENABLED=false);
-# the publisher no-ops and core banking is unaffected. Frontend deploys on Vercel.
+# Render Blueprint — backend Web Service only.
+# Configure Neon/Postgres and Upstash/Redis credentials in the Render dashboard.
+# Frontend deploys separately on Vercel.
 
 services:
   - type: web
@@ -18,12 +15,14 @@ services:
         value: prod
       - key: EVENTS_ENABLED
         value: "false"
+      # Fail closed: neither administrator nor demo accounts are created on deploy.
+      - key: SEED_ADMIN
+        value: "false"
       - key: SEED_DEMO
-        value: "true"
+        value: "false"
       - key: JWT_SECRET
         generateValue: true
-      # --- set these in the Render dashboard (from Neon / Upstash) ---
-      - key: DB_URL          # jdbc:postgresql://<neon-host>/<db>?sslmode=require
+      - key: DB_URL
         sync: false
       - key: DB_USERNAME
         sync: false
@@ -37,5 +36,5 @@ services:
         sync: false
       - key: REDIS_SSL
         value: "true"
-      - key: CORS_ALLOWED_ORIGINS   # the Vercel URL, set after the frontend deploys
+      - key: CORS_ALLOWED_ORIGINS
         sync: false
