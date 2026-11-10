@@ -1,6 +1,5 @@
 package com.bank.customer.dto;
 
-import com.bank.customer.domain.KycStatus;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -18,7 +17,6 @@ public record ProfileResponse(
         String phone,
         String addressLine1,
         String city,
-        String country,
-        KycStatus kycStatus
+        String country
 ) {
 }
