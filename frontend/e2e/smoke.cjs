@@ -23,7 +23,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.getByLabel('Password (min 8 chars)').fill('Synthetic-Only-Password-2026!')
     await page.getByRole('button', { name: 'Create account' }).click()
     await page.waitForURL('http://127.0.0.1:4173/')
-    await page.getByText('$1,500,000.00').first().waitFor()
+    await page.getByText('$5,000,000.00').first().waitFor()
 
     // Payment-page optional code control: verify its conditional visibility,
     // required validation, and clearing behavior without submitting a payment.
@@ -82,7 +82,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
       const state = JSON.parse(localStorage.getItem('northstar.local-simulation.v1') || '{}')
       return state.accounts?.find((account) => account.id === 'acct-northstar-001')
     })
-    assert.equal(accountState.balance, '1500000.00', 'rejected withdrawal must not change balance')
+    assert.equal(accountState.balance, '5000000.00', 'rejected withdrawal must not change balance')
 
     const events = await page.evaluate(() => JSON.parse(localStorage.getItem('bankapp.experiment.events.v1') || '[]'))
     assert.ok(events.some((event) => event.type === 'withdrawal_submitted'), 'submission event must be persisted')
@@ -123,7 +123,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
 
     await page.reload({ waitUntil: 'networkidle' })
     await page.getByText('Withdraw funds').waitFor()
-    await page.getByText('$1,500,000.00').first().waitFor()
+    await page.getByText('$5,000,000.00').first().waitFor()
     await page.getByRole('button', { name: 'Sign out' }).click()
     await page.waitForURL('**/login')
     assert.deepEqual(errors, [], 'browser must not emit uncaught page errors')
