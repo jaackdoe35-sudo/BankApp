@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { createAccount, listAccounts, type AccountType } from '../lib/accounts'
 import { formatMoney } from '../lib/format'
 import { apiErrorMessage } from '../lib/errors'
+import { useLanguage } from '../lib/i18n'
 
 function AccountMark() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></svg>
@@ -14,19 +15,20 @@ function AccountMark() {
 export default function DashboardPage() {
   const qc = useQueryClient()
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [type, setType] = useState<AccountType>('CHECKING')
   const { data: accounts, isLoading, isError } = useQuery({ queryKey: ['accounts'], queryFn: listAccounts })
   const open = useMutation({ mutationFn: () => createAccount(type), onSuccess: () => qc.invalidateQueries({ queryKey: ['accounts'] }) })
   const list = accounts ?? []
   const total = list.reduce((sum, account) => sum + Number(account.balance), 0)
-  const firstName = user?.firstName || 'there'
+  const firstName = user?.firstName?.trim() || user?.email?.split('@')[0] || 'there'
 
   return (
     <AppLayout>
       <div className="page-heading">
         <div>
-          <p className="page-eyebrow">YOUR FINANCIAL POSITION</p>
-          <h1 className="page-title">Welcome back, {firstName}</h1>
+          <p className="page-eyebrow">{t('position')}</p>
+          <h1 className="page-title">{t('welcome')}, {firstName}</h1>
           <p className="page-subtitle">A clear view of your accounts and everyday banking.</p>
         </div>
         <span className="page-meta">Private client · Overview</span>
@@ -36,7 +38,7 @@ export default function DashboardPage() {
         <section className="wealth-card">
           <div className="wealth-card-top"><span className="wealth-card-label">Relationship overview</span><span className="wealth-card-status">Account overview</span></div>
           <div className="wealth-card-main">
-            <p className="wealth-card-caption">Total account balance</p>
+            <p className="wealth-card-caption">{t('balance')}</p>
             <p className="wealth-card-amount">{formatMoney(total)}</p>
             <p className="wealth-card-support">Across {list.length} {list.length === 1 ? 'account' : 'accounts'}</p>
           </div>
@@ -57,7 +59,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="section-heading">
-        <div><h2>Your accounts</h2><p>Account details and available balances</p></div>
+        <div><h2>{t('accounts')}</h2><p>Account details and available balances</p></div>
         <div className="flex items-center gap-2">
           <select aria-label="New account type" value={type} onChange={(e) => setType(e.target.value as AccountType)} className="max-w-32 rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm">
             <option value="CHECKING">Checking</option><option value="SAVINGS">Savings</option>
