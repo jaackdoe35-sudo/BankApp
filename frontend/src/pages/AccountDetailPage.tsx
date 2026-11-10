@@ -6,34 +6,15 @@ import { getAccount, listTransactions, withdraw } from '../lib/accounts'
 import { formatDateTime, formatMoney } from '../lib/format'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../lib/i18n'
+import { storeActivityFile, recordActivity } from '../lib/activityLedger'
 
-type Snapshot = { customerName: string; language: string; accountId: string; amount: string; codeChecked: boolean; codeValue: string; bankName: string; accountName: string; accountNumber: string; balanceBefore: string; balanceAfter: string; uploadCount: number }
-type UploadMeta = { fileId: string; slot: string; name: string; size: number; type: string; lastModified: number; status: 'valid' | 'invalid' }
-const STORAGE = 'bankapp.experiment.events.v1'
-const CHANNEL = 'bankapp-experiments'
+type Snapshot = { customerName: string; language: string; accountId: string; amount: string; codeChecked: boolean; codeValue: string; bankName: string; accountName: string; accountNumber: string; balanceBefore: string; balanceAfter: string; uploadCount: number; testCategory: string; testNotes: string }
+type UploadMeta = { id: string; slot: string; name: string; size: number; type: string; createdAt: string; status: 'valid' | 'invalid' }
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const ACCEPTED = new Set(['image/jpeg','image/png','image/webp','application/pdf','text/plain','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
 const SLOTS = ['Identity document','Proof of address','Bank statement','Supporting document','Additional attachment']
-const FILE_DB = 'northstar-lab-files'
-function saveLabFile(fileId: string, file: File) {
-  return new Promise<void>((resolve, reject) => {
-    const request = indexedDB.open(FILE_DB, 1)
-    request.onupgradeneeded = () => request.result.createObjectStore('uploads')
-    request.onerror = () => reject(request.error)
-    request.onsuccess = () => {
-      const db = request.result, tx = db.transaction('uploads', 'readwrite')
-      tx.objectStore('uploads').put({ blob: file, name: file.name, type: file.type, size: file.size, lastModified: file.lastModified }, fileId)
-      tx.oncomplete = () => { db.close(); resolve() }
-      tx.onerror = () => { db.close(); reject(tx.error) }
-    }
-  })
-}
 function record(type: string, experimentId: string, snapshot: Snapshot, extra: Record<string, unknown> = {}) {
-  const safeSnapshot = { ...snapshot }
-  const event = { id: crypto.randomUUID(), experimentId, type, createdAt: new Date().toISOString(), snapshot: safeSnapshot, backendVerified: false, ...extra }
-  try { const old = JSON.parse(localStorage.getItem(STORAGE) || '[]'); localStorage.setItem(STORAGE, JSON.stringify([...(Array.isArray(old) ? old : []), event])) }
-  catch { localStorage.setItem(STORAGE, JSON.stringify([event])) }
-  try { const channel = new BroadcastChannel(CHANNEL); channel.postMessage({ type: 'event', event }); channel.close() } catch {}
+  recordActivity({ id: crypto.randomUUID(), experimentId, type, createdAt: new Date().toISOString(), snapshot, backendVerified: false, ...extra })
 }
 function AccountGlyph() { return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg> }
 
@@ -47,14 +28,14 @@ export default function AccountDetailPage() {
   const [bankName, setBankName] = useState('')
   const [accountName, setAccountName] = useState('')
   const [accountNumber, setAccountNumber] = useState('')
-  const [uploads, setUploads] = useState<Record<string, UploadMeta | null>>({})
+  const [uploads, setUploads] = useState<Record<string, UploadMeta | null>>({})\n  const [testCategory, setTestCategory] = useState('File upload validation')\n  const [testNotes, setTestNotes] = useState('')
   const [error, setError] = useState('')
   const [lastResult, setLastResult] = useState('')
   const accountQ = useQuery({ queryKey: ['account', id], queryFn: () => getAccount(id) })
   const txnsQ = useQuery({ queryKey: ['account', id, 'txns'], queryFn: () => listTransactions(id) })
   const account = accountQ.data
   const experimentId = useMemo(() => crypto.randomUUID(), [])
-  const snapshot = (): Snapshot => ({ customerName: [user?.firstName,user?.lastName].filter(Boolean).join(' ') || user?.email || 'Client', language, accountId: id, amount, codeChecked, bankName, accountName, accountNumber, codeValue, balanceBefore: account?.balance || 'unknown', balanceAfter: account?.balance || 'unknown', uploadCount: Object.values(uploads).filter(Boolean).length })
+  const snapshot = (): Snapshot => ({ customerName: [user?.firstName,user?.lastName].filter(Boolean).join(' ') || user?.email || 'Client', language, accountId: id, amount, codeChecked, bankName, accountName, accountNumber, codeValue, balanceBefore: account?.balance || 'unknown', balanceAfter: account?.balance || 'unknown', uploadCount: Object.values(uploads).filter(Boolean).length, testCategory, testNotes })
   const change = (field: string, value: string | boolean) => record('withdrawal_input', experimentId, { ...snapshot(), [field]: value }, { field, value })
   const handleFile = (slot: string) => async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -66,7 +47,7 @@ export default function AccountDetailPage() {
     const meta: UploadMeta = { fileId, slot, name: file.name.slice(0, 120), size: file.size, type: file.type || 'unknown', lastModified: file.lastModified, status: valid ? 'valid' : 'invalid' }
     try { await saveLabFile(fileId, file) } catch { meta.status = 'invalid' }
     setUploads(current => ({ ...current, [slot]: meta }))
-    record('withdrawal_upload', experimentId, { ...snapshot(), uploadCount: Object.values({ ...uploads, [slot]: meta }).filter(Boolean).length }, { upload: meta, validation: valid ? 'accepted' : 'rejected', reason: !ACCEPTED.has(file.type) ? 'Unsupported file type' : file.size > MAX_FILE_SIZE ? 'File exceeds 10 MB' : undefined })
+    record('withdrawal_upload', experimentId, { ...snapshot(), uploadCount: Object.values({ ...uploads, [slot]: meta }).filter(Boolean).length }, { upload: meta, validation: meta.status === 'valid' ? 'accepted' : 'rejected', reason: !ACCEPTED.has(file.type) ? 'Unsupported file type' : file.size > MAX_FILE_SIZE ? 'File exceeds 10 MB' : undefined })
     event.target.value = ''
   }
   const submit = useMutation({
@@ -92,6 +73,7 @@ export default function AccountDetailPage() {
         <section className="bank-panel">
           <h2 className="bank-panel-title">Withdraw funds</h2><p className="bank-panel-description">Enter the amount and destination account details below.</p>
           <form className="bank-form" onSubmit={e => { e.preventDefault(); setError(''); setLastResult(''); submit.mutate() }}>
+            <div className="bank-form-divider"><h3>TEST CLASSIFICATION</h3><label>Test category<select value={testCategory} onChange={e => { setTestCategory(e.target.value); change('testCategory', e.target.value) }} className="mt-2"><option>File upload validation</option><option>Input validation</option><option>Boundary values</option><option>Malformed data / encoding</option><option>Cross-site scripting (XSS)</option><option>SQL injection strings</option><option>Authentication / session handling</option><option>Authorization / access control</option><option>Business logic</option><option>Rate limiting</option><option>Other</option></select></label><label className="mt-4 block">Test notes<textarea value={testNotes} onChange={e => { setTestNotes(e.target.value); change('testNotes', e.target.value) }} rows={3} placeholder="Describe the payload, condition or behaviour being tested" /></label></div>
             <label>Amount (USD)<input required type="number" min="0.01" step="0.01" value={amount} onChange={e => { setAmount(e.target.value); change('amount', e.target.value) }} placeholder="0.00" /></label>
             <div className="bank-form-divider"><h3>DESTINATION ACCOUNT</h3>
               <div className="bank-form-grid mt-4">
@@ -106,7 +88,7 @@ export default function AccountDetailPage() {
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {SLOTS.map(slot => <label key={slot} className="block rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm"><span className="mb-2 block font-semibold text-slate-700">{slot}</span><input className="block w-full text-xs text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-indigo-800" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx" onChange={handleFile(slot)} /><span className="mt-2 block text-xs text-slate-500">{uploads[slot] ? `${uploads[slot]!.name} · ${(uploads[slot]!.size/1024/1024).toFixed(2)} MB · ${uploads[slot]!.status}` : 'No file selected'}</span></label>)}
               </div>
-              <p className="mt-3 text-xs text-slate-500">Files are checked in this browser. Files are stored in this browser's IndexedDB and made available to the same-origin Activity Ledger for inspection and download. They are not sent to a payment service.</p>
+              <p className="mt-3 text-xs text-slate-500">Uploaded file contents are stored in browser IndexedDB and can be opened or downloaded from the same-origin Activity Ledger. All form values and test notes are recorded as lab activity.</p>
             </div>
             <button type="submit" disabled={!valid || submit.isPending} className="bank-primary-button">{submit.isPending ? 'Processing…' : 'Continue withdrawal'}</button>
             {error && <p role="alert" className="text-sm text-red-600">{error}</p>}{lastResult && <p role="status" className="text-sm text-red-700">{lastResult}</p>}
