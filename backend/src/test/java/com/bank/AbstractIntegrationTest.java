@@ -50,6 +50,11 @@ public abstract class AbstractIntegrationTest {
         // Disable per-IP auth rate limiting so the many register/login calls across the
         // suite (all from 127.0.0.1) don't trip it. The filter is unit-tested separately.
         registry.add("app.ratelimit.enabled", () -> "false");
+        // Testcontainers uses an isolated database; bootstrap a strong test-only admin
+        // so admin-authorized integration tests do not depend on production seed settings.
+        registry.add("app.seed.admin.enabled", () -> "true");
+        registry.add("app.seed.admin.email", () -> "admin@bank.local");
+        registry.add("app.seed.admin.password", () -> "test-only-admin-bootstrap-password-2026");
     }
 
     @Autowired
