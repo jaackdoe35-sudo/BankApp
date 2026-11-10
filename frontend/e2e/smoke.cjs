@@ -152,6 +152,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.waitForFunction(() => Array.from(document.querySelectorAll('button')).some(button => button.textContent?.trim() === 'Mark all read' && button.disabled))
     assert.equal(await markAllRead.isDisabled(), true, 'mark-all-read should disable after notifications are read')
 
+    await page.goto('http://127.0.0.1:4173/accounts/acct-northstar-001', { waitUntil: 'networkidle' })
     await page.reload({ waitUntil: 'networkidle' })
     await page.getByText('Withdraw funds').waitFor()
     await page.getByText('$5,000,000.00').first().waitFor()
