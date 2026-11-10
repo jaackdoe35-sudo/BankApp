@@ -24,7 +24,7 @@ export function setLanguage(language: Language) {
  document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr'; listeners.forEach(fn => fn())
 }
 export function useLanguage() {
- const language = useSyncExternalStore(subscribe, snapshot, () => 'en')
+ const language = useSyncExternalStore<Language>(subscribe, snapshot, () => 'en')
  const active: Record<string, string> = messages[language]
  const fallback: Record<string, string> = messages.en
  return { language, t: (key: string) => active[key] || fallback[key] || key, setLanguage }
