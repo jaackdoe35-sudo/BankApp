@@ -25,5 +25,5 @@ export function setLanguage(language: Language) {
 }
 export function useLanguage() {
  const language = useSyncExternalStore(subscribe, snapshot, () => 'en')
- return { language, t: (key: keyof typeof messages.en) => messages[language][key] || messages.en[key] || key, setLanguage }
+ const active: Record<string, string> = messages[language]\n const fallback: Record<string, string> = messages.en\n return { language, t: (key: string) => active[key] || fallback[key] || key, setLanguage }
 }
