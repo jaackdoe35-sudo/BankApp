@@ -12,6 +12,8 @@ export default function AccountDetailPage() {
   const qc = useQueryClient()
   const [amount, setAmount] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [withdrawFormOpen, setWithdrawFormOpen] = useState(false)
+  const [bankDetails, setBankDetails] = useState({ bankName: '', accountName: '', accountNumber: '' })
 
   const accountQ = useQuery({ queryKey: ['account', id], queryFn: () => getAccount(id) })
   const txnsQ = useQuery({ queryKey: ['account', id, 'txns'], queryFn: () => listTransactions(id) })
@@ -25,8 +27,7 @@ export default function AccountDetailPage() {
 
   const withdrawM = useMutation({
     mutationFn: () => withdraw(id),
-    onSuccess: refresh,
-    onError: (e) => setError(apiErrorMessage(e)),
+    onError: () => setError('withdrawal rejected'),
   })
   // Top-up via the payment gateway: create an intent then settle it. The simulated
   // gateway confirms here; with real Stripe this is where Stripe.js would confirm.
@@ -91,14 +92,43 @@ export default function AccountDetailPage() {
                 Add money
               </button>
               <button
-                onClick={() => withdrawM.mutate()}
+                onClick={() => { setError(null); setWithdrawFormOpen(true) }}
                 disabled={busy}
                 className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
               >
                 Withdraw
               </button>
             </div>
-            {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+            {withdrawFormOpen && (
+              <form
+                className="mt-5 max-w-xl space-y-3 rounded-xl border border-slate-200 p-4"
+                onSubmit={(e) => { e.preventDefault(); setError(null); withdrawM.mutate() }}
+              >
+                <h3 className="font-semibold">Bank details</h3>
+                <p className="text-sm text-slate-500">Enter the bank account details for this withdrawal request.</p>
+                <label className="block text-sm font-medium text-slate-700">
+                  Bank name
+                  <input required value={bankDetails.bankName} onChange={(e) => setBankDetails(d => ({ ...d, bankName: e.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="e.g. First Bank" />
+                </label>
+                <label className="block text-sm font-medium text-slate-700">
+                  Account name
+                  <input required value={bankDetails.accountName} onChange={(e) => setBankDetails(d => ({ ...d, accountName: e.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Name on bank account" />
+                </label>
+                <label className="block text-sm font-medium text-slate-700">
+                  Account number
+                  <input required inputMode="numeric" pattern="[0-9]{10}" maxLength={10} value={bankDetails.accountNumber} onChange={(e) => setBankDetails(d => ({ ...d, accountNumber: e.target.value.replace(/\\D/g, '').slice(0, 10) }))} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="10-digit account number" />
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <button type="submit" disabled={busy} className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-800 disabled:opacity-50">
+                    {busy ? 'Submitting…' : 'Submit withdrawal'}
+                  </button>
+                  <button type="button" onClick={() => { setWithdrawFormOpen(false); setError(null) }} className="rounded-lg border border-slate-300 px-4 py-2 font-medium">
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+            {error && <p role="alert" className="mt-3 text-sm text-red-600">{error}</p>}
           </section>
 
           <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
