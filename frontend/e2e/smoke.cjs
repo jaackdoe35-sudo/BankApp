@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict')
+const fs = require('node:fs')
 const path = require('node:path')
 
 const binDir = process.env.PATH.split(path.delimiter).find(
@@ -43,6 +44,20 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await ledger.getByText('482913').first().waitFor()
     await ledger.getByText('Synthetic Test Bank').first().waitFor()
 
+    const [jsonDownload] = await Promise.all([
+      ledger.waitForEvent('download'),
+      ledger.getByRole('button', { name: 'Export JSON' }).click(),
+    ])
+    const exported = JSON.parse(fs.readFileSync(await jsonDownload.path(), 'utf8'))
+    assert.ok(exported.events.some((event) => event.type === 'withdrawal_result'), 'JSON export must include the result event')
+
+    const [csvDownload] = await Promise.all([
+      ledger.waitForEvent('download'),
+      ledger.getByRole('button', { name: 'Export CSV' }).click(),
+    ])
+    const csv = fs.readFileSync(await csvDownload.path(), 'utf8')
+    assert.ok(csv.includes('withdrawal_result'), 'CSV export must include the result event')
+
     const accountState = await page.evaluate(() => {
       const state = JSON.parse(localStorage.getItem('northstar.local-simulation.v1') || '{}')
       return state.accounts?.find((account) => account.id === 'acct-northstar-001')
@@ -70,6 +85,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
         'withdrawal rejection result',
         'Test Ledger cross-tab BroadcastChannel updates',
         'event persistence and event contents',
+        'JSON and CSV event exports',
         'unchanged simulated balance',
         'session persistence after reload',
         'logout and protected-route redirect',
