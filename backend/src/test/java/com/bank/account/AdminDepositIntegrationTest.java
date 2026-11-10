@@ -14,11 +14,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AdminDepositIntegrationTest extends AbstractIntegrationTest {
 
     @Test
-    void openingAccountRequiresVerifiedKyc() throws Exception {
-        String token = register("kyc-gate@example.com"); // not verified
+    void customerCanOpenAccountImmediatelyAfterRegistration() throws Exception {
+        String token = register("account-open@example.com");
         mvc.perform(post("/api/v1/accounts").header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"type\":\"CHECKING\"}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.currency", is("USD")));
     }
 
     @Test
