@@ -10,95 +10,55 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-
   async function onSubmit(e: FormEvent) {
-    e.preventDefault()
-    setError(null)
-    setSubmitting(true)
-    try {
-      await login(email, password)
-      navigate('/')
-    } catch (err) {
-      setError(apiErrorMessage(err, 'Login failed'))
-    } finally {
-      setSubmitting(false)
-    }
+    e.preventDefault(); setError(null); setSubmitting(true)
+    try { await login(email, password); navigate('/') }
+    catch (err) { setError(apiErrorMessage(err, 'Login failed')) }
+    finally { setSubmitting(false) }
   }
 
   return (
-    <AuthShell title="Welcome back" subtitle="Sign in to your account">
+    <AuthShell title="Welcome back" subtitle="Sign in to your private banking account">
       <form onSubmit={onSubmit} className="space-y-4">
         <Field label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" />
-        <Field
-          label="Password"
-          type="password"
-          value={password}
-          onChange={setPassword}
-          autoComplete="current-password"
-        />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full rounded-lg bg-slate-900 py-2.5 font-medium text-white hover:bg-slate-800 disabled:opacity-60"
-        >
-          {submitting ? 'Signing in…' : 'Sign in'}
-        </button>
+        <Field label="Password" type="password" value={password} onChange={setPassword} autoComplete="current-password" />
+        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+        <button type="submit" disabled={submitting}>{submitting ? 'Signing in…' : 'Sign in'}</button>
       </form>
-      <p className="mt-4 text-center text-sm text-slate-500">
-        No account?{' '}
-        <Link to="/signup" className="font-medium text-slate-900 hover:underline">
-          Create one
-        </Link>
-      </p>
+      <p className="mt-5 text-center text-xs text-slate-500">No account yet? <Link to="/signup">Create an account</Link></p>
     </AuthShell>
   )
 }
 
-export function AuthShell({
-  title,
-  subtitle,
-  children,
-}: {
-  title: string
-  subtitle: string
-  children: React.ReactNode
-}) {
+export function AuthShell({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="text-2xl font-bold tracking-tight">🏦 {title}</h1>
-        <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
-        <div className="mt-6">{children}</div>
-      </div>
+    <div className="auth-shell">
+      <section className="auth-brand-panel">
+        <div className="auth-brand-top">
+          <Link to="/login" className="auth-brand-wordmark" style={{ color: 'inherit', textDecoration: 'none' }}>
+            <span className="bank-brand-mark">N</span><span><strong>Northstar</strong><small>PRIVATE BANKING</small></span>
+          </Link>
+        </div>
+        <div className="auth-brand-message">
+          <p className="eyebrow">A MORE CONSIDERED APPROACH</p>
+          <h2>Clarity for your financial life.</h2>
+          <p>Thoughtful banking, with a clear view of what matters and the tools to manage it with confidence.</p>
+        </div>
+        <div className="auth-brand-bottom">Private client services · Northstar Private</div>
+      </section>
+      <section className="auth-form-panel">
+        <div className="auth-form-card">
+          <p className="page-eyebrow">NORTHSTAR PRIVATE · CLIENT ACCESS</p>
+          <h1>{title}</h1>
+          <p>{subtitle}</p>
+          {children}
+          <div className="auth-form-footnote">Protected client access · Please keep your sign-in details confidential.</div>
+        </div>
+      </section>
     </div>
   )
 }
 
-export function Field({
-  label,
-  type = 'text',
-  value,
-  onChange,
-  autoComplete,
-}: {
-  label: string
-  type?: string
-  value: string
-  onChange: (v: string) => void
-  autoComplete?: string
-}) {
-  return (
-    <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
-      <input
-        type={type}
-        value={value}
-        autoComplete={autoComplete}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
-        required
-      />
-    </label>
-  )
+export function Field({ label, type = 'text', value, onChange, autoComplete }: { label: string; type?: string; value: string; onChange: (value: string) => void; autoComplete?: string }) {
+  return <label><span>{label}</span><input type={type} value={value} autoComplete={autoComplete} onChange={(e) => onChange(e.target.value)} required /></label>
 }
