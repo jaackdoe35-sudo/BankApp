@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { unreadCount } from '../lib/notifications'
-import { languages, useLanguage, type Language } from '../lib/i18n'
+import { languages, useLanguage } from '../lib/i18n'
 
 type IconName = 'overview' | 'payments' | 'cards' | 'loans' | 'profile' | 'activity'
 function NavIcon({ name }: { name: IconName }) {
@@ -69,7 +69,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <header className="bank-topbar">
           <div className="bank-topbar-left"><span className="bank-topbar-kicker">PRIVATE CLIENT PORTAL</span><span className="bank-topbar-divider" /><span>Digital banking</span></div>
           <div className="bank-topbar-right">
-            <label className="flex items-center gap-2 text-xs text-slate-600"><span>{t('language')}</span><select aria-label={t('language')} value={language} onChange={e => setLanguage(e.target.value as Language)} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs">{languages.map(item => <option key={item.code} value={item.code}>{item.label}</option>)}</select></label>
+            <label className="flex items-center gap-2 text-xs text-slate-600"><span>{t('language')}</span><><input aria-label={t('language')} list="northstar-languages" value={language} onChange={e => setLanguage(e.target.value)} placeholder="en / fr / ja / sw / zh-CN" className="w-36 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs"/><datalist id="northstar-languages">{languages.map(item => <option key={item.code} value={item.code}>{item.label}</option>)}</datalist></></label>
             <Link to="/notifications" className="bank-activity-link"><NavIcon name="activity" />Activity{unread > 0 && <span className="bank-nav-count">{unread}</span>}</Link>
             <span className="bank-topbar-secure"><span />Secure connection</span>
             <button className="bank-signout mobile-signout" onClick={logout}>Sign out</button>
