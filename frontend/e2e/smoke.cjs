@@ -340,7 +340,16 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     }
 
     await localeSelect.selectOption('en')
-    await page.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded' })
+    await page.goto('http://127.0.0.1:4173/accounts/acct-northstar-001', { waitUntil: 'networkidle' })
+    await page.evaluate(() => {
+      const original = Storage.prototype.setItem
+      Storage.prototype.setItem = function (key, value) {
+        if (key === 'bankapp.experiment.events.v1') throw new DOMException('Synthetic quota failure', 'QuotaExceededError')
+        return original.call(this, key, value)
+      }
+    })
+    await page.getByLabel('Test notes').fill('Storage unavailable fixture')
+    assert.equal(await page.getByLabel('Test notes').inputValue(), 'Storage unavailable fixture', 'form entry should remain usable when activity storage is unavailable')
     await page.getByRole('button', { name: 'Sign out' }).click()
     await page.waitForURL('**/login')
     assert.deepEqual(translationProviderRequests, [], 'offline translation must not call a third-party translation API')
