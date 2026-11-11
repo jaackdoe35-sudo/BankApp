@@ -255,6 +255,14 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.goto('http://127.0.0.1:4173/signup')
     await page.waitForFunction(() => document.querySelector('h1')?.textContent?.trim() === 'Ouvrir votre compte')
     await page.getByRole('button', { name: 'Créer un compte' }).waitFor()
+    // The preceding route checks intentionally signed out; create a separate
+    // synthetic account before testing locale controls on the authenticated shell.
+    await page.getByLabel('First name').fill('Locale')
+    await page.getByLabel('Last name').fill('Tester')
+    await page.getByLabel('Email').fill('e2e.locale@example.test')
+    await page.getByLabel('Password (min 8 chars)').fill('Synthetic-Only-Password-2026!')
+    await page.getByRole('button', { name: 'Créer un compte' }).click()
+    await page.waitForURL('http://127.0.0.1:4173/')
 
     // Locale-switching checks run on the authenticated app shell, where navigation exists.
     await page.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded' })
