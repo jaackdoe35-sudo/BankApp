@@ -9,7 +9,7 @@ import { recordActivity, storeActivityFile, type ActivityUpload } from '../lib/a
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../lib/i18n'
 
-type PaymentUpload = ActivityUpload & { slot: string; status: 'valid' | 'invalid' }
+type PaymentUpload = ActivityUpload & { status: 'valid' | 'invalid' }
 const PAYMENT_UPLOAD_SLOTS = ['document-1', 'document-2', 'document-3', 'document-4', 'document-5']
 const MAX_PAYMENT_FILE_SIZE = 10 * 1024 * 1024
 const PAYMENT_FILE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
