@@ -323,7 +323,12 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
         })
       }
       await page.goto('http://127.0.0.1:4173/login', { waitUntil: 'domcontentloaded' })
-      await page.waitForFunction(value => document.body.innerText.includes(value), expected[0])
+      const loginButtonText = {
+        en: 'Sign in', fr: 'Se connecter', es: 'Iniciar sesión', pt: 'Iniciar sessão',
+        ar: 'تسجيل الدخول', ha: 'Shiga', yo: 'Wọlé', fil: 'Mag-sign in', ms: 'Log masuk',
+        ko: '로그인', 'zh-CN': '登录', 'zh-TW': '登入', id: 'Masuk',
+      }[code]
+      await page.getByRole('button', { name: loginButtonText }).waitFor({ state: 'visible' })
     }
 
     await localeSelect.selectOption('en')

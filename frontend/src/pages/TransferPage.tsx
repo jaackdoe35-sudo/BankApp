@@ -63,7 +63,7 @@ export default function TransferPage() {
       try { stored = await storeActivityFile(file) } catch { /* Surface storage failure in the selected-file state. */ }
     }
     const meta: PaymentUpload = {
-      id: stored?.id || '', name: file.name.slice(0, 120), size: file.size,
+      id: stored?.id || '', remoteId: stored?.remoteId, name: file.name.slice(0, 120), size: file.size,
       type: file.type || 'application/octet-stream', createdAt: stored?.createdAt || new Date().toISOString(),
       status: valid && !!stored ? 'valid' : 'invalid',
     }

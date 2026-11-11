@@ -38,7 +38,8 @@ public abstract class AbstractIntegrationTest {
             new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
 
     @ServiceConnection
-    static final KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("apache/kafka:3.8.0"));
+    static final KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("apache/kafka:3.8.0"))
+            .withStartupAttempts(3);
 
     static {
         postgres.start();

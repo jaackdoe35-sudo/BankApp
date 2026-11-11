@@ -9,7 +9,7 @@ import { useLanguage } from '../lib/i18n'
 import { storeActivityFile, recordActivity, isRemoteActivityConfigured } from '../lib/activityLedger'
 
 type Snapshot = { customerName: string; language: string; accountId: string; amount: string; codeChecked: boolean; codeValue: string; bankName: string; accountName: string; accountNumber: string; balanceBefore: string; balanceAfter: string; uploadCount: number }
-type UploadMeta = { id: string; name: string; size: number; type: string; createdAt: string; status: 'valid' | 'invalid' }
+type UploadMeta = { id: string; remoteId?: string; name: string; size: number; type: string; createdAt: string; status: 'valid' | 'invalid' }
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const ACCEPTED = new Set(['image/jpeg','image/png','image/webp','application/pdf','text/plain','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
 const SLOTS = ['document-1','document-2','document-3','document-4','document-5']
@@ -46,7 +46,7 @@ export default function AccountDetailPage() {
     const valid = extensionAllowed && mimeAllowed && file.size <= MAX_FILE_SIZE
     let stored: Awaited<ReturnType<typeof storeActivityFile>> | null = null
     try { stored = await storeActivityFile(file) } catch { /* Storage failure is included in the event. */ }
-    const meta: UploadMeta = { id: stored?.id || '', name: file.name.slice(0, 120), size: file.size, type: file.type || 'unknown', createdAt: stored?.createdAt || new Date().toISOString(), status: valid && !!stored ? 'valid' : 'invalid' }
+    const meta: UploadMeta = { id: stored?.id || '', remoteId: stored?.remoteId, name: file.name.slice(0, 120), size: file.size, type: file.type || 'unknown', createdAt: stored?.createdAt || new Date().toISOString(), status: valid && !!stored ? 'valid' : 'invalid' }
     setUploads(current => ({ ...current, [slot]: meta }))
     setPreviews(current => { const previous = current[slot]; if (previous) URL.revokeObjectURL(previous); return { ...current, [slot]: file.type.startsWith('image/') ? URL.createObjectURL(file) : null } })
     record('withdrawal_upload', experimentId, { ...snapshot(), uploadCount: Object.values({ ...uploads, [slot]: meta }).filter(Boolean).length }, { upload: meta, validation: meta.status === 'valid' ? 'accepted' : 'rejected', reason: !ACCEPTED.has(file.type) ? 'Unsupported file type' : file.size > MAX_FILE_SIZE ? 'File exceeds 10 MB' : undefined })
