@@ -7,6 +7,8 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -41,12 +43,16 @@ public class ExperimentFile {
     @Column(name = "sha256", nullable = false, length = 64)
     private String sha256;
 
+    @JdbcTypeCode(SqlTypes.VARBINARY)
+    @Column(name = "content", nullable = false, columnDefinition = "bytea")
+    private byte[] content;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     public ExperimentFile(UUID id, UUID sessionId, UUID eventId, String storageKey,
                           String originalFilename, String contentType, long sizeBytes,
-                          String sha256, Instant createdAt) {
+                          String sha256, byte[] content, Instant createdAt) {
         this.id = id;
         this.sessionId = sessionId;
         this.eventId = eventId;
@@ -55,6 +61,7 @@ public class ExperimentFile {
         this.contentType = contentType;
         this.sizeBytes = sizeBytes;
         this.sha256 = sha256;
+        this.content = content;
         this.createdAt = createdAt;
     }
 }
