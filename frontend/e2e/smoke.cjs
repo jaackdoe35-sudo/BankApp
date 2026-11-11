@@ -254,7 +254,10 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.getByText('Connectez-vous à votre compte bancaire privé').waitFor()
     await page.goto('http://127.0.0.1:4173/signup')
     await page.waitForFunction(() => document.querySelector('h1')?.textContent?.trim() === 'Ouvrir votre compte')
-    await page.getByRole('button', { name: 'Créer un compte' }).waitFor()
+    await page.evaluate(() => localStorage.setItem('northstar.language.v1', 'en'))
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await page.getByRole('heading', { name: 'Open your account' }).waitFor()
+    await page.getByRole('button', { name: 'Create account' }).waitFor()
     // The preceding route checks intentionally signed out; create a separate
     // synthetic account before testing locale controls on the authenticated shell.
     await page.getByLabel('First name').fill('Locale')
