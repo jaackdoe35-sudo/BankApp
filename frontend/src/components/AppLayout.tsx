@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext'
 import { unreadCount } from '../lib/notifications'
 import { useLanguage } from '../lib/i18n'
 import LanguagePicker from './LanguagePicker'
-import LabDisclosure from './LabDisclosure'
 
 type IconName = 'overview' | 'payments' | 'cards' | 'loans' | 'profile' | 'activity'
 function NavIcon({ name }: { name: IconName }) {
@@ -59,7 +58,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           {user?.role === 'ADMIN' && <Link to="/admin" aria-current={pathname === '/admin' ? 'page' : undefined} className={'bank-nav-link' + (pathname === '/admin' ? ' is-active' : '')}><span className="bank-nav-icon"><NavIcon name="profile" /></span><span>Administration</span></Link>}
         </nav>
         <div className="bank-sidebar-bottom">
-          <div className="bank-secure-state"><span className="bank-secure-dot" />Secure session</div>
+          <div className="bank-secure-state"><span className="bank-secure-dot" />Demo session</div>
           <div className="bank-user-row">
             <span className="bank-avatar">{initials}</span>
             <span className="bank-user-copy"><strong>{fullName}</strong><span>Private client</span></span>
@@ -73,12 +72,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <div className="bank-topbar-right">
             <LanguagePicker className="language-picker flex items-center gap-2 text-xs text-slate-600" />
             <Link to="/notifications" className="bank-activity-link"><NavIcon name="activity" />Activity{unread > 0 && <span className="bank-nav-count">{unread}</span>}</Link>
-            <span className="bank-topbar-secure"><span />Secure connection</span>
+            <span className="bank-topbar-secure"><span />Demo environment</span>
             <button className="bank-signout mobile-signout" onClick={logout}>Sign out</button>
           </div>
         </header>
-        <main className="bank-content"><LabDisclosure />{children}</main>
-        <footer className="bank-footer"><span>© Northstar Private Banking</span><span>Confidential client access</span></footer>
+        <main className="bank-content">{children}</main>
+        <footer className="bank-footer"><span>© Northstar Private Banking</span><span>{t('demoFooter')}</span></footer>
       </div>
     </div>
   )
