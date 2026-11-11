@@ -71,10 +71,10 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     assert.ok(desktop.scrollWidth <= desktop.width, 'withdrawal page must not overflow horizontally on desktop')
     assert.equal(desktop.columns.split(' ').length, 2, 'upload cards must use two columns on desktop')
     await page.setViewportSize({ width: 390, height: 844 })
+    const pdfFixtures = Array.from({ length: 5 }, (_, index) => Buffer.from(`Synthetic document ${index + 1}`))
+    const pngFixtures = Array.from({ length: 5 }, () => Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/XuoAAAAASUVORK5CYII=', 'base64'))
     for (let index = 0; index < 5; index++) {
-      await fileInputs.nth(index).setInputFiles({ name: `support-${index + 1}.pdf`, mimeType: 'application/pdf', buffer: Buffer.from(`Synthetic document ${index + 1}`) })
-      const slotPdf = Buffer.from(`Synthetic document ${index + 1}`)
-      assert.equal(slotPdf.toString(), `Synthetic document ${index + 1}`)
+      await fileInputs.nth(index).setInputFiles({ name: `support-${index + 1}.pdf`, mimeType: 'application/pdf', buffer: pdfFixtures[index] })
     }
     await page.getByText('support-5.pdf').waitFor()
 
@@ -93,21 +93,27 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     assert.ok(await ledger.getByText('739201').count() > 0, 'ledger must display the submitted synthetic verification code')
     await ledger.getByText('Synthetic Test Bank').first().waitFor()
 
-    const [fileDownload] = await Promise.all([
-      ledger.waitForEvent('download'),
-      ledger.getByRole('button', { name: 'Open / download support-1.pdf' }).first().click(),
-    ])
-    assert.equal(fs.readFileSync(await fileDownload.path(), 'utf8'), 'Synthetic document 1', 'ledger must return the original uploaded file bytes')
+    // Verify every one of the five PDF uploads can be downloaded byte-for-byte.
+    for (let index = 0; index < 5; index++) {
+      const name = `support-${index + 1}.pdf`
+      const [download] = await Promise.all([
+        ledger.waitForEvent('download'),
+        ledger.getByRole('button', { name: `Open / download ${name}` }).first().click(),
+      ])
+      assert.deepEqual(fs.readFileSync(await download.path()), pdfFixtures[index], 'Ledger must return original PDF bytes from slot ' + (index + 1))
+    }
 
-    // Replace one document with a real image fixture and verify the Ledger returns the original image bytes.
-    const pngBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/XuoAAAAASUVORK5CYII=', 'base64')
-    await fileInputs.nth(0).setInputFiles({ name: 'synthetic-proof.png', mimeType: 'image/png', buffer: pngBytes })
-    await ledger.getByRole('button', { name: 'Open / download synthetic-proof.png' }).waitFor()
-    const [imageDownload] = await Promise.all([
-      ledger.waitForEvent('download'),
-      ledger.getByRole('button', { name: 'Open / download synthetic-proof.png' }).click(),
-    ])
-    assert.deepEqual(fs.readFileSync(await imageDownload.path()), pngBytes, 'ledger must return the original uploaded image bytes')
+    // Replace each slot with an image and verify every image download preserves its bytes.
+    for (let index = 0; index < 5; index++) {
+      const name = `synthetic-proof-${index + 1}.png`
+      await fileInputs.nth(index).setInputFiles({ name, mimeType: 'image/png', buffer: pngFixtures[index] })
+      await ledger.getByRole('button', { name: `Open / download ${name}` }).waitFor()
+      const [download] = await Promise.all([
+        ledger.waitForEvent('download'),
+        ledger.getByRole('button', { name: `Open / download ${name}` }).first().click(),
+      ])
+      assert.deepEqual(fs.readFileSync(await download.path()), pngFixtures[index], 'Ledger must return original PNG bytes from slot ' + (index + 1))
+    }
 
     const [jsonDownload] = await Promise.all([
       ledger.waitForEvent('download'),
@@ -135,7 +141,17 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     assert.equal(accountState.balance, '5000000.00', 'rejected withdrawal must not change balance')
 
     const events = await page.evaluate(() => JSON.parse(localStorage.getItem('bankapp.experiment.events.v1') || '[]'))
-    assert.ok(events.some((event) => event.type === 'withdrawal_submitted'), 'submission event must be persisted')
+    const submitted = events.find((event) => event.type === 'withdrawal_submitted')
+    assert.ok(submitted, 'submission event must be persisted')
+    for (const [field, value] of Object.entries({
+      amount: '125.50', bankName: 'Synthetic Test Bank', accountName: 'Test Customer',
+      accountNumber: '1234567890', codeValue: '739201', codeChecked: true,
+      testCategory: 'File upload validation',
+      testNotes: 'Synthetic PDF upload; verify file storage and ledger disclosure.',
+      accountId: 'acct-northstar-001', language: 'en', balanceBefore: '5000000.00',
+      balanceAfter: '5000000.00', uploadCount: 5,
+    })) assert.equal(submitted.snapshot[field], value, 'submission snapshot must preserve ' + field)
+    assert.equal(submitted.uploads.length, 5, 'submission must reference all five uploaded files')
     assert.ok(JSON.stringify(events).includes('739201'), 'stored events must include submitted test codes')
     assert.ok(JSON.stringify(events).includes('1234567890'), 'stored events must include submitted account numbers')
     assert.ok(events.some((event) => event.type === 'withdrawal_upload'), 'upload events must be persisted')
@@ -233,6 +249,8 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
         'withdrawal rejection result',
         'Test Ledger cross-tab BroadcastChannel updates',
         'event persistence and event contents',
+        'complete withdrawal submission snapshot (all fields and five upload references)',
+        'byte-identical download of all five PDF uploads and all five PNG uploads',
         'JSON and CSV event exports',
         'unchanged simulated balance',
         'session persistence after reload',
