@@ -264,7 +264,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.getByLabel('Last name').fill('Tester')
     await page.getByLabel('Email').fill('e2e.locale@example.test')
     await page.getByLabel('Password (min 8 chars)').fill('Synthetic-Only-Password-2026!')
-    await page.getByRole('button', { name: 'Créer un compte' }).click()
+    await page.getByRole('button', { name: 'Create account' }).click()
     await page.waitForURL('http://127.0.0.1:4173/')
 
     // Locale-switching checks run on the authenticated app shell, where navigation exists.
