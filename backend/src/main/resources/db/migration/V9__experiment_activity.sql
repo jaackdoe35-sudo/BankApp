@@ -26,6 +26,7 @@ CREATE TABLE experiment_files (
     content_type VARCHAR(160) NOT NULL,
     size_bytes BIGINT NOT NULL CHECK (size_bytes > 0 AND size_bytes <= 10485760),
     sha256 CHAR(64) NOT NULL,
+    content BYTEA NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX idx_experiment_files_session ON experiment_files (session_id, created_at DESC);
