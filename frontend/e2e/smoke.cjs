@@ -57,7 +57,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     assert.equal(await paymentFileInputs.count(), 5, 'main payment page must expose five file inputs')
     assert.equal(await paymentUploadZones.count(), 5, 'main payment page must display five upload fields')
     for (let index = 0; index < 5; index++) {
-      assert.ok(await paymentUploadZones.nth(index).innerText().then(value => value.includes('Upload documents')), 'payment upload slot must use the standard label')
+      assert.ok(await paymentUploadZones.nth(index).innerText().then(value => value.includes('Choose image/file')), 'payment upload slot must use the standard label')
     }
     const paymentPdfFixtures = Array.from({ length: 5 }, (_, index) => Buffer.from(`Payment evidence ${index + 1}`))
     for (let index = 0; index < 5; index++) {
@@ -76,8 +76,6 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.getByLabel('Bank name').fill('Synthetic Test Bank')
     await page.getByLabel('Account name').fill('Test Customer')
     await page.getByRole('textbox', { name: 'Account number', exact: true }).fill('1234567890')
-    await page.getByLabel('Test category').selectOption({ label: 'File upload validation' })
-    await page.getByLabel('Test notes').fill('Synthetic PDF upload; verify file storage and ledger disclosure.')
     await page.getByLabel('Enter a Code').check()
     await page.getByPlaceholder('Enter code').fill('739201')
     const fileInputs = page.locator('input[type="file"]')
@@ -85,7 +83,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     const uploadZones = page.locator('.withdrawal-upload-dropzone')
     assert.equal(await uploadZones.count(), 5, 'five visible upload areas must render')
     for (let index = 0; index < 5; index++) {
-      assert.ok((await uploadZones.nth(index).innerText()).includes('Upload documents'), 'withdrawal upload slot must use the standard label')
+      assert.ok((await uploadZones.nth(index).innerText()).includes('Choose image/file'), 'withdrawal upload slot must use the standard label')
     }
     for (let index = 0; index < 5; index++) {
       assert.ok(await uploadZones.nth(index).isVisible(), 'upload area ' + (index + 1) + ' must be visible')
