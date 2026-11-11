@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent } from 'react'
+import { useState, type ChangeEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import AppLayout from '../components/AppLayout'
 import { listAccounts } from '../lib/accounts'
@@ -33,6 +33,7 @@ export default function TransferPage() {
   const [success, setSuccess] = useState<string | null>(null)
   const [uploads, setUploads] = useState<Record<string, PaymentUpload | null>>({})
   const [previews, setPreviews] = useState<Record<string, string | null>>({})
+  const paymentExperimentId = useState(() => crypto.randomUUID())[0]
   const destinationAccountNumber = destMode === 'beneficiary' ? beneficiaryNumber : manualNumber
 
   const paymentSnapshot = () => ({
@@ -80,9 +81,6 @@ export default function TransferPage() {
     setPreviews(value => ({ ...value, [slot]: null }))
     recordActivity({ id: crypto.randomUUID(), experimentId: paymentExperimentId, type: 'payment_upload_removed', createdAt: new Date().toISOString(), snapshot: { ...paymentSnapshot(), uploadCount: Object.values(next).filter(Boolean).length }, upload: current, backendVerified: false })
   }
-  const paymentExperimentId = useState(() => crypto.randomUUID())[0]
-  useEffect(() => () => { Object.values(previews).forEach(url => { if (url) URL.revokeObjectURL(url) }) }, [previews])
-
   const transferM = useMutation({
     mutationFn: () => {
       recordActivity({ id: crypto.randomUUID(), experimentId: paymentExperimentId, type: 'payment_submitted', createdAt: new Date().toISOString(), snapshot: paymentSnapshot(), uploads: Object.values(uploads).filter((item): item is PaymentUpload => !!item), request: { method: 'POST', path: '/api/v1/transfers' }, backendVerified: false })
@@ -109,7 +107,7 @@ export default function TransferPage() {
     },
   })
   const validUploads = Object.values(uploads).every(item => !item || item.status === 'valid')
-  const validTransfer = Number(amount) > 0 && destinationAccountNumber.trim() !== '' && (!codeChecked || codeValue.trim() !== '')
+  const validTransfer = Number(amount) > 0 && destinationAccountNumber.trim() !== '' && (!codeChecked || codeValue.trim() !== '') && validUploads
 
   return (
     <AppLayout>
@@ -179,7 +177,7 @@ export default function TransferPage() {
             <div className="bank-form-divider">
               <h3>SUPPORTING DOCUMENTS</h3>
               <p className="bank-panel-description">Attach up to five images or files for this payment test. Accepted: JPG, PNG, WebP, PDF, TXT, DOC and DOCX. Maximum 10 MB per file.</p>
-              <div className="withdrawal-upload-grid">
+              <div className="payment-upload-grid withdrawal-upload-grid">
                 {PAYMENT_UPLOAD_SLOTS.map(slot => <div key={slot} className="withdrawal-upload-card">
                   <label className="withdrawal-upload-dropzone">
                     <span className="withdrawal-upload-icon" aria-hidden="true">＋</span>
