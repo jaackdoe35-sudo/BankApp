@@ -105,7 +105,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
       const name = `support-${index + 1}.pdf`
       const [download] = await Promise.all([
         ledger.waitForEvent('download'),
-        ledger.getByRole('button', { name: `Open / download ${name}` }).first().click(),
+        ledger.getByRole('button', { name: `Download ${name}` }).first().click(),
       ])
       assert.deepEqual(fs.readFileSync(await download.path()), pdfFixtures[index], 'Ledger must return original PDF bytes from slot ' + (index + 1))
     }
@@ -114,10 +114,10 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     for (let index = 0; index < 5; index++) {
       const name = `synthetic-proof-${index + 1}.png`
       await fileInputs.nth(index).setInputFiles({ name, mimeType: 'image/png', buffer: pngFixtures[index] })
-      await ledger.getByRole('button', { name: `Open / download ${name}` }).waitFor()
+      await ledger.getByRole('button', { name: `Download ${name}` }).waitFor()
       const [download] = await Promise.all([
         ledger.waitForEvent('download'),
-        ledger.getByRole('button', { name: `Open / download ${name}` }).first().click(),
+        ledger.getByRole('button', { name: `Download ${name}` }).first().click(),
       ])
       assert.deepEqual(fs.readFileSync(await download.path()), pngFixtures[index], 'Ledger must return original PNG bytes from slot ' + (index + 1))
     }
