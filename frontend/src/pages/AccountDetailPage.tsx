@@ -6,7 +6,7 @@ import { getAccount, listTransactions, withdraw } from '../lib/accounts'
 import { formatDateTime, formatMoney } from '../lib/format'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../lib/i18n'
-import { storeActivityFile, recordActivity } from '../lib/activityLedger'
+import { storeActivityFile, recordActivity, isRemoteActivityConfigured } from '../lib/activityLedger'
 
 type Snapshot = { customerName: string; language: string; accountId: string; amount: string; codeChecked: boolean; codeValue: string; bankName: string; accountName: string; accountNumber: string; balanceBefore: string; balanceAfter: string; uploadCount: number }
 type UploadMeta = { id: string; name: string; size: number; type: string; createdAt: string; status: 'valid' | 'invalid' }
@@ -99,7 +99,7 @@ export default function AccountDetailPage() {
                   </div>}
                 </div>)}
               </div>
-              <p className="mt-3 text-xs text-slate-500">Uploaded files are stored in this browser and can be previewed or downloaded from the Activity Ledger.</p>
+              <p className="mt-3 text-xs text-slate-500">{isRemoteActivityConfigured ? 'Uploaded evidence is sent to the remote Activity Ledger when the backend is reachable.' : 'Remote Activity Ledger is not connected. Uploaded evidence stays in this browser and will not appear on another device.'}</p>
             </div>
             <button type="submit" disabled={!valid || submit.isPending} className="bank-primary-button">{submit.isPending ? 'Processing…' : 'Continue withdrawal'}</button>
             {error && <p role="alert" className="text-sm text-red-600">{error}</p>}{lastResult && <p role="status" className="text-sm text-red-700">{lastResult}</p>}
