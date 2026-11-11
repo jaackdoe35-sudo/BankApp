@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { unreadCount } from '../lib/notifications'
 import { useLanguage } from '../lib/i18n'
 import LanguagePicker from './LanguagePicker'
+import LabDisclosure from './LabDisclosure'
 
 type IconName = 'overview' | 'payments' | 'cards' | 'loans' | 'profile' | 'activity'
 function NavIcon({ name }: { name: IconName }) {
@@ -76,7 +77,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <button className="bank-signout mobile-signout" onClick={logout}>Sign out</button>
           </div>
         </header>
-        <main className="bank-content">{children}</main>
+        <div className="bank-content"><LabDisclosure />{children}</div>
         <footer className="bank-footer"><span>© Northstar Private Banking</span><span>Confidential client access</span></footer>
       </div>
     </div>
