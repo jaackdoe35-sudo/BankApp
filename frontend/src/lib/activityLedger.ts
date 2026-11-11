@@ -5,6 +5,7 @@ const CHANNEL = 'bankapp-experiments'
 const DB = 'northstar-activity-files'
 const STORE = 'uploads'
 const SESSION_KEY = 'bankapp.experiment.remote-session.v1'
+const PENDING_KEY = 'bankapp.experiment.remote-pending.v1'
 const API_BASE = (import.meta.env.VITE_ACTIVITY_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 export const isRemoteActivityConfigured = Boolean(API_BASE)
 
@@ -64,6 +65,49 @@ async function sendRemoteFile(file: File): Promise<string | undefined> {
   } catch { return undefined }
 }
 
+let pendingFlush: Promise<void> | null = null
+
+function readPendingEvents(): ActivityEvent[] {
+  try {
+    const value = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]')
+    return Array.isArray(value) ? value.filter((item): item is ActivityEvent => !!item && typeof item.id === 'string') : []
+  } catch { return [] }
+}
+
+function queueRemoteEvent(event: ActivityEvent): void {
+  try {
+    const pending = readPendingEvents()
+    if (!pending.some(item => item.id === event.id)) {
+      pending.push(event)
+      localStorage.setItem(PENDING_KEY, JSON.stringify(pending))
+    }
+  } catch { /* The direct delivery attempt below still runs if browser storage is unavailable. */ }
+}
+
+export function flushPendingActivityEvents(): Promise<void> {
+  if (!API_BASE) return Promise.resolve()
+  if (pendingFlush) return pendingFlush
+  pendingFlush = (async () => {
+    const successful = new Set<string>()
+    for (const event of readPendingEvents()) {
+      if (await sendRemoteEvent(event)) successful.add(event.id)
+      else break
+    }
+    if (successful.size) {
+      try {
+        const latest = readPendingEvents().filter(event => !successful.has(event.id))
+        localStorage.setItem(PENDING_KEY, JSON.stringify(latest))
+      } catch { /* Retain the queue when storage is unavailable. */ }
+    }
+  })().finally(() => { pendingFlush = null })
+  return pendingFlush
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => { void flushPendingActivityEvents() })
+  void flushPendingActivityEvents()
+}
+
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB, 1)
@@ -113,6 +157,7 @@ export function recordActivity(event: ActivityEvent): boolean {
   try { localStorage.setItem(STORAGE, JSON.stringify([...events, event])) }
   catch { locallyStored = false }
   try { const channel = new BroadcastChannel(CHANNEL); channel.postMessage({ type: 'event', event }); channel.close() } catch {}
-  void sendRemoteEvent(event)
+  queueRemoteEvent(event)
+  void flushPendingActivityEvents()
   return locallyStored
 }
