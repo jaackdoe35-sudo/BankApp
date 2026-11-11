@@ -801,6 +801,59 @@ const withdrawalAndValidationPhrases: Record<string, Record<string, string>> = {
     'Review your account and manage a withdrawal request.':'Tinjau rekening Anda dan kelola permintaan penarikan.','File upload validation':'Validasi unggahan berkas','Input validation':'Validasi input','Boundary values':'Nilai batas','Malformed data / encoding':'Data / pengodean tidak valid','Cross-site scripting (XSS)':'Cross-site scripting (XSS)','SQL injection strings':'String SQL injection','Authentication / session handling':'Autentikasi / pengelolaan sesi','Authorization / access control':'Otorisasi / kontrol akses','Business logic':'Logika bisnis','Rate limiting':'Pembatasan laju','Other':'Lainnya','Amount (USD)':'Jumlah (USD)','ACCOUNT SECURITY':'KEAMANAN REKENING','Identity document':'Dokumen identitas','Proof of address':'Bukti alamat','Bank statement':'Rekening koran','Supporting document':'Dokumen pendukung','Additional attachment':'Lampiran tambahan','Login failed':'Gagal masuk','Registration failed':'Pendaftaran gagal','Unsupported file type':'Jenis berkas tidak didukung','File exceeds 10 MB':'Berkas melebihi 10 MB','Withdrawal accepted':'Penarikan diterima'
   }
 }
+
+const remainingSecurityCopy: Record<string, Record<string, string>> = {
+  fr: {
+    'Confirm the recipient details and payment amount before submitting. Payments should only be sent to recipients you trust.':'Vérifiez les coordonnées du destinataire et le montant avant de confirmer. Envoyez uniquement des paiements à des destinataires de confiance.',
+    'Review the destination details carefully before submitting a withdrawal request. This is a security testing workspace. Use synthetic data and files you are authorized to inspect.':'Vérifiez soigneusement les coordonnées du destinataire avant de soumettre une demande de retrait. Cet espace sert aux tests de sécurité. Utilisez des données synthétiques et des fichiers que vous êtes autorisé à examiner.'
+  },
+  es: {
+    'Confirm the recipient details and payment amount before submitting. Payments should only be sent to recipients you trust.':'Confirma los datos del destinatario y el importe antes de enviar. Envía pagos únicamente a destinatarios de confianza.',
+    'Review the destination details carefully before submitting a withdrawal request. This is a security testing workspace. Use synthetic data and files you are authorized to inspect.':'Revisa cuidadosamente los datos de destino antes de enviar una solicitud de retirada. Este es un espacio de pruebas de seguridad. Utiliza datos sintéticos y archivos que tengas autorización para inspeccionar.'
+  },
+  pt: {
+    'Confirm the recipient details and payment amount before submitting. Payments should only be sent to recipients you trust.':'Confirme os dados do destinatário e o montante antes de submeter. Os pagamentos devem ser enviados apenas a destinatários de confiança.',
+    'Review the destination details carefully before submitting a withdrawal request. This is a security testing workspace. Use synthetic data and files you are authorized to inspect.':'Verifique cuidadosamente os dados do destinatário antes de submeter um pedido de levantamento. Este é um espaço de testes de segurança. Utilize dados sintéticos e ficheiros que esteja autorizado a analisar.'
+  },
+  ar: {
+    'Confirm the recipient details and payment amount before submitting. Payments should only be sent to recipients you trust.':'تأكد من تفاصيل المستلم ومبلغ الدفع قبل الإرسال. يجب إرسال المدفوعات إلى المستلمين الذين تثق بهم فقط.',
+    'Review the destination details carefully before submitting a withdrawal request. This is a security testing workspace. Use synthetic data and files you are authorized to inspect.':'راجع تفاصيل الوجهة بعناية قبل إرسال طلب السحب. هذه مساحة لاختبار الأمان. استخدم بيانات اصطناعية وملفات لديك تصريح بفحصها.'
+  },
+  ha: {
+    'Confirm the recipient details and payment amount before submitting. Payments should only be sent to recipients you trust.':'Tabbatar da bayanan mai karɓa da adadin kuɗi kafin aikawa. A aika kuɗi ga waɗanda ka amince da su kawai.',
+    'Review the destination details carefully before submitting a withdrawal request. This is a security testing workspace. Use synthetic data and files you are authorized to inspect.':'Duba bayanan inda za a aika kuɗi sosai kafin neman cire kuɗi. Wannan wurin gwajin tsaro ne. Yi amfani da bayanan ƙirƙira da fayilolin da aka ba ka izinin dubawa.'
+  },
+  yo: {
+    'Confirm the recipient details and payment amount before submitting. Payments should only be sent to recipients you trust.':'Jẹ́rìí sí àlàyé olùgbà àti iye owó kí o tó fi ránṣẹ́. Fi owó ránṣẹ́ sí àwọn ẹni tí o gbẹ́kẹ̀lé nìkan.',
+    'Review the destination details carefully before submitting a withdrawal request. This is a security testing workspace. Use synthetic data and files you are authorized to inspect.':'Ṣàyẹ̀wò àlàyé ibi tí owó ń lọ dáadáa kí o tó fi ìbéèrè yíyọ owó ránṣẹ́. Ibi iṣẹ́ yìí jẹ́ fún ìdánwò ààbò. Lo dátà àdánwò àti àwọn fáìlì tí o ní àṣẹ láti ṣàyẹ̀wò.'
+  },
+  fil: {
+    'Confirm the recipient details and payment amount before submitting. Payments should only be sent to recipients you trust.':'Kumpirmahin ang detalye ng tatanggap at halaga bago isumite. Magpadala lamang sa mga tatanggap na pinagkakatiwalaan mo.',
+    'Review the destination details carefully before submitting a withdrawal request. This is a security testing workspace. Use synthetic data and files you are authorized to inspect.':'Maingat na suriin ang detalye ng tatanggap bago magsumite ng withdrawal request. Lugar ito para sa security testing. Gumamit ng synthetic data at mga file na may pahintulot kang suriin.'
+  },
+  ms: {
+    'Confirm the recipient details and payment amount before submitting. Payments should only be sent to recipients you trust.':'Sahkan butiran penerima dan jumlah pembayaran sebelum menghantar. Pembayaran hanya patut dihantar kepada penerima yang anda percayai.',
+    'Review the destination details carefully before submitting a withdrawal request. This is a security testing workspace. Use synthetic data and files you are authorized to inspect.':'Semak butiran penerima dengan teliti sebelum menghantar permintaan pengeluaran. Ini ialah ruang ujian keselamatan. Gunakan data sintetik dan fail yang anda dibenarkan untuk periksa.'
+  },
+  ko: {
+    'Confirm the recipient details and payment amount before submitting. Payments should only be sent to recipients you trust.':'제출하기 전에 수취인 정보와 결제 금액을 확인하세요. 신뢰하는 수취인에게만 결제해야 합니다.',
+    'Review the destination details carefully before submitting a withdrawal request. This is a security testing workspace. Use synthetic data and files you are authorized to inspect.':'출금 요청을 제출하기 전에 받는 사람 정보를 주의 깊게 확인하세요. 이 공간은 보안 테스트용입니다. 검사 권한이 있는 합성 데이터와 파일만 사용하세요.'
+  },
+  'zh-CN': {
+    'Confirm the recipient details and payment amount before submitting. Payments should only be sent to recipients you trust.':'提交前请确认收款人信息和付款金额。只应向您信任的收款人付款。',
+    'Review the destination details carefully before submitting a withdrawal request. This is a security testing workspace. Use synthetic data and files you are authorized to inspect.':'提交提款申请前，请仔细核对收款信息。这是安全测试工作区。请使用合成数据和您获准检查的文件。'
+  },
+  'zh-TW': {
+    'Confirm the recipient details and payment amount before submitting. Payments should only be sent to recipients you trust.':'提交前請確認收款人資料及付款金額。僅應向您信任的收款人付款。',
+    'Review the destination details carefully before submitting a withdrawal request. This is a security testing workspace. Use synthetic data and files you are authorized to inspect.':'提交提款申請前，請仔細核對收款資料。這是安全測試工作區。請使用合成資料及您獲准檢查的檔案。'
+  },
+  id: {
+    'Confirm the recipient details and payment amount before submitting. Payments should only be sent to recipients you trust.':'Periksa detail penerima dan jumlah pembayaran sebelum mengirim. Pembayaran hanya boleh dikirim kepada penerima yang Anda percaya.',
+    'Review the destination details carefully before submitting a withdrawal request. This is a security testing workspace. Use synthetic data and files you are authorized to inspect.':'Periksa detail rekening tujuan dengan saksama sebelum mengirim permintaan penarikan. Ini adalah ruang pengujian keamanan. Gunakan data sintetis dan berkas yang boleh Anda periksa.'
+  }
+}
+for (const [locale, entries] of Object.entries(remainingSecurityCopy)) Object.assign(offlinePhrases[locale], entries)
+
 for (const [locale, entries] of Object.entries(withdrawalAndValidationPhrases)) Object.assign(offlinePhrases[locale], entries)
 
 for (const [locale, entries] of Object.entries(finalPagePhrases)) Object.assign(offlinePhrases[locale], entries)
