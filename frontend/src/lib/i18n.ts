@@ -250,11 +250,21 @@ function translateDocument(root: HTMLElement, language: string) {
       if (!originals) { originals = new Map(); originalAttributes.set(element, originals) }
       let done = translatedAttributes.get(element)
       if (!done) { done = new Map(); translatedAttributes.set(element, done) }
-      const source = originals.get(attr) ?? value
-      originals.set(attr, source)
-      if (done.get(attr) === language || manual.has(source.trim())) continue
+      let source = originals.get(attr) ?? value
+      const previousTranslation = offlinePhrases[language]?.[source.trim()]
+      if (originals.has(attr) && value.trim() !== source.trim() && value.trim() !== previousTranslation) {
+        source = value
+        originals.set(attr, source)
+        done.delete(attr)
+      } else {
+        originals.set(attr, source)
+      }
+      if (done.get(attr) === language && value.trim() !== source.trim() || manual.has(source.trim())) continue
       const result = offlinePhrases[language]?.[source.trim()]
-      if (result && !stopped) { element.setAttribute(attr, result); done.set(attr, language) }
+      if (result && !stopped) {
+        if (result !== source.trim()) element.setAttribute(attr, result)
+        done.set(attr, language)
+      }
     }
   }
   const scan = (element: Element) => {
