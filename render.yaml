@@ -28,6 +28,11 @@ services:
         sync: false
       - key: DB_PASSWORD
         sync: false
+      # Set SEED_ADMIN=true only after supplying a unique, strong owner credential.
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
       - key: REDIS_HOST
         sync: false
       - key: REDIS_PORT
