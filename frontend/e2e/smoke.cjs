@@ -320,6 +320,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     }
 
     await localeSelect.selectOption('en')
+    await page.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded' })
     await page.getByRole('button', { name: 'Sign out' }).click()
     await page.waitForURL('**/login')
     assert.deepEqual(translationProviderRequests, [], 'offline translation must not call a third-party translation API')
