@@ -85,8 +85,11 @@ export async function storeActivityFile(file: File): Promise<ActivityUpload> {
   db.close()
   const allowed = new Set(['image/jpeg','image/png','image/webp','application/pdf','text/plain','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
   const extensionAllowed = /\\.(jpe?g|png|webp|pdf|txt|docx?)$/i.test(file.name)
-  const remoteId = allowed.has(file.type) && extensionAllowed && file.size <= 10 * 1024 * 1024
-    ? await sendRemoteFile(file) : undefined
+  const validForRemote = allowed.has(file.type) && extensionAllowed && file.size > 0 && file.size <= 10 * 1024 * 1024
+  const remoteId = validForRemote ? await sendRemoteFile(file) : undefined
+  if (API_BASE && validForRemote && !remoteId) {
+    throw new Error('Evidence upload did not reach the remote Activity Ledger. Check the backend connection and try again.')
+  }
   return { ...meta, ...(remoteId ? { remoteId } : {}) }
 }
 export async function readActivityFile(id: string): Promise<{ name: string; type: string; blob: Blob } | null> {
