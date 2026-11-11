@@ -1,6 +1,10 @@
 spring:
   application:
     name: banking-backend
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 11MB
 
   datasource:
     url: ${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:banking}}
@@ -40,12 +44,6 @@ spring:
       properties:
         spring.json.trusted.packages: "com.bank.*"
         spring.json.value.default.type: com.bank.common.event.DomainEvent
-
-spring:
-  servlet:
-    multipart:
-      max-file-size: 10MB
-      max-request-size: 11MB
 
 server:
   port: 8080
