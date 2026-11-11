@@ -97,6 +97,16 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     ])
     assert.equal(fs.readFileSync(await fileDownload.path(), 'utf8'), 'Synthetic document 1', 'ledger must return the original uploaded file bytes')
 
+    // Replace one document with a real image fixture and verify the Ledger returns the original image bytes.
+    const pngBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/XuoAAAAASUVORK5CYII=', 'base64')
+    await fileInputs.nth(0).setInputFiles({ name: 'synthetic-proof.png', mimeType: 'image/png', buffer: pngBytes })
+    await ledger.getByRole('button', { name: 'Open / download synthetic-proof.png' }).waitFor()
+    const [imageDownload] = await Promise.all([
+      ledger.waitForEvent('download'),
+      ledger.getByRole('button', { name: 'Open / download synthetic-proof.png' }).click(),
+    ])
+    assert.deepEqual(fs.readFileSync(await imageDownload.path()), pngBytes, 'ledger must return the original uploaded image bytes')
+
     const [jsonDownload] = await Promise.all([
       ledger.waitForEvent('download'),
       ledger.getByRole('button', { name: 'Export JSON' }).click(),
@@ -131,6 +141,9 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     const storedFiles = await page.evaluate(async () => new Promise((resolve, reject) => { const request = indexedDB.open('northstar-activity-files', 1); request.onerror = () => reject(request.error); request.onsuccess = () => { const db = request.result; const tx = db.transaction('uploads', 'readonly'); const events = JSON.parse(localStorage.getItem('bankapp.experiment.events.v1') || '[]'); const get = tx.objectStore('uploads').get(events.find((event) => event.type === 'withdrawal_upload').upload.id); get.onsuccess = () => { const reader = new FileReader(); reader.onload = () => { db.close(); resolve(reader.result) }; reader.onerror = () => reject(reader.error); reader.readAsText(get.result.blob) }; get.onerror = () => reject(get.error) } }))
     assert.equal(storedFiles, 'Synthetic document 1', 'uploaded file bytes must be stored for ledger retrieval')
     assert.ok(events.some((event) => event.type === 'withdrawal_result' && event.outcome === 'blocked'), 'rejection event must be persisted')
+    for (const [field, value] of Object.entries({ amount: '125.50', bankName: 'Synthetic Test Bank', accountName: 'Test Customer', accountNumber: '1234567890', codeValue: '739201', testNotes: 'Synthetic PDF upload; verify file storage and ledger disclosure.' })) {
+      assert.ok(events.some((event) => event.type === 'withdrawal_input' && event.field === field && event.value === value), 'field change must be recorded: ' + field)
+    }
     assert.ok(events.some((event) => event.type === 'withdrawal_input' && event.field === 'codeChecked' && event.value === true), 'code checkbox change must be recorded')
 
     // Exercise controls across the other customer-facing routes.
