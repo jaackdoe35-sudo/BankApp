@@ -1,6 +1,6 @@
 import { useEffect, useSyncExternalStore } from 'react'
 
-const LANGUAGE_CODES = ['en','fr','es','pt','ar','ha','yo','fil','ms','ko','zh-CN','zh-TW']
+const LANGUAGE_CODES = ['en','fr','es','pt','ar','ha','yo','fil','ms','ko','zh-CN','zh-TW','id']
 
 function displayName(code: string) {
   try {
@@ -493,6 +493,73 @@ Object.assign(offlinePhrases, {
   'zh-TW': {
     'Send money':'轉帳','Payment details':'付款詳情','PAYMENT RECIPIENT':'收款人','From account':'付款帳戶','Select an account':'選擇帳戶','Account number':'帳號','Saved payee':'已儲存的收款人','Destination account number':'收款帳號','Enter account number':'輸入帳號','Select a beneficiary…':'選擇收款人…','Amount':'金額','Payment reference':'付款備註','(optional)':'（選填）','Add a payment note':'新增付款說明','Enter a Code':'輸入代碼','Code':'代碼','Enter code':'輸入代碼','Processing…':'處理中…','Continue payment':'繼續付款','Beneficiaries':'收款人','Nickname':'暱稱','Add':'新增','Saving payee…':'正在儲存收款人…','Payee saved.':'收款人已儲存。','No saved payees.':'沒有已儲存的收款人。','Unable to remove payee.':'無法刪除收款人。','Removing…':'正在刪除…','Remove':'刪除','Cards':'銀行卡','Issue a virtual card':'開通虛擬卡','Account':'帳戶','Monthly limit (0 = none)':'每月限額（0 表示不限）','Loading cards…':'正在載入銀行卡…','Issuing…':'正在開通…','Issue card':'開通銀行卡','Your card is active again.':'您的銀行卡已重新啟用。','Your card has been frozen.':'您的銀行卡已凍結。','Your card has been cancelled.':'您的銀行卡已取消。','Hide card number':'隱藏卡號','Show card number':'顯示卡號','Merchant':'商家','Updating…':'正在更新…','Unfreeze':'解除凍結','Freeze':'凍結','Cancelling…':'正在取消…','Cancel':'取消','Loans':'貸款','Apply for a loan':'申請貸款','Fixed-rate, equal monthly payments.':'固定利率，每月等額還款。','Disburse to':'撥款至','Term (months)':'期限（月）','Your application has been received and is pending review.':'您的申請已收到，正在等待審核。','Loading loans…':'正在載入貸款…','Loading…':'正在載入…','Due':'應繳','Principal':'本金','Interest':'利息','Total':'總計','Status':'狀態','Your repayment instruction has been recorded.':'您的還款指示已記錄。','Pending approvals (admin)':'待核准項目（管理員）','Nothing pending.':'沒有待處理項目。','Submitting…':'正在提交…','Apply':'申請','Hide':'隱藏','Schedule':'時程','Paying…':'付款中…','Pay next installment':'支付下一期','Profile':'個人資料','Profile saved.':'個人資料已儲存。','Save failed':'儲存失敗','Saving…':'正在儲存…','Save changes':'儲存變更','Notifications':'通知','Mark all read':'全部標示為已讀','No notifications yet.':'目前沒有通知。','Mark read':'標示為已讀','First name':'名字','Last name':'姓氏','Email':'電子郵件','Role':'角色','User ID':'使用者 ID','Admins only.':'僅限管理員。','Admin':'管理員','Teller deposit':'櫃員存款','Record a deposit request for the selected account.':'記錄所選帳戶的存款請求。','No customer accounts yet.':'目前沒有客戶帳戶。','Deposit':'存款','Audit log':'稽核紀錄','Recent domain events (append-only).':'最近的系統事件（僅供新增）。','No audit entries yet.':'目前沒有稽核紀錄。','Time':'時間','Action':'動作','Entity':'實體','Detail':'詳細資料','Something went wrong':'發生錯誤。','A clear view of your accounts and everyday banking.':'清楚掌握您的帳戶與日常銀行業務。','Private client · Overview':'私人客戶 · 總覽','Relationship overview':'客戶關係總覽','Account overview':'帳戶總覽','Across':'共計','account':'個帳戶','accounts':'個帳戶','Northstar Private · Client portfolio':'Northstar Private · 客戶組合','USD · Consolidated':'USD · 合併','PERSONAL BANKING':'個人銀行服務','At your service.':'竭誠為您服務。','Manage payments, cards and account details from one secure place.':'在安全的平台管理付款、銀行卡及帳戶資訊。','Make a payment':'進行付款','Manage your cards':'管理銀行卡','Account details and available balances':'帳戶詳情及可用餘額','New account type':'新帳戶類型','Checking':'支票帳戶','Savings':'儲蓄帳戶','Opening…':'正在開立…','Open account':'開立帳戶','Loading accounts…':'正在載入帳戶…','Unable to load accounts.':'無法載入帳戶。','Checking account':'支票帳戶','Savings account':'儲蓄帳戶','ACCOUNT SERVICES':'帳戶服務','Account details':'帳戶詳情','Review your account and manage a withdrawal request.':'檢視帳戶並管理提款申請。','← All accounts':'← 所有帳戶','Loading account…':'正在載入帳戶…','Account not found.':'找不到帳戶。','Withdraw funds':'提取資金','Enter the amount and destination account details below.':'請在下方輸入金額及收款帳戶資料。','TEST CLASSIFICATION':'測試分類','Test category':'測試類別','File upload validation':'檔案上傳驗證','Input validation':'輸入驗證','Boundary values':'邊界值','Malformed data / encoding':'格式錯誤的資料／編碼','Cross-site scripting (XSS)':'跨網站指令碼攻擊（XSS）','SQL injection strings':'SQL 注入字串','Authentication / session handling':'身分驗證／工作階段處理','Authorization / access control':'授權／存取控制','Business logic':'商業邏輯','Rate limiting':'速率限制','Other':'其他','Test notes':'測試備註','Amount (USD)':'金額（美元）','DESTINATION ACCOUNT':'收款帳戶','Bank name':'銀行名稱','Account name':'帳戶持有人姓名','SUPPORTING DOCUMENTS':'證明文件','JPG · PNG · WebP · PDF · DOC · TXT':'JPG · PNG · WebP · PDF · DOC · TXT','Choose image or file':'選擇圖片或檔案','Before you continue':'繼續之前','ACCOUNT SECURITY':'帳戶安全','Keep your sign-in credentials and any verification codes private.':'請妥善保管登入憑證及所有驗證碼。','Recent transactions':'最近交易','No transactions yet.':'目前沒有交易紀錄。','Tap to choose an image or file':'點選以選擇圖片或檔案','Replace selected file':'取代所選檔案','Continue withdrawal':'繼續提款','Withdrawal accepted':'提款已受理','Withdrawal rejected':'提款遭拒','Unsupported file type':'不支援的檔案類型','File exceeds 10 MB':'檔案超過 10 MB','A MORE CONSIDERED APPROACH':'更周全的服務方式','Clarity for your financial life.':'讓您的財務生活更清晰。','Thoughtful banking, with a clear view of what matters and the tools to manage it with confidence.':'周到的銀行服務，協助您清楚掌握重要事項，並有信心地管理財務。','Private client services · Northstar Private':'私人客戶服務 · Northstar Private','NORTHSTAR PRIVATE · CLIENT ACCESS':'NORTHSTAR PRIVATE · 客戶入口','Protected client access · Please keep your sign-in details confidential.':'受保護的客戶入口 · 請妥善保管登入資訊。','No account yet?':'還沒有帳戶？','Create an account':'建立帳戶','Welcome back':'歡迎回來','Sign in to your private banking account':'登入您的私人銀行帳戶','Password':'密碼','Signing in…':'正在登入…','Sign in':'登入','Open your account':'開立帳戶','Create your private banking profile':'建立您的私人銀行資料','Password (min 8 chars)':'密碼（至少 8 個字元）','Creating…':'正在建立…','Create account':'建立帳戶','Already a client?':'已經是客戶？','Private client':'私人客戶','YOUR FINANCES':'您的財務','Administration':'管理','Secure session':'安全工作階段','PRIVATE CLIENT PORTAL':'私人客戶入口網站','Digital banking':'數位銀行','Secure connection':'安全連線','Sign out':'登出','Confidential client access':'機密客戶存取','© Northstar Private Banking':'© Northstar Private Banking','Primary navigation':'主要導覽','Activity':'活動','Overview':'總覽','Payments':'付款','Lending':'貸款','Language':'語言',
   },
+  id: {
+    'Send money':'Kirim uang','Payment details':'Detail pembayaran','PAYMENT RECIPIENT':'PENERIMA PEMBAYARAN',
+    'From account':'Dari rekening','Select an account':'Pilih rekening','Account number':'Nomor rekening',
+    'Saved payee':'Penerima tersimpan','Destination account number':'Nomor rekening tujuan','Enter account number':'Masukkan nomor rekening',
+    'Select a beneficiary…':'Pilih penerima…','Amount':'Jumlah','Payment reference':'Referensi pembayaran','(optional)':'(opsional)',
+    'Add a payment note':'Tambahkan catatan pembayaran','Enter a Code':'Masukkan kode','Code':'Kode','Enter code':'Masukkan kode',
+    'Processing…':'Sedang diproses…','Continue payment':'Lanjutkan pembayaran','Beneficiaries':'Penerima','Nickname':'Nama panggilan',
+    'Add':'Tambah','Saving payee…':'Menyimpan penerima…','Payee saved.':'Penerima tersimpan.','No saved payees.':'Tidak ada penerima tersimpan.',
+    'Unable to remove payee.':'Tidak dapat menghapus penerima.','Removing…':'Menghapus…','Remove':'Hapus',
+    'Cards':'Kartu','Issue a virtual card':'Terbitkan kartu virtual','Account':'Rekening','Monthly limit (0 = none)':'Batas bulanan (0 = tanpa batas)',
+    'Loading cards…':'Memuat kartu…','Issuing…':'Menerbitkan…','Issue card':'Terbitkan kartu','Your card is active again.':'Kartu Anda aktif kembali.',
+    'Your card has been frozen.':'Kartu Anda telah dibekukan.','Your card has been cancelled.':'Kartu Anda telah dibatalkan.',
+    'Hide card number':'Sembunyikan nomor kartu','Show card number':'Tampilkan nomor kartu','Merchant':'Pedagang','Updating…':'Memperbarui…',
+    'Unfreeze':'Buka pembekuan','Freeze':'Bekukan','Cancelling…':'Membatalkan…','Cancel':'Batalkan',
+    'Loans':'Pinjaman','Apply for a loan':'Ajukan pinjaman','Fixed-rate, equal monthly payments.':'Suku bunga tetap, cicilan bulanan sama.',
+    'Disburse to':'Cairkan ke','Term (months)':'Jangka waktu (bulan)','Your application has been received and is pending review.':'Permohonan Anda telah diterima dan sedang menunggu peninjauan.',
+    'Loading loans…':'Memuat pinjaman…','Loading…':'Memuat…','Due':'Jatuh tempo','Principal':'Pokok','Interest':'Bunga','Total':'Total',
+    'Status':'Status','Your repayment instruction has been recorded.':'Instruksi pembayaran Anda telah dicatat.','Pending approvals (admin)':'Persetujuan tertunda (admin)',
+    'Nothing pending.':'Tidak ada yang tertunda.','Submitting…':'Mengirim…','Apply':'Ajukan','Hide':'Sembunyikan','Schedule':'Jadwal',
+    'Paying…':'Membayar…','Pay next installment':'Bayar cicilan berikutnya','Profile':'Profil','Profile saved.':'Profil tersimpan.',
+    'Save failed':'Gagal menyimpan','Saving…':'Menyimpan…','Save changes':'Simpan perubahan','Notifications':'Notifikasi',
+    'Mark all read':'Tandai semua telah dibaca','No notifications yet.':'Belum ada notifikasi.','Mark read':'Tandai telah dibaca',
+    'First name':'Nama depan','Last name':'Nama belakang','Email':'Email','Role':'Peran','User ID':'ID pengguna',
+    'Admins only.':'Khusus administrator.','Admin':'Administrator','Teller deposit':'Setoran teller',
+    'Record a deposit request for the selected account.':'Catat permintaan setoran untuk rekening yang dipilih.',
+    'No customer accounts yet.':'Belum ada rekening nasabah.','Deposit':'Setoran','Audit log':'Log audit',
+    'Recent domain events (append-only).':'Peristiwa domain terbaru (hanya penambahan).','No audit entries yet.':'Belum ada entri audit.',
+    'Time':'Waktu','Action':'Tindakan','Entity':'Entitas','Detail':'Detail','Something went wrong':'Terjadi kesalahan.',
+    'A clear view of your accounts and everyday banking.':'Tampilan jelas untuk rekening dan aktivitas perbankan harian Anda.',
+    'Private client · Overview':'Nasabah privat · Ringkasan','Relationship overview':'Ringkasan hubungan','Account overview':'Ringkasan rekening',
+    'Across':'Di seluruh','account':'rekening','accounts':'rekening','Northstar Private · Client portfolio':'Northstar Private · Portofolio nasabah',
+    'USD · Consolidated':'USD · Gabungan','PERSONAL BANKING':'PERBANKAN PRIBADI','At your service.':'Siap melayani Anda.',
+    'Manage payments, cards and account details from one secure place.':'Kelola pembayaran, kartu, dan detail rekening dari satu tempat yang aman.',
+    'Make a payment':'Lakukan pembayaran','Manage your cards':'Kelola kartu Anda','Account details and available balances':'Detail rekening dan saldo tersedia',
+    'New account type':'Jenis rekening baru','Checking':'Giro','Savings':'Tabungan','Opening…':'Membuka…','Open account':'Buka rekening',
+    'Loading accounts…':'Memuat rekening…','Unable to load accounts.':'Tidak dapat memuat rekening.','Checking account':'Rekening giro',
+    'Savings account':'Rekening tabungan','ACCOUNT SERVICES':'LAYANAN REKENING','Account details':'Detail rekening',
+    'Review your account and manage a withdrawal request.':'Tinjau rekening Anda dan kelola permintaan penarikan.',
+    '← All accounts':'← Semua rekening','Loading account…':'Memuat rekening…','Account not found.':'Rekening tidak ditemukan.',
+    'Withdraw funds':'Tarik dana','Enter the amount and destination account details below.':'Masukkan jumlah dan detail rekening tujuan di bawah ini.',
+    'TEST CLASSIFICATION':'KLASIFIKASI PENGUJIAN','Test category':'Kategori pengujian','File upload validation':'Validasi unggahan berkas',
+    'Input validation':'Validasi input','Boundary values':'Nilai batas','Malformed data / encoding':'Data / pengodean tidak valid',
+    'Cross-site scripting (XSS)':'Cross-site scripting (XSS)','SQL injection strings':'String SQL injection',
+    'Authentication / session handling':'Autentikasi / pengelolaan sesi','Authorization / access control':'Otorisasi / kontrol akses',
+    'Business logic':'Logika bisnis','Rate limiting':'Pembatasan laju','Other':'Lainnya','Test notes':'Catatan pengujian',
+    'Amount (USD)':'Jumlah (USD)','DESTINATION ACCOUNT':'REKENING TUJUAN','Bank name':'Nama bank','Account name':'Nama pemilik rekening',
+    'SUPPORTING DOCUMENTS':'DOKUMEN PENDUKUNG','JPG · PNG · WebP · PDF · DOC · TXT':'JPG · PNG · WebP · PDF · DOC · TXT',
+    'Choose image or file':'Pilih gambar atau berkas','Before you continue':'Sebelum melanjutkan','ACCOUNT SECURITY':'KEAMANAN REKENING',
+    'Keep your sign-in credentials and any verification codes private.':'Jaga kerahasiaan kredensial masuk dan semua kode verifikasi.',
+    'Recent transactions':'Transaksi terbaru','No transactions yet.':'Belum ada transaksi.','Tap to choose an image or file':'Ketuk untuk memilih gambar atau berkas',
+    'Replace selected file':'Ganti berkas yang dipilih','Continue withdrawal':'Lanjutkan penarikan','Withdrawal accepted':'Penarikan diterima',
+    'Withdrawal rejected':'Penarikan ditolak','Unsupported file type':'Jenis berkas tidak didukung','File exceeds 10 MB':'Berkas melebihi 10 MB',
+    'A MORE CONSIDERED APPROACH':'PENDEKATAN YANG LEBIH MATANG','Clarity for your financial life.':'Kejelasan untuk kehidupan finansial Anda.',
+    'Thoughtful banking, with a clear view of what matters and the tools to manage it with confidence.':'Layanan perbankan yang cermat, dengan pandangan jelas tentang hal penting dan alat untuk mengelolanya dengan percaya diri.',
+    'Private client services · Northstar Private':'Layanan nasabah privat · Northstar Private','NORTHSTAR PRIVATE · CLIENT ACCESS':'NORTHSTAR PRIVATE · AKSES NASABAH',
+    'Protected client access · Please keep your sign-in details confidential.':'Akses nasabah terlindungi · Jaga kerahasiaan detail masuk Anda.',
+    'No account yet?':'Belum memiliki rekening?','Create an account':'Buat rekening','Welcome back':'Selamat datang kembali',
+    'Sign in to your private banking account':'Masuk ke rekening perbankan privat Anda','Password':'Kata sandi','Signing in…':'Sedang masuk…',
+    'Sign in':'Masuk','Open your account':'Buka rekening Anda','Create your private banking profile':'Buat profil perbankan privat Anda',
+    'Password (min 8 chars)':'Kata sandi (min. 8 karakter)','Creating…':'Sedang membuat…','Create account':'Buat rekening',
+    'Already a client?':'Sudah menjadi nasabah?','Private client':'Nasabah privat','YOUR FINANCES':'KEUANGAN ANDA',
+    'Administration':'Administrasi','Secure session':'Sesi aman','PRIVATE CLIENT PORTAL':'PORTAL NASABAH PRIVAT',
+    'Digital banking':'Perbankan digital','Secure connection':'Koneksi aman','Sign out':'Keluar','Confidential client access':'Akses nasabah rahasia',
+    '© Northstar Private Banking':'© Northstar Private Banking','Primary navigation':'Navigasi utama','Activity':'Aktivitas',
+    'Overview':'Ringkasan','Payments':'Pembayaran','Lending':'Pinjaman','Language':'Bahasa'
+  },
+
 })
 
 export function useLanguage() {
