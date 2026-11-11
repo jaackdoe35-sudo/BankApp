@@ -83,7 +83,10 @@ export async function storeActivityFile(file: File): Promise<ActivityUpload> {
     tx.onabort = () => reject(tx.error)
   })
   db.close()
-  const remoteId = await sendRemoteFile(file)
+  const allowed = new Set(['image/jpeg','image/png','image/webp','application/pdf','text/plain','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+  const extensionAllowed = /\\.(jpe?g|png|webp|pdf|txt|docx?)$/i.test(file.name)
+  const remoteId = allowed.has(file.type) && extensionAllowed && file.size <= 10 * 1024 * 1024
+    ? await sendRemoteFile(file) : undefined
   return { ...meta, ...(remoteId ? { remoteId } : {}) }
 }
 export async function readActivityFile(id: string): Promise<{ name: string; type: string; blob: Blob } | null> {
@@ -102,10 +105,10 @@ export function recordActivity(event: ActivityEvent): boolean {
     const previous = JSON.parse(localStorage.getItem(STORAGE) || '[]')
     events = Array.isArray(previous) ? previous : []
   } catch { events = [] }
-  try {
-    localStorage.setItem(STORAGE, JSON.stringify([...events, event]))
-  } catch { return false }
+  let locallyStored = true
+  try { localStorage.setItem(STORAGE, JSON.stringify([...events, event])) }
+  catch { locallyStored = false }
   try { const channel = new BroadcastChannel(CHANNEL); channel.postMessage({ type: 'event', event }); channel.close() } catch {}
   void sendRemoteEvent(event)
-  return true
+  return locallyStored
 }
