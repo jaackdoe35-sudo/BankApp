@@ -77,7 +77,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <button className="bank-signout mobile-signout" onClick={logout}>Sign out</button>
           </div>
         </header>
-        <div className="bank-content"><LabDisclosure />{children}</div>
+        <main className="bank-content"><LabDisclosure />{children}</main>
         <footer className="bank-footer"><span>© Northstar Private Banking</span><span>Confidential client access</span></footer>
       </div>
     </div>
