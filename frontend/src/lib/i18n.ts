@@ -298,7 +298,7 @@ Object.assign(offlinePhrases, {
     'A MORE CONSIDERED APPROACH':'UNE APPROCHE PLUS RÉFLÉCHIE','PRIVATE CLIENT PORTAL':'PORTAIL CLIENT PRIVÉ',
     'Digital banking':'Banque numérique','YOUR FINANCES':'VOS FINANCES','Secure session':'Session sécurisée',
     'Secure connection':'Connexion sécurisée','Administration':'Administration',
-    'ACCOUNT SERVICES':'SERVICES DE COMPTE','Withdraw funds':'Retirer des fonds',
+    'ACCOUNT SERVICES':'SERVICES DE COMPTE','Account details':'Détails du compte','Withdraw funds':'Retirer des fonds',
     'Enter the amount and destination account details below.':'Saisissez le montant et les coordonnées du compte destinataire ci-dessous.',
     'TEST CLASSIFICATION':'CLASSIFICATION DU TEST','Test category':'Catégorie du test','Test notes':'Notes du test',
     'DESTINATION ACCOUNT':'COMPTE DESTINATAIRE','Bank name':'Nom de la banque','Account name':'Nom du titulaire',
