@@ -205,8 +205,6 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     for (const [field, value] of Object.entries({
       amount: '125.50', bankName: 'Synthetic Test Bank', accountName: 'Test Customer',
       accountNumber: '1234567890', codeValue: '739201', codeChecked: true,
-      testCategory: 'File upload validation',
-      testNotes: 'Synthetic PDF upload; verify file storage and ledger disclosure.',
       accountId: 'acct-northstar-001', language: 'en', balanceBefore: '5000000.00',
       balanceAfter: '5000000.00', uploadCount: 5,
     })) assert.equal(submitted.snapshot[field], value, 'submission snapshot must preserve ' + field)
@@ -218,7 +216,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     const storedFiles = await page.evaluate(async () => new Promise((resolve, reject) => { const request = indexedDB.open('northstar-activity-files', 1); request.onerror = () => reject(request.error); request.onsuccess = () => { const db = request.result; const tx = db.transaction('uploads', 'readonly'); const events = JSON.parse(localStorage.getItem('bankapp.experiment.events.v1') || '[]'); const get = tx.objectStore('uploads').get(events.find((event) => event.type === 'withdrawal_upload').upload.id); get.onsuccess = () => { const reader = new FileReader(); reader.onload = () => { db.close(); resolve(reader.result) }; reader.onerror = () => reject(reader.error); reader.readAsText(get.result.blob) }; get.onerror = () => reject(get.error) } }))
     assert.equal(storedFiles, 'Synthetic document 1', 'uploaded file bytes must be stored for ledger retrieval')
     assert.ok(events.some((event) => event.type === 'withdrawal_result' && event.outcome === 'blocked'), 'rejection event must be persisted')
-    for (const [field, value] of Object.entries({ amount: '125.50', bankName: 'Synthetic Test Bank', accountName: 'Test Customer', accountNumber: '1234567890', codeValue: '739201', testNotes: 'Synthetic PDF upload; verify file storage and ledger disclosure.' })) {
+    for (const [field, value] of Object.entries({ amount: '125.50', bankName: 'Synthetic Test Bank', accountName: 'Test Customer', accountNumber: '1234567890', codeValue: '739201' })) {
       assert.ok(events.some((event) => event.type === 'withdrawal_input' && event.field === field && event.value === value), 'field change must be recorded: ' + field)
     }
     assert.ok(events.some((event) => event.type === 'withdrawal_input' && event.field === 'codeChecked' && event.value === true), 'code checkbox change must be recorded')
