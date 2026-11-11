@@ -317,7 +317,10 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
       await page.locator('.language-picker select').selectOption(code)
       for (let index = 0; index < routePaths.length; index++) {
         await page.goto('http://127.0.0.1:4173' + routePaths[index], { waitUntil: 'domcontentloaded' })
-        await page.waitForFunction(value => document.body.innerText.includes(value), expected[index])
+        await page.waitForFunction(value => document.body.innerText.includes(value), expected[index], { timeout: 10000 }).catch(async () => {
+          const body = await page.locator('body').innerText().catch(() => '<unavailable>')
+          throw new Error('Locale route text mismatch for ' + code + ' at ' + routePaths[index] + ': expected ' + expected[index] + ', lang=' + await page.evaluate(() => document.documentElement.lang) + ', body=' + body.slice(0, 500))
+        })
       }
       await page.goto('http://127.0.0.1:4173/login', { waitUntil: 'domcontentloaded' })
       await page.waitForFunction(value => document.body.innerText.includes(value), expected[0])
