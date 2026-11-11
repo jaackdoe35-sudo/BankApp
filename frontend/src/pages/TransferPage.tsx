@@ -5,7 +5,7 @@ import { listAccounts } from '../lib/accounts'
 import { addBeneficiary, createTransfer, deleteBeneficiary, listBeneficiaries } from '../lib/transfers'
 import { formatMoney } from '../lib/format'
 import { apiErrorMessage } from '../lib/errors'
-import { recordActivity, storeActivityFile, type ActivityUpload } from '../lib/activityLedger'
+import { recordActivity, storeActivityFile, isRemoteActivityConfigured, type ActivityUpload } from '../lib/activityLedger'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../lib/i18n'
 
@@ -202,7 +202,7 @@ export default function TransferPage() {
                   </div>}
                 </div>)}
               </div>
-              <p className="mt-3 text-xs text-slate-500">Uploaded files are stored in this browser and linked to the payment activity record. Open the Activity Ledger in the same browser profile to preview or download the original files.</p>
+              <p className="mt-3 text-xs text-slate-500">{isRemoteActivityConfigured ? 'Uploaded evidence is sent to the remote Activity Ledger when the backend is reachable.' : 'Remote Activity Ledger is not connected. Uploaded evidence stays in this browser and will not appear on another device.'}</p>
             </div>
 
             <button type="submit" disabled={!validTransfer || transferM.isPending || ownAccounts.length === 0} className="bank-primary-button">
