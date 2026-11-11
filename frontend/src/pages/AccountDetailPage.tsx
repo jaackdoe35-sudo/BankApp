@@ -102,7 +102,7 @@ export default function AccountDetailPage() {
                   {uploads[slot] && <div className="withdrawal-upload-selected">
                     {previews[slot] && <img className="withdrawal-upload-preview" src={previews[slot]!} alt={slot + ' preview'} />}
                     <div className="withdrawal-upload-filecopy"><strong>{uploads[slot]!.name}</strong><span>{(uploads[slot]!.size/1024/1024).toFixed(2)} MB · {uploads[slot]!.status}</span></div>
-                    <button type="button" className="withdrawal-upload-remove" onClick={() => { const current = uploads[slot]; if (!current) return; if (previews[slot]) URL.revokeObjectURL(previews[slot]!); setPreviews(value => ({ ...value, [slot]: null })); setUploads(value => ({ ...value, [slot]: null })); record('withdrawal_upload_removed', experimentId, snapshot(), { upload: current, slot }) }}>Remove</button>
+                    <button type="button" className="withdrawal-upload-remove" onClick={() => { const current = uploads[slot]; if (!current) return; if (previews[slot]) URL.revokeObjectURL(previews[slot]!); setPreviews(value => ({ ...value, [slot]: null })); const nextUploads = { ...uploads, [slot]: null }; setUploads(nextUploads); record('withdrawal_upload_removed', experimentId, { ...snapshot(), uploadCount: Object.values(nextUploads).filter(Boolean).length }, { upload: current, slot }) }}>Remove</button>
                   </div>}
                 </div>)}
               </div>
