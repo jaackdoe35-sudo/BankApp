@@ -72,7 +72,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <div className="bank-topbar-right">
             <LanguagePicker className="language-picker flex items-center gap-2 text-xs text-slate-600" />
             <Link to="/notifications" className="bank-activity-link"><NavIcon name="activity" />Activity{unread > 0 && <span className="bank-nav-count">{unread}</span>}</Link>
-            <span className="bank-topbar-secure"><span />Demo environment</span>
+            <span className="bank-topbar-secure"><span />{t('demoLabel')}</span>
             <button className="bank-signout mobile-signout" onClick={logout}>Sign out</button>
           </div>
         </header>
