@@ -273,7 +273,10 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     ]) {
       await localeSelect.selectOption(code)
       await page.waitForFunction(value => document.documentElement.lang === value, code)
-      await page.waitForFunction(value => document.querySelector('.bank-nav-link')?.textContent?.includes(value), expected)
+      await page.waitForFunction(value => document.querySelector('.bank-nav-link')?.textContent?.includes(value), expected, { timeout: 10000 }).catch(async () => {
+        const actual = await page.locator('.bank-nav-link').first().innerText().catch(() => '<missing>')
+        throw new Error('Locale navigation label mismatch for ' + code + ': expected ' + expected + ', actual ' + actual + ', document.lang=' + await page.evaluate(() => document.documentElement.lang))
+      })
     }
     await localeSelect.selectOption('zh-CN')
     await page.reload({ waitUntil: 'domcontentloaded' })
