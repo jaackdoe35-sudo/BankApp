@@ -291,6 +291,31 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await localeSelect.selectOption('en')
     await page.waitForFunction(() => document.querySelector('.bank-nav-link')?.textContent?.includes('Overview'))
 
+    const routeMatrix = {
+      en: ['Welcome back','Open your account','Send money','Cards','Loans','Profile','Notifications','Account details','Admins only.'],
+      fr: ['Bon retour','Ouvrir votre compte','Envoyer de l’argent','Cartes','Prêts','Profil','Notifications','Détails du compte','Réservé aux administrateurs.'],
+      es: ['Te damos la bienvenida','Abre tu cuenta','Enviar dinero','Tarjetas','Préstamos','Perfil','Notificaciones','Detalles de la cuenta','Solo administradores.'],
+      pt: ['Bem-vindo de volta','Abra a sua conta','Enviar dinheiro','Cartões','Empréstimos','Perfil','Notificações','Detalhes da conta','Apenas administradores.'],
+      ar: ['مرحبًا بعودتك','افتح حسابك','إرسال الأموال','البطاقات','القروض','الملف الشخصي','الإشعارات','تفاصيل الحساب','للمسؤولين فقط.'],
+      ha: ['Barka da dawowa','Buɗe asusunka','Aika kuɗi','Katuna','Lamuni','Bayani','Sanarwa','Bayanan asusu','Na masu gudanarwa kawai.'],
+      yo: ['Ẹ káàbọ̀ padà','Ṣí àkọọ́lẹ̀ rẹ','Fi owó ránṣẹ́','Káàdì','Àwìn','Àkọ́ọ́lẹ̀','Àwọn ìfitónilétí','Àlàyé àkọọ́lẹ̀','Fún àwọn alákóso nìkan.'],
+      fil: ['Maligayang pagbabalik','Buksan ang iyong account','Magpadala ng pera','Mga card','Mga pautang','Profile','Mga notification','Mga detalye ng account','Para lamang sa mga admin.'],
+      ms: ['Selamat kembali','Buka akaun anda','Hantar wang','Kad','Pinjaman','Profil','Pemberitahuan','Butiran akaun','Khusus untuk pentadbir.'],
+      ko: ['다시 오신 것을 환영합니다','계좌 개설','송금','카드','대출','프로필','알림','계좌 상세 정보','관리자 전용입니다.'],
+      'zh-CN': ['欢迎回来','开立账户','转账','银行卡','贷款','个人资料','通知','账户详情','仅限管理员。'],
+      'zh-TW': ['歡迎回來','開立帳戶','轉帳','銀行卡','貸款','個人資料','通知','帳戶詳情','僅限管理員。'],
+      id: ['Selamat datang kembali','Buka rekening Anda','Kirim uang','Kartu','Pinjaman','Profil','Notifikasi','Detail rekening','Khusus administrator.'],
+    }
+    const routePaths = ['/','/signup','/transfer','/cards','/loans','/profile','/notifications','/accounts/acct-northstar-001','/admin']
+    for (const [code, expected] of Object.entries(routeMatrix)) {
+      await page.goto('http://127.0.0.1:4173/')
+      await page.locator('.language-picker select').selectOption(code)
+      for (let index = 0; index < routePaths.length; index++) {
+        await page.goto('http://127.0.0.1:4173' + routePaths[index], { waitUntil: 'domcontentloaded' })
+        await page.waitForFunction(value => document.body.innerText.includes(value), expected[index])
+      }
+    }
+
     await localeSelect.selectOption('en')
     await page.getByRole('button', { name: 'Sign out' }).click()
     await page.waitForURL('**/login')
