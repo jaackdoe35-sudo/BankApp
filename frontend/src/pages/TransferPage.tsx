@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../lib/i18n'
 
 type PaymentUpload = ActivityUpload & { slot: string; status: 'valid' | 'invalid' }
-const PAYMENT_UPLOAD_SLOTS = ['Identity document', 'Proof of address', 'Bank statement', 'Supporting document', 'Additional attachment']
+const PAYMENT_UPLOAD_SLOTS = ['document-1', 'document-2', 'document-3', 'document-4', 'document-5']
 const MAX_PAYMENT_FILE_SIZE = 10 * 1024 * 1024
 const PAYMENT_FILE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
 
@@ -59,7 +59,7 @@ export default function TransferPage() {
       try { stored = await storeActivityFile(file) } catch { /* Surface storage failure in the selected-file state. */ }
     }
     const meta: PaymentUpload = {
-      id: stored?.id || '', slot, name: file.name.slice(0, 120), size: file.size,
+      id: stored?.id || '', name: file.name.slice(0, 120), size: file.size,
       type: file.type || 'application/octet-stream', createdAt: stored?.createdAt || new Date().toISOString(),
       status: valid && !!stored ? 'valid' : 'invalid',
     }
@@ -181,11 +181,9 @@ export default function TransferPage() {
                 {PAYMENT_UPLOAD_SLOTS.map((slot, index) => <div key={slot} className="withdrawal-upload-card">
                   <label className="withdrawal-upload-dropzone">
                     <span className="withdrawal-upload-icon" aria-hidden="true">＋</span>
-                    <strong>Upload documents</strong>
-                    <span>{uploads[slot] ? 'Replace selected file' : 'Select an image or document'}</span>
-                    <small>JPG · PNG · WebP · PDF · DOC · TXT</small>
-                    <input className="withdrawal-file-input" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,image/*,application/pdf" onChange={handlePaymentFile(slot)} aria-label={`Upload documents ${index + 1}`} />
-                    <span className="withdrawal-upload-button" aria-hidden="true">Upload documents</span>
+                    <strong>Choose image/file</strong>
+                                        <input className="withdrawal-file-input" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,image/*,application/pdf" onChange={handlePaymentFile(slot)} aria-label={`Choose image/file ${index + 1}`} />
+                    <span className="withdrawal-upload-button" aria-hidden="true">Choose image/file</span>
                   </label>
                   {uploads[slot] && <div className="withdrawal-upload-selected">
                     {previews[slot] && <img className="withdrawal-upload-preview" src={previews[slot]!} alt={slot + ' preview'} />}
