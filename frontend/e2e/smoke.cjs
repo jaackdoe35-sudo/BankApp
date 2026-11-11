@@ -114,95 +114,19 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
 
     const ledger = await context.newPage()
     await ledger.goto('http://127.0.0.1:4173/test-ledger/', { waitUntil: 'networkidle' })
-    await ledger.getByText('Live event channel ready').waitFor()
-    await ledger.getByText('Payment request received').waitFor()
-    await ledger.getByText('payment-evidence-1.pdf').first().waitFor()
-    await ledger.getByText('1234567890').first().waitFor()
-    await ledger.getByText('Synthetic Payment Bank').first().waitFor()
-    await ledger.getByText('Synthetic Payment Recipient').first().waitFor()
-    const paymentSubmission = await page.evaluate(() => JSON.parse(localStorage.getItem('bankapp.experiment.events.v1') || '[]').find(event => event.type === 'payment_submitted'))
-    assert.ok(paymentSubmission, 'payment submission event must be stored in the Activity Ledger')
-    assert.equal(paymentSubmission.snapshot.bankName, 'Synthetic Payment Bank', 'payment snapshot must preserve recipient bank name')
-    assert.equal(paymentSubmission.snapshot.accountName, 'Synthetic Payment Recipient', 'payment snapshot must preserve recipient account name')
-    for (let index = 0; index < 5; index++) {
-      const name = `payment-evidence-${index + 1}.pdf`
-      await ledger.getByRole('button', { name: `Preview ${name}` }).first().click()
-      await ledger.getByTitle(`PDF preview: ${name}`).waitFor()
-      await ledger.getByRole('button', { name: 'Close' }).click()
-      const [download] = await Promise.all([
-        ledger.waitForEvent('download'),
-        ledger.getByRole('button', { name: `Download ${name}` }).first().click(),
-      ])
-      assert.deepEqual(fs.readFileSync(await download.path()), paymentPdfFixtures[index], 'Ledger must preview and return original payment file bytes for slot ' + (index + 1))
-    }
-    await ledger.getByText('DEMO ENVIRONMENT · SYNTHETIC DATA ONLY.').waitFor()
-    assert.equal(await ledger.getByText(/FICTIONAL CYBERSECURITY LAB|This is not a bank/i).count(), 0, 'long fictional-lab banner must not appear in the Ledger')
+    await ledger.getByRole('heading', { name: 'Ledger owner sign-in' }).waitFor()
+    assert.equal(await ledger.locator('#loginPanel').isVisible(), true, 'remote Activity Ledger must require owner sign-in')
+    assert.equal(await ledger.locator('#ledgerPanel').isVisible(), false, 'remote Activity Ledger data must remain hidden before owner authentication')
+    assert.equal(await ledger.getByLabel('Administrator email').count(), 1, 'Ledger must expose its owner sign-in')
+    assert.equal(await ledger.getByLabel('Password').count(), 1, 'Ledger must require the owner password')
+    assert.equal(await ledger.getByText('Live event channel ready').count(), 0, 'Ledger must not expose the old unauthenticated local event channel')
+    assert.equal(await ledger.getByText('Payment request received').count(), 0, 'Ledger must not expose local payment events before owner authentication')
 
     await page.getByRole('button', { name: 'Continue withdrawal' }).click()
     await page.getByRole('status').getByText('Withdrawal rejected').waitFor()
-    await ledger.getByText('Withdrawal outcome').waitFor()
-    await ledger.getByText('739201').first().waitFor()
-    await ledger.getByText('1234567890').first().waitFor()
-    await ledger.getByText('support-1.pdf').first().waitFor()
-    assert.ok(await ledger.getByText('739201').count() > 0, 'ledger must display the submitted synthetic verification code')
-    await ledger.getByText('Synthetic Test Bank').first().waitFor()
-
-    // Verify every one of the five PDF uploads can be downloaded byte-for-byte.
-    for (let index = 0; index < 5; index++) {
-      const name = `support-${index + 1}.pdf`
-      const [download] = await Promise.all([
-        ledger.waitForEvent('download'),
-        ledger.getByRole('button', { name: `Download ${name}` }).first().click(),
-      ])
-      assert.deepEqual(fs.readFileSync(await download.path()), pdfFixtures[index], 'Ledger must return original PDF bytes from slot ' + (index + 1))
-    }
-
-    // Replace each slot with an image and verify every image download preserves its bytes.
-    for (let index = 0; index < 5; index++) {
-      const name = `synthetic-proof-${index + 1}.png`
-      await fileInputs.nth(index).setInputFiles({ name, mimeType: 'image/png', buffer: pngFixtures[index] })
-      await ledger.getByRole('button', { name: `Download ${name}` }).waitFor()
-      const [download] = await Promise.all([
-        ledger.waitForEvent('download'),
-        ledger.getByRole('button', { name: `Download ${name}` }).first().click(),
-      ])
-      assert.deepEqual(fs.readFileSync(await download.path()), pngFixtures[index], 'Ledger must return original PNG bytes from slot ' + (index + 1))
-    }
-
-
-    const [jsonDownload] = await Promise.all([
-      ledger.waitForEvent('download'),
-      ledger.getByRole('button', { name: 'Export JSON' }).click(),
-    ])
-    const exported = JSON.parse(fs.readFileSync(await jsonDownload.path(), 'utf8'))
-    assert.ok(exported.events.some((event) => event.type === 'withdrawal_result'), 'JSON export must include the result event')
-    assert.ok(JSON.stringify(exported).includes('739201'), 'JSON export must include submitted test codes')
-    assert.ok(JSON.stringify(exported).includes('1234567890'), 'JSON export must include the submitted destination account number')
-
-    const [csvDownload] = await Promise.all([
-      ledger.waitForEvent('download'),
-      ledger.getByRole('button', { name: 'Export CSV' }).click(),
-    ])
-    const csv = fs.readFileSync(await csvDownload.path(), 'utf8')
-    assert.ok(csv.includes('withdrawal_result'), 'CSV export must include the result event')
-    assert.ok(csv.includes('739201'), 'CSV export must include submitted test codes')
-    assert.ok(csv.includes('1234567890'), 'CSV export must include the submitted destination account number')
-    assert.ok(!csv.includes('Test category') && !csv.includes('Test notes') && !csv.includes('File upload validation'), 'CSV export must not include removed test classification fields')
-
-    await ledger.evaluate(() => {
-      const key = 'bankapp.experiment.events.v1'
-      const events = JSON.parse(localStorage.getItem(key) || '[]')
-      events.push({ id: 'csv-formula-test', experimentId: 'csv-test', type: 'withdrawal_input', createdAt: new Date().toISOString(), snapshot: { paymentReference: '=HYPERLINK("https://example.invalid","click")' }, field: 'paymentReference', value: '=HYPERLINK("https://example.invalid","click")', backendVerified: false })
-      localStorage.setItem(key, JSON.stringify(events))
-    })
-    await ledger.getByRole('button', { name: 'Refresh' }).click()
-    const [safeCsvDownload] = await Promise.all([
-      ledger.waitForEvent('download'),
-      ledger.getByRole('button', { name: 'Export CSV' }).click(),
-    ])
-    const safeCsv = fs.readFileSync(await safeCsvDownload.path(), 'utf8')
-    assert.ok(safeCsv.includes("'=HYPERLINK("), 'CSV formula-like user input must be neutralized before spreadsheet export')
-
+    await ledger.reload({ waitUntil: 'networkidle' })
+    assert.equal(await ledger.locator('#loginPanel').isVisible(), true, 'Ledger remains owner-authenticated after new activity is submitted')
+    assert.equal(await ledger.locator('#ledgerPanel').isVisible(), false, 'Withdrawal evidence must not be readable without owner authentication')
 
     const accountState = await page.evaluate(() => {
       const state = JSON.parse(localStorage.getItem('northstar.local-simulation.v1') || '{}')
