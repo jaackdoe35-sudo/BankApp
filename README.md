@@ -1,8 +1,8 @@
-# BankApp — Northstar Private Cybersecurity Lab
+# BankApp — Northstar Private | Banking Interface Security Demo
 
-A fictional banking-interface simulation and application-security testing environment. It is designed for controlled demonstrations of form handling, file uploads, browser storage, activity recording, localization and security evaluation.
+A browser-based banking-interface demonstration for application-security testing, covering form handling, file uploads, browser storage, activity recording, localization and security evaluation.
 
-> **SYNTHETIC DATA ONLY. THIS IS NOT A BANK.** No real banking services or money movement are provided. Never enter real credentials or upload real identity or financial documents.
+> **DEMO ENVIRONMENT · SYNTHETIC DATA ONLY.** Use test information and files only. Do not submit real credentials, identity documents or financial information.
 
 ## Public demonstration
 
@@ -10,7 +10,7 @@ A fictional banking-interface simulation and application-security testing enviro
 - **Activity Ledger:** https://bankapp-withdrawal-lab.vercel.app/test-ledger/
 - **Source code:** https://github.com/jaackdoe35-sudo/BankApp
 
-The public frontend currently uses a **browser-local simulation adapter**. Signup, authentication and account operations are simulated in the browser. The deployed frontend is **not connected to the Spring Boot backend** described later in this repository. Do not represent this public demo as an integrated full-stack or production banking system.
+The public frontend currently uses a **browser-local simulation adapter**. Signup, authentication and account operations are simulated in the browser. The deployed frontend is **not connected to the Spring Boot backend** described later in this repository; backend source code and tests are a separate workstream.
 
 ### Data handling in the current demo
 
@@ -37,11 +37,30 @@ See [PROJECT_PLAN.md](./PROJECT_PLAN.md) for the broader architecture and develo
 - **Public frontend:** browser-local synthetic simulation, deployed on Vercel.
 - **Withdrawal workflow:** five upload slots, browser-local file storage, activity capture and rejected withdrawal outcome.
 - **Activity Ledger:** same-origin, browser-local read-only viewer with JSON/CSV export and file retrieval.
-- **Localization:** 13 bundled language options; automated checks cover selected routes and states, not complete translation coverage.
+- **Localization:** 13 bundled language options; CI checks language switching and a route matrix across the bundled locales. Native-speaker and full visual layout review remain outstanding.
 - **Spring Boot backend:** source code and automated tests exist, but production deployment and frontend integration are not verified.
 - **Release status:** public demonstration preview; not a real banking service and not a production full-stack application.
 
 > The API sections below document backend code in this repository. They are not evidence that the public browser simulation currently calls those endpoints.
+
+## Security review — public demo
+
+The following boundaries are intentional and must be understood when evaluating this project:
+
+- **Authentication and authorization:** the public frontend uses a local simulation adapter. Login accepts non-empty credentials and creates local demo tokens; those tokens are not server-issued credentials. Role checks in the browser are not a security boundary.
+- **Data integrity:** account balances, profiles, roles and application state are browser-local and can be changed by the browser owner. Displayed balances and account statuses are illustrative, not authoritative.
+- **Activity Ledger:** the Ledger is a same-origin browser-local viewer, not an independently authenticated audit service. It reads localStorage events and IndexedDB file blobs. Records and exports can contain entered form values, account numbers and verification-code test values.
+- **File handling:** the browser checks filename extension, MIME type and maximum size. These are client-side checks only; there is no server-side malware scanning, content-signature validation or quarantine in the public demo.
+- **Transfers and withdrawals:** transfer requests are recorded as simulated requests and do not debit an account or move money. Withdrawal requests are rejected in the demo.
+- **CSV export:** spreadsheet formula-like values are prefixed to reduce CSV formula injection when opened in spreadsheet software. JSON exports preserve raw test values.
+
+### Verification boundaries
+
+- CI validates the frontend build, production dependency audit, Playwright browser workflow and backend Maven test suite.
+- The Playwright suite exercises all 13 locale codes and a customer-facing route matrix, but this does not establish translation quality or native-speaker correctness.
+- Browser storage-denial, corrupted-storage, cross-browser isolation, concurrent-tab write conflicts and real-device accessibility remain separate manual verification items.
+- A successful preview deployment is not a production release and does not prove backend integration.
+
 
 ### Notifications & Audit API (Phase 6)
 
