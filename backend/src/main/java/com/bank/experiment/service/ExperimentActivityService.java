@@ -39,8 +39,9 @@ public class ExperimentActivityService {
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     private static final Set<String> REDACT_KEYS = Set.of(
             "password", "passwd", "token", "accesstoken", "refreshtoken",
-            "authorization", "cookie", "codevalue", "otp", "onetimepassword",
-            "secret", "clientsecret", "jwt", "pin", "cvv", "securitycode");
+            "authorization", "cookie", "code", "codevalue", "verificationcode",
+            "otp", "otpcode", "onetimepassword", "secret", "clientsecret",
+            "jwt", "pin", "cvv", "securitycode", "mfacode");
 
     private final ExperimentSessionRepository sessions;
     private final ExperimentEventRepository events;
@@ -151,8 +152,11 @@ public class ExperimentActivityService {
 
     private static Map<String, Object> redact(Map<String, Object> source) {
         Map<String, Object> result = new HashMap<>();
+        boolean sensitiveFieldValue = source.get("field") instanceof String field
+                && isSensitiveKey(field);
         source.forEach((key, value) -> {
             String normalized = key.replaceAll("[^A-Za-z]", "").toLowerCase(Locale.ROOT);
+            if (sensitiveFieldValue && key.equals("value")) return;
             if (!REDACT_KEYS.contains(normalized)) result.put(key, redactValue(value));
         });
         return result;
@@ -164,6 +168,9 @@ public class ExperimentActivityService {
             map.forEach((k, v) -> {
                 if (k instanceof String key) {
                     String normalized = key.replaceAll("[^A-Za-z]", "").toLowerCase(Locale.ROOT);
+                    boolean sensitiveFieldValue = map.get("field") instanceof String field
+                            && isSensitiveKey(field);
+                    if (sensitiveFieldValue && key.equals("value")) continue;
                     if (!REDACT_KEYS.contains(normalized)) safe.put(key, redactValue(v));
                 }
             });
@@ -175,6 +182,11 @@ public class ExperimentActivityService {
             return safe;
         }
         return value;
+    }
+
+    private static boolean isSensitiveKey(String key) {
+        String normalized = key.replaceAll("[^A-Za-z]", "").toLowerCase(Locale.ROOT);
+        return REDACT_KEYS.contains(normalized);
     }
 
     private static String sha256(String value) {
