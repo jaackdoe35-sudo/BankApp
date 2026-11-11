@@ -40,7 +40,7 @@ public class ExperimentActivityService {
     private static final Set<String> REDACT_KEYS = Set.of(
             "password", "passwd", "token", "accesstoken", "refreshtoken",
             "authorization", "cookie", "codevalue", "otp", "onetimepassword",
-            "secret", "clientsecret", "jwt");
+            "secret", "clientsecret", "jwt", "pin", "cvv", "securitycode");
 
     private final ExperimentSessionRepository sessions;
     private final ExperimentEventRepository events;
@@ -94,7 +94,7 @@ public class ExperimentActivityService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File must be between 1 byte and 10 MB");
         }
         String filename = upload.getOriginalFilename() == null ? "upload" : upload.getOriginalFilename();
-        filename = filename.replaceAll("[\\\\/\\r\\n\\\\p{Cntrl}]", "_");
+        filename = filename.replaceAll("[\\\\/\\r\\n\\p{Cntrl}]", "_");
         if (filename.length() > 180) filename = filename.substring(filename.length() - 180);
         String contentType = upload.getContentType() == null ? "application/octet-stream" :
                 upload.getContentType().toLowerCase(Locale.ROOT);
@@ -103,10 +103,13 @@ public class ExperimentActivityService {
         }
         try {
             byte[] content = upload.getBytes();
+            if (!signatureMatches(contentType, content)) {
+                throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "File content does not match its declared type");
+            }
             String digest = sha256(content);
             ExperimentFile file = new ExperimentFile(UUID.randomUUID(), session.getId(), null,
-                    "postgres:" + UUID.randomUUID(), filename, contentType, content.length, digest, Instant.now());
-            file.setContent(content);
+                    "postgres:" + UUID.randomUUID(), filename, contentType, content.length,
+                    digest, content, Instant.now());
             files.save(file);
             return new ExperimentFileResponse(file.getId(), filename, contentType,
                     content.length, digest, file.getCreatedAt());
@@ -121,8 +124,29 @@ public class ExperimentActivityService {
     }
 
     @Transactional(readOnly = true)
+    public ExperimentEvent requireEvent(UUID id) {
+        return events.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    @Transactional(readOnly = true)
     public ExperimentFile requireFile(UUID id) {
         return files.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    private static boolean signatureMatches(String type, byte[] b) {
+        if (b.length < 4) return false;
+        return switch (type) {
+            case "image/jpeg" -> (b[0] & 255) == 0xFF && (b[1] & 255) == 0xD8 && (b[2] & 255) == 0xFF;
+            case "image/png" -> b.length >= 8 && (b[0] & 255) == 0x89 && b[1] == 0x50 && b[2] == 0x4E && b[3] == 0x47;
+            case "image/webp" -> b.length >= 12 && new String(b, 0, 4, java.nio.charset.StandardCharsets.US_ASCII).equals("RIFF")
+                    && new String(b, 8, 4, java.nio.charset.StandardCharsets.US_ASCII).equals("WEBP");
+            case "application/pdf" -> new String(b, 0, 4, java.nio.charset.StandardCharsets.US_ASCII).equals("%PDF");
+            case "text/plain" -> true;
+            case "application/msword" -> b.length >= 8 && (b[0] & 255) == 0xD0 && (b[1] & 255) == 0xCF;
+            case "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ->
+                    b.length >= 4 && b[0] == 0x50 && b[1] == 0x4B && b[2] == 0x03 && b[3] == 0x04;
+            default -> false;
+        };
     }
 
     private static Map<String, Object> redact(Map<String, Object> source) {
@@ -134,7 +158,6 @@ public class ExperimentActivityService {
         return result;
     }
 
-    @SuppressWarnings("unchecked")
     private static Object redactValue(Object value) {
         if (value instanceof Map<?, ?> map) {
             Map<String, Object> safe = new HashMap<>();
