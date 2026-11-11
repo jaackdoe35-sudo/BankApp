@@ -180,8 +180,6 @@ export default function TransferPage() {
               <div className="payment-upload-grid withdrawal-upload-grid">
                 {PAYMENT_UPLOAD_SLOTS.map((slot, index) => <div key={slot} className="withdrawal-upload-card">
                   <label className="withdrawal-upload-dropzone">
-                    <span className="withdrawal-upload-icon" aria-hidden="true">＋</span>
-                    <strong>Choose image/file</strong>
                                         <input className="withdrawal-file-input" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,image/*,application/pdf" onChange={handlePaymentFile(slot)} aria-label={`Choose image/file ${index + 1}`} />
                     <span className="withdrawal-upload-button" aria-hidden="true">Choose image/file</span>
                   </label>
