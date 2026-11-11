@@ -342,8 +342,14 @@ html[dir="rtl"] .withdrawal-upload-selected { direction: rtl; }
 
 
 /* Make upload controls visibly actionable; the full drop area remains the file input label. */
-.withdrawal-upload-dropzone { min-height: 176px; border: 2px dashed #71877a; background: #f1f6f2; }
-.withdrawal-upload-button { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; margin-top: 4px; padding: 8px 14px; border: 1px solid #285f45; border-radius: 8px; background: #285f45; color: #fff; font-size: 11px; font-weight: 700; }
+.withdrawal-upload-card { border-color: #D9DDF4; background: #FFFFFF; }
+.withdrawal-upload-dropzone { min-height: 176px; border: 2px dashed #8588C8; background: #F5F6FD; color: #25256F !important; }
+.withdrawal-upload-dropzone > span:not(.withdrawal-upload-icon) { color: #555B91; }
+.withdrawal-upload-dropzone small { color: #747AA8; }
+.withdrawal-upload-icon { background: #E7E9FA; color: #0000A0; }
+.withdrawal-upload-button { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; margin-top: 4px; padding: 8px 14px; border: 1px solid var(--forest); border-radius: 8px; background: var(--forest); color: #fff; font-size: 11px; font-weight: 700; }
+.withdrawal-upload-filecopy strong { color: #25256F; }
+.withdrawal-upload-selected { border-top-color: #E5E8F2; }
 .withdrawal-file-input { z-index: 2; cursor: pointer; }
 .withdrawal-upload-dropzone:focus-within .withdrawal-upload-button { outline: 3px solid rgba(40,95,69,.25); outline-offset: 2px; }
 @media (max-width: 700px) { .withdrawal-upload-dropzone { min-height: 160px; } }
