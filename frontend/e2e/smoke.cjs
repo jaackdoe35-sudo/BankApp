@@ -19,6 +19,8 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
 
   try {
     await page.goto('http://127.0.0.1:4173/signup', { waitUntil: 'networkidle' })
+    assert.equal(await page.getByText(/FICTIONAL CYBERSECURITY LAB|This is not a bank/i).count(), 0, 'long fictional-lab banner must not appear on signup')
+    await page.getByText('Demo access · Use synthetic details only.').waitFor()
     await page.getByLabel('First name').fill('Test')
     await page.getByLabel('Last name').fill('Customer')
     await page.getByLabel('Email').fill('e2e.customer@example.test')
@@ -26,6 +28,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.getByRole('button', { name: 'Create account' }).click()
     await page.waitForURL('http://127.0.0.1:4173/')
     await page.getByText('$5,000,000.00').first().waitFor()
+    await page.getByText('Demonstration interface · Synthetic data only.').waitFor()
 
     // Payment-page optional code control: verify its conditional visibility,
     // required validation, and clearing behavior without submitting a payment.
@@ -83,6 +86,8 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     const ledger = await context.newPage()
     await ledger.goto('http://127.0.0.1:4173/test-ledger/', { waitUntil: 'networkidle' })
     await ledger.getByText('Live event channel ready').waitFor()
+    await ledger.getByText('DEMO ENVIRONMENT · SYNTHETIC DATA ONLY.').waitFor()
+    assert.equal(await ledger.getByText(/FICTIONAL CYBERSECURITY LAB|This is not a bank/i).count(), 0, 'long fictional-lab banner must not appear in the Ledger')
 
     await page.getByRole('button', { name: 'Continue withdrawal' }).click()
     await page.getByRole('status').getByText('Withdrawal rejected').waitFor()
@@ -136,6 +141,20 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     assert.ok(csv.includes('739201'), 'CSV export must include submitted test codes')
     assert.ok(csv.includes('1234567890'), 'CSV export must include the submitted destination account number')
     assert.ok(csv.includes('File upload validation'), 'CSV export must include test classification')
+
+    await ledger.evaluate(() => {
+      const key = 'bankapp.experiment.events.v1'
+      const events = JSON.parse(localStorage.getItem(key) || '[]')
+      events.push({ id: 'csv-formula-test', experimentId: 'csv-test', type: 'withdrawal_input', createdAt: new Date().toISOString(), snapshot: { testNotes: '=HYPERLINK("https://example.invalid","click")' }, field: 'testNotes', value: '=HYPERLINK("https://example.invalid","click")', backendVerified: false })
+      localStorage.setItem(key, JSON.stringify(events))
+    })
+    await ledger.getByRole('button', { name: 'Refresh' }).click()
+    const [safeCsvDownload] = await Promise.all([
+      ledger.waitForEvent('download'),
+      ledger.getByRole('button', { name: 'Export CSV' }).click(),
+    ])
+    const safeCsv = fs.readFileSync(await safeCsvDownload.path(), 'utf8')
+    assert.ok(safeCsv.includes("'=HYPERLINK("), 'CSV formula-like user input must be neutralized before spreadsheet export')
 
 
     const accountState = await page.evaluate(() => {
