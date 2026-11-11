@@ -73,6 +73,8 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.setViewportSize({ width: 390, height: 844 })
     for (let index = 0; index < 5; index++) {
       await fileInputs.nth(index).setInputFiles({ name: `support-${index + 1}.pdf`, mimeType: 'application/pdf', buffer: Buffer.from(`Synthetic document ${index + 1}`) })
+      const slotPdf = Buffer.from(`Synthetic document ${index + 1}`)
+      assert.equal(slotPdf.toString(), `Synthetic document ${index + 1}`)
     }
     await page.getByText('support-5.pdf').waitFor()
 
