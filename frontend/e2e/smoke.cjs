@@ -314,6 +314,8 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
         await page.goto('http://127.0.0.1:4173' + routePaths[index], { waitUntil: 'domcontentloaded' })
         await page.waitForFunction(value => document.body.innerText.includes(value), expected[index])
       }
+      await page.goto('http://127.0.0.1:4173/login', { waitUntil: 'domcontentloaded' })
+      await page.waitForFunction(value => document.body.innerText.includes(value), expected[0])
     }
 
     await localeSelect.selectOption('en')
