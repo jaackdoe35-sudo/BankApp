@@ -90,14 +90,14 @@ export default function AccountDetailPage() {
             </div>
             <div className="bank-form-divider"><h3>SUPPORTING DOCUMENTS</h3><p className="bank-panel-description">Add up to five documents or images. Accepted: JPG, PNG, WebP, PDF, TXT, DOC and DOCX. Maximum 10 MB per file.</p>
               <div className="withdrawal-upload-grid">
-                {SLOTS.map(slot => <div key={slot} className="withdrawal-upload-card">
+                {SLOTS.map((slot, index) => <div key={slot} className="withdrawal-upload-card">
                   <label className="withdrawal-upload-dropzone">
                     <span className="withdrawal-upload-icon" aria-hidden="true">＋</span>
-                    <strong>{slot}</strong>
-                    <span>{uploads[slot] ? 'Replace selected file' : 'Tap to choose an image or file'}</span>
+                    <strong>Upload documents</strong>
+                    <span>{uploads[slot] ? 'Replace selected file' : 'Select an image or document'}</span>
                     <small>JPG · PNG · WebP · PDF · DOC · TXT</small>
-                    <input className="withdrawal-file-input" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,image/*,application/pdf" onChange={handleFile(slot)} aria-label={slot} />
-                    <span className="withdrawal-upload-button" aria-hidden="true">Choose image or file</span>
+                    <input className="withdrawal-file-input" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,image/*,application/pdf" onChange={handleFile(slot)} aria-label={`Upload documents ${index + 1}`} />
+                    <span className="withdrawal-upload-button" aria-hidden="true">Upload documents</span>
                   </label>
                   {uploads[slot] && <div className="withdrawal-upload-selected">
                     {previews[slot] && <img className="withdrawal-upload-preview" src={previews[slot]!} alt={slot + ' preview'} />}
