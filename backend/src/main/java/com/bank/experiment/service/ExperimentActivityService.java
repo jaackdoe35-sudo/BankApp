@@ -170,8 +170,10 @@ public class ExperimentActivityService {
                     String normalized = key.replaceAll("[^A-Za-z]", "").toLowerCase(Locale.ROOT);
                     boolean sensitiveFieldValue = map.get("field") instanceof String field
                             && isSensitiveKey(field);
-                    if (sensitiveFieldValue && key.equals("value")) continue;
-                    if (!REDACT_KEYS.contains(normalized)) safe.put(key, redactValue(v));
+                    if (!(sensitiveFieldValue && key.equals("value"))
+                            && !REDACT_KEYS.contains(normalized)) {
+                        safe.put(key, redactValue(v));
+                    }
                 }
             });
             return safe;
