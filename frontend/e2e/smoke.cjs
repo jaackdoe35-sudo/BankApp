@@ -176,12 +176,12 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     assert.ok(csv.includes('withdrawal_result'), 'CSV export must include the result event')
     assert.ok(csv.includes('739201'), 'CSV export must include submitted test codes')
     assert.ok(csv.includes('1234567890'), 'CSV export must include the submitted destination account number')
-    assert.ok(csv.includes('File upload validation'), 'CSV export must include test classification')
+    assert.ok(!csv.includes('Test category') && !csv.includes('Test notes') && !csv.includes('File upload validation'), 'CSV export must not include removed test classification fields')
 
     await ledger.evaluate(() => {
       const key = 'bankapp.experiment.events.v1'
       const events = JSON.parse(localStorage.getItem(key) || '[]')
-      events.push({ id: 'csv-formula-test', experimentId: 'csv-test', type: 'withdrawal_input', createdAt: new Date().toISOString(), snapshot: { testNotes: '=HYPERLINK("https://example.invalid","click")' }, field: 'testNotes', value: '=HYPERLINK("https://example.invalid","click")', backendVerified: false })
+      events.push({ id: 'csv-formula-test', experimentId: 'csv-test', type: 'withdrawal_input', createdAt: new Date().toISOString(), snapshot: { paymentReference: '=HYPERLINK("https://example.invalid","click")' }, field: 'paymentReference', value: '=HYPERLINK("https://example.invalid","click")', backendVerified: false })
       localStorage.setItem(key, JSON.stringify(events))
     })
     await ledger.getByRole('button', { name: 'Refresh' }).click()
