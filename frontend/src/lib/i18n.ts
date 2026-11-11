@@ -645,6 +645,36 @@ const routeCoveragePhrases: Record<string, Record<string, string>> = {
     'Open your account':'Buksan ang iyong account','Create your private banking profile':'Gumawa ng iyong pribadong banking profile','Email':'Email','Password (min 8 chars)':'Password (min. 8 character)','Creating…':'Ginagawa…','Create account':'Gumawa ng account','Already a client?':'Kliyente ka na ba?','Sign in':'Mag-sign in','Welcome back':'Maligayang pagbabalik','Sign in to your private banking account':'Mag-sign in sa iyong pribadong bank account','Password':'Password','Signing in…':'Nagla-log in…','No account yet?':'Wala pang account?'
   }
 }
+
+Object.assign(routeCoveragePhrases.fr, {
+  'Notifications':'Notifications','Admin':'Administration','PAYMENTS & TRANSFERS':'PAIEMENTS ET TRANSFERTS','Audit log':'Journal d’audit',
+  'Admins only.':'Réservé aux administrateurs.','Teller deposit':'Dépôt au guichet','Record a deposit request for the selected account.':'Enregistrer une demande de dépôt pour le compte sélectionné.','No customer accounts yet.':'Aucun compte client pour le moment.','Deposit':'Dépôt','Recent domain events (append-only).':'Événements récents du domaine (ajout uniquement).','No audit entries yet.':'Aucune entrée d’audit pour le moment.','Approve':'Approuver','Reject':'Rejeter','Pay':'Payer','No cards yet.':'Aucune carte pour le moment.','No loans yet.':'Aucun prêt pour le moment.'
+})
+Object.assign(routeCoveragePhrases.es, {
+  'Notifications':'Notificaciones','Admin':'Administración','PAYMENTS & TRANSFERS':'PAGOS Y TRANSFERENCIAS','Audit log':'Registro de auditoría',
+  'Admins only.':'Solo administradores.','Teller deposit':'Depósito en ventanilla','Record a deposit request for the selected account.':'Registrar una solicitud de depósito para la cuenta seleccionada.','No customer accounts yet.':'Todavía no hay cuentas de clientes.','Deposit':'Depositar','Recent domain events (append-only).':'Eventos recientes del dominio (solo anexar).','No audit entries yet.':'Todavía no hay registros de auditoría.','Approve':'Aprobar','Reject':'Rechazar','Pay':'Pagar','No cards yet.':'Todavía no hay tarjetas.','No loans yet.':'Todavía no hay préstamos.'
+})
+Object.assign(routeCoveragePhrases.pt, {
+  'Notifications':'Notificações','Admin':'Administração','PAYMENTS & TRANSFERS':'PAGAMENTOS E TRANSFERÊNCIAS','Audit log':'Registo de auditoria',
+  'Admins only.':'Apenas administradores.','Teller deposit':'Depósito ao balcão','Record a deposit request for the selected account.':'Registar um pedido de depósito para a conta selecionada.','No customer accounts yet.':'Ainda não existem contas de clientes.','Deposit':'Depositar','Recent domain events (append-only).':'Eventos recentes do domínio (apenas acrescentar).','No audit entries yet.':'Ainda não existem registos de auditoria.','Approve':'Aprovar','Reject':'Rejeitar','Pay':'Pagar','No cards yet.':'Ainda não existem cartões.','No loans yet.':'Ainda não existem empréstimos.'
+})
+Object.assign(routeCoveragePhrases.ar, {
+  'Notifications':'الإشعارات','Admin':'المسؤول','PAYMENTS & TRANSFERS':'المدفوعات والتحويلات','Audit log':'سجل التدقيق',
+  'Admins only.':'للمسؤولين فقط.','Teller deposit':'إيداع لدى الصراف','Record a deposit request for the selected account.':'سجّل طلب إيداع للحساب المحدد.','No customer accounts yet.':'لا توجد حسابات عملاء بعد.','Deposit':'إيداع','Recent domain events (append-only).':'أحداث النطاق الأخيرة (إضافة فقط).','No audit entries yet.':'لا توجد سجلات تدقيق بعد.','Approve':'موافقة','Reject':'رفض','Pay':'دفع','No cards yet.':'لا توجد بطاقات بعد.','No loans yet.':'لا توجد قروض بعد.'
+})
+Object.assign(routeCoveragePhrases.ha, {
+  'Notifications':'Sanarwa','Admin':'Mai gudanarwa','PAYMENTS & TRANSFERS':'BIYAN KUƊI DA CANJA WURI','Audit log':'Tarihin bincike',
+  'Admins only.':'Na masu gudanarwa kawai.','Teller deposit':'Ajiya a wurin ma’aikacin banki','Record a deposit request for the selected account.':'Yi rikodin buƙatar ajiya ga asusun da aka zaɓa.','No customer accounts yet.':'Babu asusun abokan ciniki tukuna.','Deposit':'Ajiya','Recent domain events (append-only).':'Abubuwan da suka faru kwanan nan (ƙara kawai).','No audit entries yet.':'Babu bayanan bincike tukuna.','Approve':'Amince','Reject':'Ƙi','Pay':'Biya','No cards yet.':'Babu kati tukuna.','No loans yet.':'Babu lamuni tukuna.'
+})
+Object.assign(routeCoveragePhrases.yo, {
+  'Notifications':'Àwọn ìfitónilétí','Admin':'Alákóso','PAYMENTS & TRANSFERS':'ÌSANWÓ ÀTI GBÍGBÉ OWÓ','Audit log':'Àkọsílẹ̀ àyẹ̀wò',
+  'Admins only.':'Fún àwọn alákóso nìkan.','Teller deposit':'Ìfowópamọ́ ní ọ́fíìsì báńkì','Record a deposit request for the selected account.':'Kọ ìbéèrè ìfowópamọ́ sílẹ̀ fún àkọọ́lẹ̀ tí a yàn.','No customer accounts yet.':'Kò tíì sí àkọọ́lẹ̀ oníbàárà.','Deposit':'Fi owó pamọ́','Recent domain events (append-only).':'Àwọn ìṣẹ̀lẹ̀ tuntun (fikún nìkan).','No audit entries yet.':'Kò tíì sí àkọsílẹ̀ àyẹ̀wò.','Approve':'Fọwọ́sí','Reject':'Kọ̀','Pay':'Sanwó','No cards yet.':'Kò tíì sí káàdì.','No loans yet.':'Kò tíì sí àwìn.'
+})
+Object.assign(routeCoveragePhrases.fil, {
+  'Notifications':'Mga notification','Admin':'Admin','PAYMENTS & TRANSFERS':'MGA BAYAD AT PAGLILIPAT','Audit log':'Talaan ng audit',
+  'Admins only.':'Para lamang sa mga admin.','Teller deposit':'Deposito sa teller','Record a deposit request for the selected account.':'Itala ang kahilingan sa deposito para sa napiling account.','No customer accounts yet.':'Wala pang mga account ng customer.','Deposit':'Magdeposito','Recent domain events (append-only).':'Mga kamakailang event ng domain (dagdag lamang).','No audit entries yet.':'Wala pang tala sa audit.','Approve':'Aprubahan','Reject':'Tanggihan','Pay':'Magbayad','No cards yet.':'Wala pang mga card.','No loans yet.':'Wala pang mga pautang.'
+})
+
 for (const [locale, entries] of Object.entries(routeCoveragePhrases)) Object.assign(offlinePhrases[locale], entries)
 
 
