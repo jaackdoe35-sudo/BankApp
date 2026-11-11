@@ -1,6 +1,6 @@
 CREATE TABLE experiment_sessions (
     id UUID PRIMARY KEY,
-    token_hash CHAR(64) NOT NULL UNIQUE,
+    token_hash VARCHAR(64) NOT NULL UNIQUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     expires_at TIMESTAMPTZ NOT NULL,
     revoked_at TIMESTAMPTZ
@@ -25,7 +25,7 @@ CREATE TABLE experiment_files (
     original_filename VARCHAR(180) NOT NULL,
     content_type VARCHAR(160) NOT NULL,
     size_bytes BIGINT NOT NULL CHECK (size_bytes > 0 AND size_bytes <= 10485760),
-    sha256 CHAR(64) NOT NULL,
+    sha256 VARCHAR(64) NOT NULL,
     content BYTEA NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
