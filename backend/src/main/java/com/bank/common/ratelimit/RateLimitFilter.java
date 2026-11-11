@@ -28,7 +28,7 @@ import java.time.Duration;
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private static final String PROTECTED_PREFIX = "/api/v1/auth/";
+    private static final java.util.List<String> PROTECTED_PREFIXES = java.util.List.of("/api/v1/auth/", "/api/v1/experiment/sessions");
 
     private final ObjectMapper objectMapper;
     private final boolean enabled;
@@ -48,7 +48,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !enabled || !request.getRequestURI().startsWith(PROTECTED_PREFIX);
+        return !enabled || PROTECTED_PREFIXES.stream().noneMatch(request.getRequestURI()::startsWith);
     }
 
     @Override
