@@ -36,13 +36,22 @@ export async function readActivityFile(id: string): Promise<{ name: string; type
   db.close()
   return value || null
 }
-export function recordActivity(event: ActivityEvent) {
+export function recordActivity(event: ActivityEvent): boolean {
+  let events: ActivityEvent[] = []
   try {
     const previous = JSON.parse(localStorage.getItem(STORAGE) || '[]')
-    const events = Array.isArray(previous) ? previous : []
+    events = Array.isArray(previous) ? previous : []
+  } catch {
+    // Recover from malformed local event data by starting a fresh event list.
+    events = []
+  }
+  try {
     localStorage.setItem(STORAGE, JSON.stringify([...events, event]))
   } catch {
-    localStorage.setItem(STORAGE, JSON.stringify([event]))
+    // Private browsing, quota exhaustion or browser policy can disable storage.
+    // Do not throw into form handlers when activity persistence is unavailable.
+    return false
   }
   try { const channel = new BroadcastChannel(CHANNEL); channel.postMessage({ type: 'event', event }); channel.close() } catch {}
+  return true
 }
