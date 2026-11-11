@@ -1,6 +1,5 @@
 package com.bank.experiment.web;
 
-import com.bank.experiment.domain.ExperimentEvent;
 import com.bank.experiment.domain.ExperimentFile;
 import com.bank.experiment.dto.ExperimentEventResponse;
 import com.bank.experiment.service.ExperimentActivityService;
@@ -11,7 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import java.util.Map;
+
 import java.util.UUID;
 
 @RestController
@@ -32,11 +31,7 @@ public class AdminExperimentController {
 
     @GetMapping("/events/{id}")
     public ExperimentEventResponse event(@PathVariable UUID id) {
-        ExperimentEvent e = service.recentEvents(0, 100).stream()
-                .filter(x -> x.getId().equals(id)).findFirst()
-                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
-                        org.springframework.http.HttpStatus.NOT_FOUND));
-        return ExperimentEventResponse.from(e);
+        return ExperimentEventResponse.from(service.requireEvent(id));
     }
 
     @GetMapping("/files/{id}")
