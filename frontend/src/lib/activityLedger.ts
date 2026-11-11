@@ -6,6 +6,7 @@ const DB = 'northstar-activity-files'
 const STORE = 'uploads'
 const SESSION_KEY = 'bankapp.experiment.remote-session.v1'
 const API_BASE = (import.meta.env.VITE_ACTIVITY_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+export const isRemoteActivityConfigured = Boolean(API_BASE)
 
 type RemoteSession = { sessionId: string; sessionToken: string; expiresAt: string }
 let remoteSessionPromise: Promise<RemoteSession | null> | null = null
