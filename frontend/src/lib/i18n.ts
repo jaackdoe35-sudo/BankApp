@@ -36,21 +36,24 @@ Object.assign(messages, {
   id: { overview:'Ringkasan',payments:'Pembayaran',cards:'Kartu',loans:'Pinjaman',profile:'Profil',activity:'Aktivitas',signOut:'Keluar',welcome:'Selamat datang kembali',position:'POSISI KEUANGAN ANDA',balance:'Total saldo rekening',accounts:'Rekening Anda',language:'Bahasa' ,demoAccess:"Akses demo · Gunakan informasi sintetis saja.",demoFooter:"Antarmuka demo · Data sintetis saja."},
 })
 
-Object.assign(messages, {
-  en: { demoLabel: 'Demo environment' },
-  fr: { demoLabel: 'Environnement de démonstration' },
-  es: { demoLabel: 'Entorno de demostración' },
-  pt: { demoLabel: 'Ambiente de demonstração' },
-  ar: { demoLabel: 'بيئة تجريبية' },
-  ha: { demoLabel: 'Yanayin gwaji' },
-  yo: { demoLabel: 'Àyíká ìdánwò' },
-  fil: { demoLabel: 'Demo environment' },
-  ms: { demoLabel: 'Persekitaran demo' },
-  ko: { demoLabel: '데모 환경' },
-  'zh-CN': { demoLabel: '演示环境' },
-  'zh-TW': { demoLabel: '展示環境' },
-  id: { demoLabel: 'Lingkungan demo' },
-})
+const demoLabels: Record<string, string> = {
+  en: 'Demo environment',
+  fr: 'Environnement de démonstration',
+  es: 'Entorno de demostración',
+  pt: 'Ambiente de demonstração',
+  ar: 'بيئة تجريبية',
+  ha: 'Yanayin gwaji',
+  yo: 'Àyíká ìdánwò',
+  fil: 'Demo environment',
+  ms: 'Persekitaran demo',
+  ko: '데모 환경',
+  'zh-CN': '演示环境',
+  'zh-TW': '展示環境',
+  id: 'Lingkungan demo',
+}
+for (const [locale, label] of Object.entries(demoLabels)) {
+  messages[locale] = { ...(messages[locale] || {}), demoLabel: label }
+}
 
 const stored = typeof localStorage === 'undefined' ? null : localStorage.getItem(KEY)
 let current: Language = stored && LANGUAGE_CODES.includes(stored) ? stored : 'en'
