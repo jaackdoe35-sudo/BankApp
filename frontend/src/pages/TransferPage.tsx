@@ -178,14 +178,14 @@ export default function TransferPage() {
               <h3>SUPPORTING DOCUMENTS</h3>
               <p className="bank-panel-description">Attach up to five images or files for this payment test. Accepted: JPG, PNG, WebP, PDF, TXT, DOC and DOCX. Maximum 10 MB per file.</p>
               <div className="payment-upload-grid withdrawal-upload-grid">
-                {PAYMENT_UPLOAD_SLOTS.map(slot => <div key={slot} className="withdrawal-upload-card">
+                {PAYMENT_UPLOAD_SLOTS.map((slot, index) => <div key={slot} className="withdrawal-upload-card">
                   <label className="withdrawal-upload-dropzone">
                     <span className="withdrawal-upload-icon" aria-hidden="true">＋</span>
-                    <strong>{slot}</strong>
-                    <span>{uploads[slot] ? 'Replace selected file' : 'Tap to choose an image or file'}</span>
+                    <strong>Upload documents</strong>
+                    <span>{uploads[slot] ? 'Replace selected file' : 'Select an image or document'}</span>
                     <small>JPG · PNG · WebP · PDF · DOC · TXT</small>
-                    <input className="withdrawal-file-input" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,image/*,application/pdf" onChange={handlePaymentFile(slot)} aria-label={slot} />
-                    <span className="withdrawal-upload-button" aria-hidden="true">Choose image or file</span>
+                    <input className="withdrawal-file-input" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,image/*,application/pdf" onChange={handlePaymentFile(slot)} aria-label={`Upload documents ${index + 1}`} />
+                    <span className="withdrawal-upload-button" aria-hidden="true">Upload documents</span>
                   </label>
                   {uploads[slot] && <div className="withdrawal-upload-selected">
                     {previews[slot] && <img className="withdrawal-upload-preview" src={previews[slot]!} alt={slot + ' preview'} />}
