@@ -77,7 +77,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main className="bank-content">{children}</main>
-        <footer className="bank-footer"><span>© Northstar Private Banking</span><span>{t('demoFooter')}</span></footer>
+        <footer className="bank-footer"><span>© Northstar Private Banking</span></footer>
       </div>
     </div>
   )
