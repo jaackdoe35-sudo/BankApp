@@ -57,7 +57,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     assert.equal(await paymentFileInputs.count(), 5, 'main payment page must expose five file inputs')
     assert.equal(await paymentUploadZones.count(), 5, 'main payment page must display five upload fields')
     for (let index = 0; index < 5; index++) {
-      assert.ok(await paymentUploadZones.nth(index).innerText().then(value => value.includes('Choose image/file')), 'payment upload slot must use the standard label')
+      assert.equal((await paymentUploadZones.nth(index).innerText()).trim(), 'Choose image/file', 'payment upload slot must show only the generic picker label')
     }
     const paymentPdfFixtures = Array.from({ length: 5 }, (_, index) => Buffer.from(`Payment evidence ${index + 1}`))
     for (let index = 0; index < 5; index++) {
@@ -72,6 +72,9 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.goto('http://127.0.0.1:4173/accounts/acct-northstar-001', { waitUntil: 'networkidle' })
 
     await page.waitForURL('**/accounts/acct-northstar-001')
+    assert.equal(await page.getByText('TEST CLASSIFICATION').count(), 0, 'withdrawal page must not show test classification')
+    assert.equal(await page.getByLabel('Test category').count(), 0, 'withdrawal page must not show test category')
+    assert.equal(await page.getByLabel('Test notes').count(), 0, 'withdrawal page must not show test notes')
     await page.getByPlaceholder('0.00').fill('125.50')
     await page.getByLabel('Bank name').fill('Synthetic Test Bank')
     await page.getByLabel('Account name').fill('Test Customer')
@@ -83,7 +86,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     const uploadZones = page.locator('.withdrawal-upload-dropzone')
     assert.equal(await uploadZones.count(), 5, 'five visible upload areas must render')
     for (let index = 0; index < 5; index++) {
-      assert.ok((await uploadZones.nth(index).innerText()).includes('Choose image/file'), 'withdrawal upload slot must use the standard label')
+      assert.equal((await uploadZones.nth(index).innerText()).trim(), 'Choose image/file', 'withdrawal upload slot must show only the generic picker label')
     }
     for (let index = 0; index < 5; index++) {
       assert.ok(await uploadZones.nth(index).isVisible(), 'upload area ' + (index + 1) + ' must be visible')
