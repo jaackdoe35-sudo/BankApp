@@ -347,3 +347,11 @@ html[dir="rtl"] .withdrawal-upload-selected { direction: rtl; }
 .withdrawal-file-input { z-index: 2; cursor: pointer; }
 .withdrawal-upload-dropzone:focus-within .withdrawal-upload-button { outline: 3px solid rgba(40,95,69,.25); outline-offset: 2px; }
 @media (max-width: 700px) { .withdrawal-upload-dropzone { min-height: 160px; } }
+
+
+/* Keep the language selector reachable on narrow mobile screens. */
+@media (max-width: 700px) {
+  .bank-topbar-right { flex: 0 0 auto; gap: 8px; }
+  .bank-activity-link, .bank-topbar-secure { display: none; }
+  .bank-topbar-right .language-picker select { width: clamp(132px, 42vw, 170px); }
+}
