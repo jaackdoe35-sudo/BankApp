@@ -221,10 +221,19 @@ function translateDocument(root: HTMLElement, language: string) {
   const processText = (node: Text) => {
     const parent = node.parentElement
     if (!parent || excludedTags.has(parent.tagName) || parent.closest('[data-no-translate],input,textarea,code,pre,script,style')) return
-    const previous = originalText.get(node)
-    const source = previous ?? node.nodeValue ?? ''
+    const current = node.nodeValue ?? ''
+    let source = originalText.get(node) ?? current
+    const priorTranslation = offlinePhrases[language]?.[source.trim()]
+    // React may reconcile a translated node back to its English source after
+    // a query/state update. Detect that reset and translate it again. If React
+    // changed the node to a different source phrase, refresh its source copy.
+    if (originalText.has(node) && current.trim() !== source.trim() && current.trim() !== priorTranslation) {
+      source = current
+      originalText.set(node, source)
+      translatedText.delete(node)
+    }
     if (!source.trim() || !/[A-Za-z]/.test(source) || manual.has(source.trim())) return
-    if (translatedText.get(node) === language) return
+    if (translatedText.get(node) === language && current.trim() !== source.trim()) return
     originalText.set(node, source)
     knownTextNodes.add(node)
     const value = offlinePhrases[language]?.[source.trim()]
