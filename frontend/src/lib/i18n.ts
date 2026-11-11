@@ -202,21 +202,21 @@ function cachedTranslation(language: string, source: string) {
   return Promise.resolve(offlinePhrases[language]?.[source] || '')
 }
 function translateDocument(root: HTMLElement, language: string) {
-  if (language === 'en') {
-    for (const node of knownTextNodes) {
-      if (!node.isConnected) { knownTextNodes.delete(node); continue }
-      const original = originalText.get(node)
-      if (original !== undefined) node.nodeValue = original
-      translatedText.delete(node)
-    }
-    for (const element of knownElements) {
-      if (!element.isConnected) { knownElements.delete(element); continue }
-      const originals = originalAttributes.get(element)
-      originals?.forEach((value, attr) => element.setAttribute(attr, value))
-      translatedAttributes.get(element)?.clear()
-    }
-    return () => {}
+  // Always restore the source copy first. This prevents a previous locale's
+  // translated text from leaking into the next locale when no new phrase exists.
+  for (const node of knownTextNodes) {
+    if (!node.isConnected) { knownTextNodes.delete(node); continue }
+    const original = originalText.get(node)
+    if (original !== undefined) node.nodeValue = original
+    translatedText.delete(node)
   }
+  for (const element of knownElements) {
+    if (!element.isConnected) { knownElements.delete(element); continue }
+    const originals = originalAttributes.get(element)
+    originals?.forEach((value, attr) => element.setAttribute(attr, value))
+    translatedAttributes.get(element)?.clear()
+  }
+  if (language === 'en') return () => {}
   let stopped = false
   const manual = new Set(Object.values(messages[language] || {}))
   const processText = (node: Text) => {
