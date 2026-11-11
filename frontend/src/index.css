@@ -347,7 +347,7 @@ html[dir="rtl"] .withdrawal-upload-selected { direction: rtl; }
 .withdrawal-upload-dropzone > span:not(.withdrawal-upload-icon) { color: #555B91; }
 .withdrawal-upload-dropzone small { color: #747AA8; }
 .withdrawal-upload-icon { background: #E7E9FA; color: #0000A0; }
-.withdrawal-upload-button { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; margin-top: 4px; padding: 8px 14px; border: 1px solid #0000A0; border-radius: 8px; background: #0000A0; color: #fff; font-size: 11px; font-weight: 700; }
+.withdrawal-upload-dropzone > .withdrawal-upload-button { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; margin-top: 4px; padding: 8px 14px; border: 1px solid #0000A0; border-radius: 8px; background: #0000A0; color: #fff !important; font-size: 11px; font-weight: 700; }
 .withdrawal-upload-filecopy strong { color: #25256F; }
 .withdrawal-upload-selected { border-top-color: #E5E8F2; }
 .withdrawal-file-input { z-index: 2; cursor: pointer; }
