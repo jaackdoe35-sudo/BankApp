@@ -25,6 +25,8 @@ export default function TransferPage() {
   const [destMode, setDestMode] = useState<'beneficiary' | 'manual'>('manual')
   const [beneficiaryNumber, setBeneficiaryNumber] = useState('')
   const [manualNumber, setManualNumber] = useState('')
+  const [bankName, setBankName] = useState('')
+  const [accountName, setAccountName] = useState('')
   const [amount, setAmount] = useState('')
   const [note, setNote] = useState('')
   const [codeChecked, setCodeChecked] = useState(false)
@@ -41,6 +43,8 @@ export default function TransferPage() {
     language,
     sourceAccountId: sourceAccountId || ownAccounts[0]?.id || '',
     destinationAccountNumber,
+    bankName,
+    accountName,
     amount,
     paymentReference: note,
     codeChecked,
@@ -107,7 +111,7 @@ export default function TransferPage() {
     },
   })
   const validUploads = Object.values(uploads).every(item => !item || item.status === 'valid')
-  const validTransfer = Number(amount) > 0 && destinationAccountNumber.trim() !== '' && (!codeChecked || codeValue.trim() !== '') && validUploads
+  const validTransfer = Number(amount) > 0 && destinationAccountNumber.trim() !== '' && bankName.trim() !== '' && accountName.trim() !== '' && (!codeChecked || codeValue.trim() !== '') && validUploads
 
   return (
     <AppLayout>
@@ -150,6 +154,14 @@ export default function TransferPage() {
                     </select>
                   </label>
                 )}
+              </div>
+              <div className="bank-form-grid mt-4">
+                <label>Bank name
+                  <input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="Bank name" required />
+                </label>
+                <label>Account name
+                  <input value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="Account holder name" required />
+                </label>
               </div>
             </div>
 
