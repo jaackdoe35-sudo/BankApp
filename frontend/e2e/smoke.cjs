@@ -50,6 +50,10 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     assert.equal(await paymentCode.count(), 0, 'payment code input must disappear when disabled')
     assert.equal(await paymentButton.isDisabled(), false, 'payment can continue without the optional code')
 
+    await page.goto('http://127.0.0.1:4173/')
+    const enteredEmailName = await page.evaluate(() => (localStorage.getItem('northstar.email') || '').split('@')[0])
+    assert.equal(await page.locator('.page-title').innerText(), 'Welcome, ' + enteredEmailName, 'greeting should use entered email, not generated profile name')
+
     // Main Payments page must expose five visible upload slots and preserve
     // the original files in the Activity Ledger when the payment is submitted.
     const paymentFileInputs = page.locator('input[type="file"]')
@@ -308,7 +312,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.waitForFunction(() => document.querySelector('h1.page-title')?.textContent?.trim() === 'Détails du compte')
     await page.getByRole('heading', { name: 'Retirer des fonds' }).waitFor()
     await page.goto('http://127.0.0.1:4173/login')
-    await page.waitForFunction(() => document.querySelector('h1')?.textContent?.trim() === 'Bon retour')
+    await page.waitForFunction(() => document.querySelector('h1')?.textContent?.trim() === 'Bienvenue')
     await page.getByText('Connectez-vous à votre compte bancaire privé').waitFor()
     await page.goto('http://127.0.0.1:4173/signup')
     await page.waitForFunction(() => document.querySelector('h1')?.textContent?.trim() === 'Ouvrir votre compte')
@@ -341,19 +345,19 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.waitForFunction(() => document.querySelector('.bank-nav-link')?.textContent?.includes('Overview'))
 
     const routeMatrix = {
-      en: ['Welcome back','Open your account','Send money','Cards','Loans','Profile','Notifications','Account details','Admins only.'],
-      fr: ['Bon retour','Ouvrir votre compte','Envoyer de l’argent','Cartes','Prêts','Profil','Notifications','Détails du compte','Réservé aux administrateurs.'],
-      es: ['Te damos la bienvenida','Abre tu cuenta','Enviar dinero','Tarjetas','Préstamos','Perfil','Notificaciones','Detalles de la cuenta','Solo administradores.'],
-      pt: ['Bem-vindo de volta','Abra a sua conta','Enviar dinheiro','Cartões','Empréstimos','Perfil','Notificações','Detalhes da conta','Apenas administradores.'],
-      ar: ['مرحبًا بعودتك','افتح حسابك','إرسال الأموال','البطاقات','القروض','الملف الشخصي','الإشعارات','تفاصيل الحساب','للمسؤولين فقط.'],
-      ha: ['Barka da dawowa','Buɗe asusunka','Aika kuɗi','Katuna','Lamuni','Bayani','Sanarwa','Bayanan asusu','Na masu gudanarwa kawai.'],
-      yo: ['Ẹ káàbọ̀ padà','Ṣí àkọọ́lẹ̀ rẹ','Fi owó ránṣẹ́','Káàdì','Àwìn','Àkọ́ọ́lẹ̀','Àwọn ìfitónilétí','Àlàyé àkọọ́lẹ̀','Fún àwọn alákóso nìkan.'],
-      fil: ['Maligayang pagbabalik','Buksan ang iyong account','Magpadala ng pera','Mga card','Mga pautang','Profile','Mga notification','Mga detalye ng account','Para lamang sa mga admin.'],
-      ms: ['Selamat kembali','Buka akaun anda','Hantar wang','Kad','Pinjaman','Profil','Pemberitahuan','Butiran akaun','Khusus untuk pentadbir.'],
-      ko: ['다시 오신 것을 환영합니다','계좌 개설','송금','카드','대출','프로필','알림','계좌 상세 정보','관리자 전용입니다.'],
-      'zh-CN': ['欢迎回来','开立账户','转账','银行卡','贷款','个人资料','通知','账户详情','仅限管理员。'],
-      'zh-TW': ['歡迎回來','開立帳戶','轉帳','銀行卡','貸款','個人資料','通知','帳戶詳情','僅限管理員。'],
-      id: ['Selamat datang kembali','Buka rekening Anda','Kirim uang','Kartu','Pinjaman','Profil','Notifikasi','Detail rekening','Khusus administrator.'],
+      en: ['Welcome','Open your account','Send money','Cards','Loans','Profile','Notifications','Account details','Admins only.'],
+      fr: ['Bienvenue','Ouvrir votre compte','Envoyer de l’argent','Cartes','Prêts','Profil','Notifications','Détails du compte','Réservé aux administrateurs.'],
+      es: ['Bienvenido','Abre tu cuenta','Enviar dinero','Tarjetas','Préstamos','Perfil','Notificaciones','Detalles de la cuenta','Solo administradores.'],
+      pt: ['Boas-vindas','Abra a sua conta','Enviar dinheiro','Cartões','Empréstimos','Perfil','Notificações','Detalhes da conta','Apenas administradores.'],
+      ar: ['مرحبًا','افتح حسابك','إرسال الأموال','البطاقات','القروض','الملف الشخصي','الإشعارات','تفاصيل الحساب','للمسؤولين فقط.'],
+      ha: ['Barka','Buɗe asusunka','Aika kuɗi','Katuna','Lamuni','Bayani','Sanarwa','Bayanan asusu','Na masu gudanarwa kawai.'],
+      yo: ['Ẹ káàbọ̀','Ṣí àkọọ́lẹ̀ rẹ','Fi owó ránṣẹ́','Káàdì','Àwìn','Àkọ́ọ́lẹ̀','Àwọn ìfitónilétí','Àlàyé àkọọ́lẹ̀','Fún àwọn alákóso nìkan.'],
+      fil: ['Maligayang pagdating','Buksan ang iyong account','Magpadala ng pera','Mga card','Mga pautang','Profile','Mga notification','Mga detalye ng account','Para lamang sa mga admin.'],
+      ms: ['Selamat datang','Buka akaun anda','Hantar wang','Kad','Pinjaman','Profil','Pemberitahuan','Butiran akaun','Khusus untuk pentadbir.'],
+      ko: ['환영합니다','계좌 개설','송금','카드','대출','프로필','알림','계좌 상세 정보','관리자 전용입니다.'],
+      'zh-CN': ['欢迎','开立账户','转账','银行卡','贷款','个人资料','通知','账户详情','仅限管理员。'],
+      'zh-TW': ['歡迎','開立帳戶','轉帳','銀行卡','貸款','個人資料','通知','帳戶詳情','僅限管理員。'],
+      id: ['Selamat datang','Buka rekening Anda','Kirim uang','Kartu','Pinjaman','Profil','Notifikasi','Detail rekening','Khusus administrator.'],
     }
     const routePaths = ['/','/signup','/transfer','/cards','/loans','/profile','/notifications','/accounts/acct-northstar-001','/admin']
     for (const [code, expected] of Object.entries(routeMatrix)) {
