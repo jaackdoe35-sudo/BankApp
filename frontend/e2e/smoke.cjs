@@ -265,6 +265,8 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.waitForFunction(() => document.querySelector('h1')?.textContent?.trim() === 'Ouvrir votre compte')
     await page.getByRole('button', { name: 'Créer un compte' }).waitFor()
 
+    // Locale-switching checks run on the authenticated app shell, where navigation exists.
+    await page.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded' })
     // Every selectable locale is local-only; RTL metadata is checked for Arabic.
     const localeSelect = page.locator('.language-picker select')
     for (const code of ['en','fr','es','pt','ar','ha','yo','fil']) {
@@ -282,6 +284,10 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
       await page.waitForFunction(value => document.documentElement.lang === value, code)
       await page.waitForFunction(value => document.querySelector('.bank-nav-link')?.textContent?.includes(value), expected)
     }
+    await localeSelect.selectOption('zh-CN')
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await page.waitForFunction(() => document.documentElement.lang === 'zh-CN')
+    await page.waitForFunction(() => document.querySelector('.bank-nav-link')?.textContent?.includes('总览'))
     await localeSelect.selectOption('en')
     await page.waitForFunction(() => document.querySelector('.bank-nav-link')?.textContent?.includes('Overview'))
 
