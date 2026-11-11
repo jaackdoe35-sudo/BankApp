@@ -9,7 +9,7 @@ import { useLanguage } from '../lib/i18n'
 import { storeActivityFile, recordActivity } from '../lib/activityLedger'
 
 type Snapshot = { customerName: string; language: string; accountId: string; amount: string; codeChecked: boolean; codeValue: string; bankName: string; accountName: string; accountNumber: string; balanceBefore: string; balanceAfter: string; uploadCount: number }
-type UploadMeta = { id: string; slot: string; name: string; size: number; type: string; createdAt: string; status: 'valid' | 'invalid' }
+type UploadMeta = { id: string; name: string; size: number; type: string; createdAt: string; status: 'valid' | 'invalid' }
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const ACCEPTED = new Set(['image/jpeg','image/png','image/webp','application/pdf','text/plain','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
 const SLOTS = ['document-1','document-2','document-3','document-4','document-5']
