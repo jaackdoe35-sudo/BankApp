@@ -204,7 +204,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.getByText('Withdraw funds').waitFor()
     await page.getByText('$5,000,000.00').first().waitFor()
     const languageSelect = page.locator('.language-picker select')
-    assert.equal(await languageSelect.locator('option').count(), 12, 'language dropdown must list only bundled offline languages')
+    assert.equal(await languageSelect.locator('option').count(), 13, 'language dropdown must list only bundled offline languages')
     await languageSelect.selectOption('fr')
     await page.getByText('Vue d’ensemble').waitFor()
     assert.equal(await page.evaluate(() => document.documentElement.lang), 'fr', 'language code must be applied')
@@ -269,7 +269,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded' })
     // Every selectable locale is local-only; RTL metadata is checked for Arabic.
     const localeSelect = page.locator('.language-picker select')
-    for (const code of ['en','fr','es','pt','ar','ha','yo','fil']) {
+    for (const code of ['en','fr','es','pt','ar','ha','yo','fil','ms','ko','zh-CN','zh-TW','id']) {
       await localeSelect.selectOption(code)
       assert.equal(await page.evaluate(() => document.documentElement.lang), code, 'selected locale metadata must match ' + code)
     }
@@ -278,7 +278,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     assert.equal(await page.evaluate(() => document.documentElement.dir), 'rtl', 'Arabic must use right-to-left direction')
     // Exercise the newly bundled locales on a real page, not only the picker.
     for (const [code, expected] of [
-      ['ms','Gambaran keseluruhan'], ['ko','개요'], ['zh-CN','总览'], ['zh-TW','總覽'],
+      ['ms','Gambaran keseluruhan'], ['ko','개요'], ['zh-CN','总览'], ['zh-TW','總覽'], ['id','Ringkasan'],
     ]) {
       await localeSelect.selectOption(code)
       await page.waitForFunction(value => document.documentElement.lang === value, code)
