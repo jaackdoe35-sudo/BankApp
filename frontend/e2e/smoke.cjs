@@ -50,16 +50,15 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     assert.equal(await paymentCode.count(), 0, 'payment code input must disappear when disabled')
     assert.equal(await paymentButton.isDisabled(), false, 'payment can continue without the optional code')
 
-    await page.goto('http://127.0.0.1:4173/')
-    const enteredEmailName = await page.evaluate(() => (localStorage.getItem('northstar.email') || '').split('@')[0])
-    assert.equal(await page.locator('.page-title').innerText(), 'Welcome, ' + enteredEmailName, 'greeting should use entered email, not generated profile name')
-
     // Main Payments page must expose five visible upload slots and preserve
     // the original files in the Activity Ledger when the payment is submitted.
     const paymentFileInputs = page.locator('input[type="file"]')
     const paymentUploadZones = page.locator('.payment-upload-grid .withdrawal-upload-dropzone')
     assert.equal(await paymentFileInputs.count(), 5, 'main payment page must expose five file inputs')
     assert.equal(await paymentUploadZones.count(), 5, 'main payment page must display five upload fields')
+    for (let index = 0; index < 5; index++) {
+      assert.ok(await paymentUploadZones.nth(index).innerText().then(value => value.includes('Upload documents')), 'payment upload slot must use the standard label')
+    }
     const paymentPdfFixtures = Array.from({ length: 5 }, (_, index) => Buffer.from(`Payment evidence ${index + 1}`))
     for (let index = 0; index < 5; index++) {
       await paymentFileInputs.nth(index).setInputFiles({ name: `payment-evidence-${index + 1}.pdf`, mimeType: 'application/pdf', buffer: paymentPdfFixtures[index] })
@@ -67,6 +66,9 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.getByText('payment-evidence-5.pdf').waitFor()
     await paymentButton.click()
     await page.getByRole('status').getByText('Payment request recorded').waitFor()
+    await page.goto('http://127.0.0.1:4173/')
+    const enteredEmailName = await page.evaluate(() => (localStorage.getItem('northstar.email') || '').split('@')[0])
+    assert.equal(await page.locator('.page-title').innerText(), 'Welcome, ' + enteredEmailName, 'greeting should use entered email, not generated profile name')
     await page.goto('http://127.0.0.1:4173/accounts/acct-northstar-001', { waitUntil: 'networkidle' })
 
     await page.waitForURL('**/accounts/acct-northstar-001')
@@ -82,6 +84,9 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     assert.equal(await fileInputs.count(), 5, 'withdrawal page must expose five upload slots')
     const uploadZones = page.locator('.withdrawal-upload-dropzone')
     assert.equal(await uploadZones.count(), 5, 'five visible upload areas must render')
+    for (let index = 0; index < 5; index++) {
+      assert.ok((await uploadZones.nth(index).innerText()).includes('Upload documents'), 'withdrawal upload slot must use the standard label')
+    }
     for (let index = 0; index < 5; index++) {
       assert.ok(await uploadZones.nth(index).isVisible(), 'upload area ' + (index + 1) + ' must be visible')
       assert.ok(await uploadZones.nth(index).locator('.withdrawal-upload-button').isVisible(), 'upload area ' + (index + 1) + ' must show a visible picker action')
