@@ -114,12 +114,12 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await ledger.getByText('1234567890').first().waitFor()
     for (let index = 0; index < 5; index++) {
       const name = `payment-evidence-${index + 1}.pdf`
-      await ledger.getByRole('button', { name: `Preview ${name}` }).click()
+      await ledger.getByRole('button', { name: `Preview ${name}` }).first().click()
       await ledger.getByTitle(`PDF preview: ${name}`).waitFor()
       await ledger.getByRole('button', { name: 'Close' }).click()
       const [download] = await Promise.all([
         ledger.waitForEvent('download'),
-        ledger.getByRole('button', { name: `Download ${name}` }).click(),
+        ledger.getByRole('button', { name: `Download ${name}` }).first().click(),
       ])
       assert.deepEqual(fs.readFileSync(await download.path()), paymentPdfFixtures[index], 'Ledger must preview and return original payment file bytes for slot ' + (index + 1))
     }
