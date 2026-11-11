@@ -237,7 +237,7 @@ function translateDocument(root: HTMLElement, language: string) {
     originalText.set(node, source)
     knownTextNodes.add(node)
     const value = offlinePhrases[language]?.[source.trim()]
-    if (value && !stopped) { node.nodeValue = source.replace(source.trim(), value); translatedText.set(node, language) }
+    if (value && !stopped) { if (value !== source.trim()) node.nodeValue = source.replace(source.trim(), value); translatedText.set(node, language) }
   }
   const processElement = (element: Element) => {
     if (['SCRIPT','STYLE','NOSCRIPT','CODE','PRE','SVG'].includes(element.tagName) || element.closest('[data-no-translate]')) return
