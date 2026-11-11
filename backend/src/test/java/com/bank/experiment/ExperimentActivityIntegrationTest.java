@@ -24,15 +24,16 @@ class ExperimentActivityIntegrationTest extends AbstractIntegrationTest {
         mvc.perform(post("/api/v1/experiment/sessions/" + id + "/events")
                         .header("X-Experiment-Token", token).contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                          {"eventType":"payment_submitted","payload":{"amount":"15","codeValue":"123456","password":"do-not-store","bankName":"Synthetic Bank"}}
+                          {"eventType":"withdrawal_input","payload":{"amount":"15","snapshot":{"codeValue":"123456","bankName":"Synthetic Bank"},"password":"do-not-store","field":"codeValue","value":"123456"}}
                         """))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.eventId").exists());
         mvc.perform(get("/api/v1/admin/experiments/events")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/admin/experiments/events")
                         .header("Authorization", "Bearer " + adminToken()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].payload.codeValue").doesNotExist())
+                .andExpect(jsonPath("$.content[0].payload.snapshot.codeValue").doesNotExist())
                 .andExpect(jsonPath("$.content[0].payload.password").doesNotExist())
+                .andExpect(jsonPath("$.content[0].payload.value").doesNotExist())
                 .andExpect(jsonPath("$.content[0].payload.amount").value("15"));
     }
 
