@@ -51,7 +51,7 @@ export default function TransferPage() {
   const handlePaymentFile = (slot: string) => async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
-    const extensionAllowed = /\\.(jpe?g|png|webp|pdf|txt|docx?)$/i.test(file.name)
+    const extensionAllowed = /\.(jpe?g|png|webp|pdf|txt|docx?)$/i.test(file.name)
     const mimeAllowed = !file.type || PAYMENT_FILE_TYPES.has(file.type)
     const valid = extensionAllowed && mimeAllowed && file.size <= MAX_PAYMENT_FILE_SIZE
     let stored: ActivityUpload | null = null
