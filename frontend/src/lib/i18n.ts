@@ -3,6 +3,7 @@ import { useEffect, useSyncExternalStore } from 'react'
 const LANGUAGE_CODES = ['en','fr','es','pt','ar','ha','yo','fil','ms','ko','zh-CN','zh-TW','id']
 
 function displayName(code: string) {
+  if (code === 'id') return 'Bahasa Indonesia'
   try {
     return new Intl.DisplayNames(['en'], { type: 'language' }).of(code) || code
   } catch {
