@@ -49,6 +49,20 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.getByLabel('Enter a Code').uncheck()
     assert.equal(await paymentCode.count(), 0, 'payment code input must disappear when disabled')
     assert.equal(await paymentButton.isDisabled(), false, 'payment can continue without the optional code')
+
+    // Main Payments page must expose five visible upload slots and preserve
+    // the original files in the Activity Ledger when the payment is submitted.
+    const paymentFileInputs = page.locator('input[type="file"]')
+    const paymentUploadZones = page.locator('.payment-upload-grid .withdrawal-upload-dropzone')
+    assert.equal(await paymentFileInputs.count(), 5, 'main payment page must expose five file inputs')
+    assert.equal(await paymentUploadZones.count(), 5, 'main payment page must display five upload fields')
+    const paymentPdfFixtures = Array.from({ length: 5 }, (_, index) => Buffer.from(`Payment evidence ${index + 1}`))
+    for (let index = 0; index < 5; index++) {
+      await paymentFileInputs.nth(index).setInputFiles({ name: `payment-evidence-${index + 1}.pdf`, mimeType: 'application/pdf', buffer: paymentPdfFixtures[index] })
+    }
+    await page.getByText('payment-evidence-5.pdf').waitFor()
+    await paymentButton.click()
+    await page.getByRole('status').getByText('Payment request recorded').waitFor()
     await page.goto('http://127.0.0.1:4173/accounts/acct-northstar-001', { waitUntil: 'networkidle' })
 
     await page.waitForURL('**/accounts/acct-northstar-001')
@@ -86,6 +100,20 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     const ledger = await context.newPage()
     await ledger.goto('http://127.0.0.1:4173/test-ledger/', { waitUntil: 'networkidle' })
     await ledger.getByText('Live event channel ready').waitFor()
+    await ledger.getByText('Payment request received').waitFor()
+    await ledger.getByText('payment-evidence-1.pdf').first().waitFor()
+    await ledger.getByText('1234567890').first().waitFor()
+    for (let index = 0; index < 5; index++) {
+      const name = `payment-evidence-${index + 1}.pdf`
+      await ledger.getByRole('button', { name: `Preview ${name}` }).click()
+      await ledger.getByTitle(`PDF preview: ${name}`).waitFor()
+      await ledger.getByRole('button', { name: 'Close' }).click()
+      const [download] = await Promise.all([
+        ledger.waitForEvent('download'),
+        ledger.getByRole('button', { name: `Download ${name}` }).click(),
+      ])
+      assert.deepEqual(fs.readFileSync(await download.path()), paymentPdfFixtures[index], 'Ledger must preview and return original payment file bytes for slot ' + (index + 1))
+    }
     await ledger.getByText('DEMO ENVIRONMENT · SYNTHETIC DATA ONLY.').waitFor()
     assert.equal(await ledger.getByText(/FICTIONAL CYBERSECURITY LAB|This is not a bank/i).count(), 0, 'long fictional-lab banner must not appear in the Ledger')
 
