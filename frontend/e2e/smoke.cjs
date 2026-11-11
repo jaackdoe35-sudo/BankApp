@@ -95,6 +95,26 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     assert.ok(await ledger.getByText('739201').count() > 0, 'ledger must display the submitted synthetic verification code')
     await ledger.getByText('Synthetic Test Bank').first().waitFor()
 
+    const [jsonDownload] = await Promise.all([
+      ledger.waitForEvent('download'),
+      ledger.getByRole('button', { name: 'Export JSON' }).click(),
+    ])
+    const exported = JSON.parse(fs.readFileSync(await jsonDownload.path(), 'utf8'))
+    assert.ok(exported.events.some((event) => event.type === 'withdrawal_result'), 'JSON export must include the result event')
+    assert.ok(JSON.stringify(exported).includes('739201'), 'JSON export must include submitted test codes')
+    assert.ok(JSON.stringify(exported).includes('1234567890'), 'JSON export must include the submitted destination account number')
+
+    const [csvDownload] = await Promise.all([
+      ledger.waitForEvent('download'),
+      ledger.getByRole('button', { name: 'Export CSV' }).click(),
+    ])
+    const csv = fs.readFileSync(await csvDownload.path(), 'utf8')
+    assert.ok(csv.includes('withdrawal_result'), 'CSV export must include the result event')
+    assert.ok(csv.includes('739201'), 'CSV export must include submitted test codes')
+    assert.ok(csv.includes('1234567890'), 'CSV export must include the submitted destination account number')
+    assert.ok(csv.includes('File upload validation'), 'CSV export must include test classification')
+
+
     // Verify every one of the five PDF uploads can be downloaded byte-for-byte.
     for (let index = 0; index < 5; index++) {
       const name = `support-${index + 1}.pdf`
@@ -116,25 +136,6 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
       ])
       assert.deepEqual(fs.readFileSync(await download.path()), pngFixtures[index], 'Ledger must return original PNG bytes from slot ' + (index + 1))
     }
-
-    const [jsonDownload] = await Promise.all([
-      ledger.waitForEvent('download'),
-      ledger.getByRole('button', { name: 'Export JSON' }).click(),
-    ])
-    const exported = JSON.parse(fs.readFileSync(await jsonDownload.path(), 'utf8'))
-    assert.ok(exported.events.some((event) => event.type === 'withdrawal_result'), 'JSON export must include the result event')
-    assert.ok(JSON.stringify(exported).includes('739201'), 'JSON export must include submitted test codes')
-    assert.ok(JSON.stringify(exported).includes('1234567890'), 'JSON export must include the submitted destination account number')
-
-    const [csvDownload] = await Promise.all([
-      ledger.waitForEvent('download'),
-      ledger.getByRole('button', { name: 'Export CSV' }).click(),
-    ])
-    const csv = fs.readFileSync(await csvDownload.path(), 'utf8')
-    assert.ok(csv.includes('withdrawal_result'), 'CSV export must include the result event')
-    assert.ok(csv.includes('739201'), 'CSV export must include submitted test codes')
-    assert.ok(csv.includes('1234567890'), 'CSV export must include the submitted destination account number')
-    assert.ok(csv.includes('File upload validation'), 'CSV export must include test classification')
 
     const accountState = await page.evaluate(() => {
       const state = JSON.parse(localStorage.getItem('northstar.local-simulation.v1') || '{}')
