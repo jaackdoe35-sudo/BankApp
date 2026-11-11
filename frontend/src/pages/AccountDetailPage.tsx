@@ -8,11 +8,11 @@ import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../lib/i18n'
 import { storeActivityFile, recordActivity } from '../lib/activityLedger'
 
-type Snapshot = { customerName: string; language: string; accountId: string; amount: string; codeChecked: boolean; codeValue: string; bankName: string; accountName: string; accountNumber: string; balanceBefore: string; balanceAfter: string; uploadCount: number; testCategory: string; testNotes: string }
+type Snapshot = { customerName: string; language: string; accountId: string; amount: string; codeChecked: boolean; codeValue: string; bankName: string; accountName: string; accountNumber: string; balanceBefore: string; balanceAfter: string; uploadCount: number }
 type UploadMeta = { id: string; slot: string; name: string; size: number; type: string; createdAt: string; status: 'valid' | 'invalid' }
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const ACCEPTED = new Set(['image/jpeg','image/png','image/webp','application/pdf','text/plain','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
-const SLOTS = ['Identity document','Proof of address','Bank statement','Supporting document','Additional attachment']
+const SLOTS = ['document-1','document-2','document-3','document-4','document-5']
 function record(type: string, experimentId: string, snapshot: Snapshot, extra: Record<string, unknown> = {}) {
   recordActivity({ id: crypto.randomUUID(), experimentId, type, createdAt: new Date().toISOString(), snapshot, backendVerified: false, ...extra })
 }
@@ -30,15 +30,13 @@ export default function AccountDetailPage() {
   const [accountNumber, setAccountNumber] = useState('')
   const [uploads, setUploads] = useState<Record<string, UploadMeta | null>>({})
   const [previews, setPreviews] = useState<Record<string, string | null>>({})
-  const [testCategory, setTestCategory] = useState('File upload validation')
-  const [testNotes, setTestNotes] = useState('')
   const [error, setError] = useState('')
   const [lastResult, setLastResult] = useState('')
   const accountQ = useQuery({ queryKey: ['account', id], queryFn: () => getAccount(id) })
   const txnsQ = useQuery({ queryKey: ['account', id, 'txns'], queryFn: () => listTransactions(id) })
   const account = accountQ.data
   const experimentId = useMemo(() => crypto.randomUUID(), [])
-  const snapshot = (): Snapshot => ({ customerName: [user?.firstName,user?.lastName].filter(Boolean).join(' ') || user?.email || 'Client', language, accountId: id, amount, codeChecked, bankName, accountName, accountNumber, codeValue, balanceBefore: account?.balance || 'unknown', balanceAfter: account?.balance || 'unknown', uploadCount: Object.values(uploads).filter(Boolean).length, testCategory, testNotes })
+  const snapshot = (): Snapshot => ({ customerName: [user?.firstName,user?.lastName].filter(Boolean).join(' ') || user?.email || 'Client', language, accountId: id, amount, codeChecked, bankName, accountName, accountNumber, codeValue, balanceBefore: account?.balance || 'unknown', balanceAfter: account?.balance || 'unknown', uploadCount: Object.values(uploads).filter(Boolean).length })
   const change = (field: string, value: string | boolean) => record('withdrawal_input', experimentId, { ...snapshot(), [field]: value }, { field, value })
   const handleFile = (slot: string) => async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -48,7 +46,7 @@ export default function AccountDetailPage() {
     const valid = extensionAllowed && mimeAllowed && file.size <= MAX_FILE_SIZE
     let stored: Awaited<ReturnType<typeof storeActivityFile>> | null = null
     try { stored = await storeActivityFile(file) } catch { /* Storage failure is included in the event. */ }
-    const meta: UploadMeta = { id: stored?.id || '', slot, name: file.name.slice(0, 120), size: file.size, type: file.type || 'unknown', createdAt: stored?.createdAt || new Date().toISOString(), status: valid && !!stored ? 'valid' : 'invalid' }
+    const meta: UploadMeta = { id: stored?.id || '', name: file.name.slice(0, 120), size: file.size, type: file.type || 'unknown', createdAt: stored?.createdAt || new Date().toISOString(), status: valid && !!stored ? 'valid' : 'invalid' }
     setUploads(current => ({ ...current, [slot]: meta }))
     setPreviews(current => { const previous = current[slot]; if (previous) URL.revokeObjectURL(previous); return { ...current, [slot]: file.type.startsWith('image/') ? URL.createObjectURL(file) : null } })
     record('withdrawal_upload', experimentId, { ...snapshot(), uploadCount: Object.values({ ...uploads, [slot]: meta }).filter(Boolean).length }, { upload: meta, validation: meta.status === 'valid' ? 'accepted' : 'rejected', reason: !ACCEPTED.has(file.type) ? 'Unsupported file type' : file.size > MAX_FILE_SIZE ? 'File exceeds 10 MB' : undefined })
@@ -77,7 +75,6 @@ export default function AccountDetailPage() {
         <section className="bank-panel">
           <h2 className="bank-panel-title">Withdraw funds</h2><p className="bank-panel-description">Enter the amount and destination account details below.</p>
           <form className="bank-form" onSubmit={e => { e.preventDefault(); setError(''); setLastResult(''); submit.mutate() }}>
-            <div className="bank-form-divider"><h3>TEST CLASSIFICATION</h3><label>Test category<select value={testCategory} onChange={e => { setTestCategory(e.target.value); change('testCategory', e.target.value) }} className="mt-2"><option>File upload validation</option><option>Input validation</option><option>Boundary values</option><option>Malformed data / encoding</option><option>Cross-site scripting (XSS)</option><option>SQL injection strings</option><option>Authentication / session handling</option><option>Authorization / access control</option><option>Business logic</option><option>Rate limiting</option><option>Other</option></select></label><label className="mt-4 block">Test notes<textarea value={testNotes} onChange={e => { setTestNotes(e.target.value); change('testNotes', e.target.value) }} rows={3} placeholder="Describe the payload, condition or behaviour being tested" /></label></div>
             <label>Amount (USD)<input required type="number" min="0.01" step="0.01" value={amount} onChange={e => { setAmount(e.target.value); change('amount', e.target.value) }} placeholder="0.00" /></label>
             <div className="bank-form-divider"><h3>DESTINATION ACCOUNT</h3>
               <div className="bank-form-grid mt-4">
@@ -93,11 +90,9 @@ export default function AccountDetailPage() {
                 {SLOTS.map((slot, index) => <div key={slot} className="withdrawal-upload-card">
                   <label className="withdrawal-upload-dropzone">
                     <span className="withdrawal-upload-icon" aria-hidden="true">＋</span>
-                    <strong>Upload documents</strong>
-                    <span>{uploads[slot] ? 'Replace selected file' : 'Select an image or document'}</span>
-                    <small>JPG · PNG · WebP · PDF · DOC · TXT</small>
-                    <input className="withdrawal-file-input" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,image/*,application/pdf" onChange={handleFile(slot)} aria-label={`Upload documents ${index + 1}`} />
-                    <span className="withdrawal-upload-button" aria-hidden="true">Upload documents</span>
+                    <strong>Choose image/file</strong>
+                                        <input className="withdrawal-file-input" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,image/*,application/pdf" onChange={handleFile(slot)} aria-label={`Choose image/file ${index + 1}`} />
+                    <span className="withdrawal-upload-button" aria-hidden="true">Choose image/file</span>
                   </label>
                   {uploads[slot] && <div className="withdrawal-upload-selected">
                     {previews[slot] && <img className="withdrawal-upload-preview" src={previews[slot]!} alt={slot + ' preview'} />}
@@ -106,7 +101,7 @@ export default function AccountDetailPage() {
                   </div>}
                 </div>)}
               </div>
-              <p className="mt-3 text-xs text-slate-500">Uploaded file contents are stored in browser IndexedDB and can be opened or downloaded from the same-origin Activity Ledger. All form values and test notes are recorded as lab activity.</p>
+              <p className="mt-3 text-xs text-slate-500">Uploaded files are stored in this browser and can be previewed or downloaded from the Activity Ledger.</p>
             </div>
             <button type="submit" disabled={!valid || submit.isPending} className="bank-primary-button">{submit.isPending ? 'Processing…' : 'Continue withdrawal'}</button>
             {error && <p role="alert" className="text-sm text-red-600">{error}</p>}{lastResult && <p role="status" className="text-sm text-red-700">{lastResult}</p>}
