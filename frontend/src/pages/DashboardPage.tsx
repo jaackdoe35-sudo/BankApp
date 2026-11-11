@@ -21,14 +21,14 @@ export default function DashboardPage() {
   const open = useMutation({ mutationFn: () => createAccount(type), onSuccess: () => qc.invalidateQueries({ queryKey: ['accounts'] }) })
   const list = accounts ?? []
   const total = list.reduce((sum, account) => sum + Number(account.balance), 0)
-  const firstName = user?.firstName?.trim() || user?.email?.split('@')[0] || 'there'
+  const emailLabel = user?.email?.trim().split('@')[0] || ''
 
   return (
     <AppLayout>
       <div className="page-heading">
         <div>
           <p className="page-eyebrow">{t('position')}</p>
-          <h1 className="page-title">{t('welcome')}, {firstName}</h1>
+          <h1 className="page-title">{t('welcome')}{emailLabel ? `, ${emailLabel}` : ''}</h1>
           <p className="page-subtitle">A clear view of your accounts and everyday banking.</p>
         </div>
         <span className="page-meta">Private client · Overview</span>
