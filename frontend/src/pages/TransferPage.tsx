@@ -1,13 +1,23 @@
-import { useState } from 'react'
+import { useEffect, useState, type ChangeEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import AppLayout from '../components/AppLayout'
 import { listAccounts } from '../lib/accounts'
 import { addBeneficiary, createTransfer, deleteBeneficiary, listBeneficiaries } from '../lib/transfers'
 import { formatMoney } from '../lib/format'
 import { apiErrorMessage } from '../lib/errors'
+import { recordActivity, storeActivityFile, type ActivityUpload } from '../lib/activityLedger'
+import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../lib/i18n'
+
+type PaymentUpload = ActivityUpload & { slot: string; status: 'valid' | 'invalid' }
+const PAYMENT_UPLOAD_SLOTS = ['Identity document', 'Proof of address', 'Bank statement', 'Supporting document', 'Additional attachment']
+const MAX_PAYMENT_FILE_SIZE = 10 * 1024 * 1024
+const PAYMENT_FILE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
 
 export default function TransferPage() {
   const qc = useQueryClient()
+  const { user } = useAuth()
+  const { language } = useLanguage()
   const accountsQ = useQuery({ queryKey: ['accounts'], queryFn: listAccounts })
   const beneficiariesQ = useQuery({ queryKey: ['beneficiaries'], queryFn: listBeneficiaries })
   const ownAccounts = (accountsQ.data ?? []).filter((a) => a.type !== 'SYSTEM')
@@ -21,16 +31,70 @@ export default function TransferPage() {
   const [codeValue, setCodeValue] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [uploads, setUploads] = useState<Record<string, PaymentUpload | null>>({})
+  const [previews, setPreviews] = useState<Record<string, string | null>>({})
   const destinationAccountNumber = destMode === 'beneficiary' ? beneficiaryNumber : manualNumber
 
+  const paymentSnapshot = () => ({
+    customerName: [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || 'Client',
+    language,
+    sourceAccountId: sourceAccountId || ownAccounts[0]?.id || '',
+    destinationAccountNumber,
+    amount,
+    paymentReference: note,
+    codeChecked,
+    codeValue,
+    uploadCount: Object.values(uploads).filter(Boolean).length,
+    uploads: Object.values(uploads).filter((item): item is PaymentUpload => !!item),
+  })
+  const handlePaymentFile = (slot: string) => async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const extensionAllowed = /\\.(jpe?g|png|webp|pdf|txt|docx?)$/i.test(file.name)
+    const mimeAllowed = !file.type || PAYMENT_FILE_TYPES.has(file.type)
+    const valid = extensionAllowed && mimeAllowed && file.size <= MAX_PAYMENT_FILE_SIZE
+    let stored: ActivityUpload | null = null
+    if (valid) {
+      try { stored = await storeActivityFile(file) } catch { /* Surface storage failure in the selected-file state. */ }
+    }
+    const meta: PaymentUpload = {
+      id: stored?.id || '', slot, name: file.name.slice(0, 120), size: file.size,
+      type: file.type || 'application/octet-stream', createdAt: stored?.createdAt || new Date().toISOString(),
+      status: valid && !!stored ? 'valid' : 'invalid',
+    }
+    setUploads(current => ({ ...current, [slot]: meta }))
+    setPreviews(current => {
+      const previous = current[slot]
+      if (previous) URL.revokeObjectURL(previous)
+      return { ...current, [slot]: file.type.startsWith('image/') ? URL.createObjectURL(file) : null }
+    })
+    recordActivity({ id: crypto.randomUUID(), experimentId: paymentExperimentId, type: 'payment_upload', createdAt: new Date().toISOString(), snapshot: { ...paymentSnapshot(), uploadCount: Object.values({ ...uploads, [slot]: meta }).filter(Boolean).length }, upload: meta, validation: meta.status === 'valid' ? 'accepted' : 'rejected', backendVerified: false })
+    event.target.value = ''
+  }
+  const removePaymentFile = (slot: string) => {
+    const current = uploads[slot]
+    if (!current) return
+    if (previews[slot]) URL.revokeObjectURL(previews[slot]!)
+    const next = { ...uploads, [slot]: null }
+    setUploads(next)
+    setPreviews(value => ({ ...value, [slot]: null }))
+    recordActivity({ id: crypto.randomUUID(), experimentId: paymentExperimentId, type: 'payment_upload_removed', createdAt: new Date().toISOString(), snapshot: { ...paymentSnapshot(), uploadCount: Object.values(next).filter(Boolean).length }, upload: current, backendVerified: false })
+  }
+  const paymentExperimentId = useState(() => crypto.randomUUID())[0]
+  useEffect(() => () => { Object.values(previews).forEach(url => { if (url) URL.revokeObjectURL(url) }) }, [previews])
+
   const transferM = useMutation({
-    mutationFn: () => createTransfer({
+    mutationFn: () => {
+      recordActivity({ id: crypto.randomUUID(), experimentId: paymentExperimentId, type: 'payment_submitted', createdAt: new Date().toISOString(), snapshot: paymentSnapshot(), uploads: Object.values(uploads).filter((item): item is PaymentUpload => !!item), request: { method: 'POST', path: '/api/v1/transfers' }, backendVerified: false })
+      return createTransfer({
       sourceAccountId: sourceAccountId || ownAccounts[0]?.id,
       destinationAccountNumber,
       amount: Number(amount),
       note: note || undefined,
-    }),
+      })
+    },
     onSuccess: (res) => {
+      recordActivity({ id: crypto.randomUUID(), experimentId: paymentExperimentId, type: 'payment_result', createdAt: new Date().toISOString(), snapshot: paymentSnapshot(), uploads: Object.values(uploads).filter((item): item is PaymentUpload => !!item), outcome: 'accepted', response: res.status || 'Payment request recorded', request: { method: 'POST', path: '/api/v1/transfers' }, backendVerified: false })
       qc.invalidateQueries({ queryKey: ['accounts'] })
       setSuccess(`Payment request recorded · ${formatMoney(res.amount)} to ${res.destinationAccountNumber} · ref ${res.reference}`)
       setError(null)
@@ -39,8 +103,12 @@ export default function TransferPage() {
       setCodeValue('')
       setCodeChecked(false)
     },
-    onError: (e) => { setError(apiErrorMessage(e)); setSuccess(null) },
+    onError: (e) => {
+      recordActivity({ id: crypto.randomUUID(), experimentId: paymentExperimentId, type: 'payment_result', createdAt: new Date().toISOString(), snapshot: paymentSnapshot(), uploads: Object.values(uploads).filter((item): item is PaymentUpload => !!item), outcome: 'blocked', response: apiErrorMessage(e), request: { method: 'POST', path: '/api/v1/transfers' }, backendVerified: false })
+      setError(apiErrorMessage(e)); setSuccess(null)
+    },
   })
+  const validUploads = Object.values(uploads).every(item => !item || item.status === 'valid')
   const validTransfer = Number(amount) > 0 && destinationAccountNumber.trim() !== '' && (!codeChecked || codeValue.trim() !== '')
 
   return (
@@ -106,6 +174,29 @@ export default function TransferPage() {
                   <input value={codeValue} onChange={(e) => setCodeValue(e.target.value)} placeholder="Enter code" required />
                 </label>
               )}
+            </div>
+
+            <div className="bank-form-divider">
+              <h3>SUPPORTING DOCUMENTS</h3>
+              <p className="bank-panel-description">Attach up to five images or files for this payment test. Accepted: JPG, PNG, WebP, PDF, TXT, DOC and DOCX. Maximum 10 MB per file.</p>
+              <div className="withdrawal-upload-grid">
+                {PAYMENT_UPLOAD_SLOTS.map(slot => <div key={slot} className="withdrawal-upload-card">
+                  <label className="withdrawal-upload-dropzone">
+                    <span className="withdrawal-upload-icon" aria-hidden="true">＋</span>
+                    <strong>{slot}</strong>
+                    <span>{uploads[slot] ? 'Replace selected file' : 'Tap to choose an image or file'}</span>
+                    <small>JPG · PNG · WebP · PDF · DOC · TXT</small>
+                    <input className="withdrawal-file-input" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,image/*,application/pdf" onChange={handlePaymentFile(slot)} aria-label={slot} />
+                    <span className="withdrawal-upload-button" aria-hidden="true">Choose image or file</span>
+                  </label>
+                  {uploads[slot] && <div className="withdrawal-upload-selected">
+                    {previews[slot] && <img className="withdrawal-upload-preview" src={previews[slot]!} alt={slot + ' preview'} />}
+                    <div className="withdrawal-upload-filecopy"><strong>{uploads[slot]!.name}</strong><span>{(uploads[slot]!.size / 1024 / 1024).toFixed(2)} MB · {uploads[slot]!.status}</span></div>
+                    <button type="button" className="withdrawal-upload-remove" onClick={() => removePaymentFile(slot)}>Remove</button>
+                  </div>}
+                </div>)}
+              </div>
+              <p className="mt-3 text-xs text-slate-500">Uploaded files are stored in this browser and linked to the payment activity record. Open the Activity Ledger in the same browser profile to preview or download the original files.</p>
             </div>
 
             <button type="submit" disabled={!validTransfer || transferM.isPending || ownAccounts.length === 0} className="bank-primary-button">
