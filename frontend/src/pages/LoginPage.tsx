@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { apiErrorMessage } from '../lib/errors'
 import LanguagePicker from '../components/LanguagePicker'
+import LabDisclosure from '../components/LabDisclosure'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -50,6 +51,7 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
       <section className="auth-form-panel">
         <div className="auth-form-card">
           <LanguagePicker className="language-picker mb-4 flex items-center justify-end gap-2 text-xs text-slate-600" />
+          <LabDisclosure />
           <p className="page-eyebrow">NORTHSTAR PRIVATE · CLIENT ACCESS</p>
           <h1>{title}</h1>
           <p>{subtitle}</p>
