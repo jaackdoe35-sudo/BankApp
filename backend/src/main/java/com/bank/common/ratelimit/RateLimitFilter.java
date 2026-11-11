@@ -55,7 +55,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         int capacity = experiment
                 ? (path.equals(EXPERIMENT_PREFIX) ? 10 : 120)
                 : authCapacity;
-        String bucketKey = clientIp(request) + (experiment ? ":experiment" : ":auth");
+        String bucketKey = clientIp(request) + (experiment ? (path.equals(EXPERIMENT_PREFIX) ? ":experiment-bootstrap" : ":experiment-ingest") : ":auth");
         Bucket bucket = buckets.get(bucketKey, ip -> newBucket(capacity));
         if (bucket.tryConsume(1)) {
             filterChain.doFilter(request, response);
