@@ -49,7 +49,7 @@ export default function DashboardPage() {
           <div>
             <p className="service-card-kicker">PERSONAL BANKING</p>
             <h2>At your service.</h2>
-            <p>Manage payments, cards and account details from one secure place.</p>
+            <p>Explore payments, cards and account details in one place.</p>
           </div>
           <div className="service-links">
             <Link className="service-link" to="/transfer"><span>Make a payment</span><span>↗</span></Link>
