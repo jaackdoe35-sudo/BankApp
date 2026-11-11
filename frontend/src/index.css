@@ -308,7 +308,7 @@ a { color: inherit; }
 .withdrawal-upload-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
 .withdrawal-upload-card { min-width: 0; padding: 10px; border: 1px solid #DCE3E0; border-radius: 12px; background: #FBFCFA; }
 .withdrawal-upload-dropzone { position: relative; display: flex !important; min-height: 142px; flex-direction: column; align-items: center; justify-content: center; gap: 7px; overflow: hidden; padding: 14px; border: 1.5px dashed #AAB8B0; border-radius: 9px; background: #F5F8F5; color: #344B40 !important; text-align: center; cursor: pointer; }
-.withdrawal-upload-dropzone:focus-within { outline: 3px solid rgba(40,95,69,.25); outline-offset: 2px; }
+.withdrawal-upload-dropzone:focus-within { outline: 3px solid rgba(0,0,160,.22); outline-offset: 2px; }
 .withdrawal-upload-dropzone strong { font-size: 12px; }
 .withdrawal-upload-dropzone > span:not(.withdrawal-upload-icon) { color: #5F7067; font-size: 11px; font-weight: 500; }
 .withdrawal-upload-dropzone small { color: #7D8982; font-size: 9px; font-weight: 500; }
@@ -351,7 +351,7 @@ html[dir="rtl"] .withdrawal-upload-selected { direction: rtl; }
 .withdrawal-upload-filecopy strong { color: #25256F; }
 .withdrawal-upload-selected { border-top-color: #E5E8F2; }
 .withdrawal-file-input { z-index: 2; cursor: pointer; }
-.withdrawal-upload-dropzone:focus-within .withdrawal-upload-button { outline: 3px solid rgba(40,95,69,.25); outline-offset: 2px; }
+.withdrawal-upload-dropzone:focus-within .withdrawal-upload-button { outline: 3px solid rgba(0,0,160,.22); outline-offset: 2px; }
 @media (max-width: 700px) { .withdrawal-upload-dropzone { min-height: 160px; } }
 
 
