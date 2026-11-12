@@ -68,7 +68,7 @@ async function sendRemoteFile(file: File): Promise<string | undefined> {
 const SENSITIVE_KEYS = new Set([
   'password','passwd','token','accesstoken','refreshtoken','authorization','cookie',
   'code','codevalue','verificationcode','otp','otpcode','onetimepassword','secret',
-  'clientsecret','jwt','pin','cvv','securitycode','mfacode','passcode','passwordconfirmation',
+  'clientsecret','jwt','pin','cvv','securitycode','mfacode','passcode','passwordconfirmation',\n  'privatekey','apikey','accesskey','sessiontoken','experimenttoken','credential','credentials',\n  'passphrase','bearer','recoverycode','totp',
 ])
 const normalizeKey = (key: string) => key.replace(/[^a-z]/gi, '').toLowerCase()
 function redactActivityValue(value: unknown): unknown {
