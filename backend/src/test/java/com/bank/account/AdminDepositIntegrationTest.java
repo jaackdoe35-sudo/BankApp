@@ -19,7 +19,8 @@ class AdminDepositIntegrationTest extends AbstractIntegrationTest {
         mvc.perform(post("/api/v1/accounts").header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"type\":\"CHECKING\"}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.currency", is("USD")));
+                .andExpect(jsonPath("$.currency", is("USD")))
+                .andExpect(jsonPath("$.balance", is(5000000.00)));
     }
 
     @Test
@@ -52,7 +53,7 @@ class AdminDepositIntegrationTest extends AbstractIntegrationTest {
         mvc.perform(get("/api/v1/accounts/" + account.get("id").asText())
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.balance", is(250.00)));
+                .andExpect(jsonPath("$.balance", is(5000250.00)));
     }
 
     @Test
