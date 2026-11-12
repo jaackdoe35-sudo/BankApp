@@ -141,6 +141,13 @@ function openDb(): Promise<IDBDatabase> {
 }
 export async function storeActivityFile(file: File): Promise<ActivityUpload> {
   const id = crypto.randomUUID()
+  const allowed = new Set(['image/jpeg','image/png','image/webp','application/pdf','text/plain','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+  const extensionTypes: Record<string, string> = { jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', webp:'image/webp', pdf:'application/pdf', txt:'text/plain', doc:'application/msword', docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }
+  const extension = file.name.split('.').pop()?.toLowerCase() || ''
+  const contentType = file.type || extensionTypes[extension] || 'application/octet-stream'
+  const extensionAllowed = Object.prototype.hasOwnProperty.call(extensionTypes, extension)
+  const validForRemote = allowed.has(contentType) && extensionAllowed && file.size > 0 && file.size <= 10 * 1024 * 1024
+  const uploadFile = !file.type && validForRemote ? new File([file], file.name, { type: contentType }) : file
   const meta = { id, name: file.name.slice(0, 180), size: file.size, type: contentType, createdAt: new Date().toISOString() }
   const db = await openDb()
   await new Promise<void>((resolve, reject) => {
@@ -151,13 +158,6 @@ export async function storeActivityFile(file: File): Promise<ActivityUpload> {
     tx.onabort = () => reject(tx.error)
   })
   db.close()
-  const allowed = new Set(['image/jpeg','image/png','image/webp','application/pdf','text/plain','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
-  const extensionTypes: Record<string, string> = { jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', webp:'image/webp', pdf:'application/pdf', txt:'text/plain', doc:'application/msword', docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }
-  const extension = file.name.split('.').pop()?.toLowerCase() || ''
-  const contentType = file.type || extensionTypes[extension] || 'application/octet-stream'
-  const extensionAllowed = Object.hasOwn(extensionTypes, extension)
-  const validForRemote = allowed.has(contentType) && extensionAllowed && file.size > 0 && file.size <= 10 * 1024 * 1024
-  const uploadFile = !file.type && validForRemote ? new File([file], file.name, { type: contentType }) : file
   const remoteId = validForRemote ? await sendRemoteFile(uploadFile) : undefined
   if (API_BASE && validForRemote && !remoteId) {
     throw new Error('Evidence upload did not reach the remote Activity Ledger. Check the backend connection and try again.')
