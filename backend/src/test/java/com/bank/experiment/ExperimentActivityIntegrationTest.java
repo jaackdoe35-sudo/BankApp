@@ -58,7 +58,13 @@ class ExperimentActivityIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.id").exists())
                 .andReturn().getResponse().getContentAsString();
         String fileId = mapper.readTree(json).get("id").asText();
+        mvc.perform(get("/api/v1/admin/experiments/files")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/admin/experiments/files/" + fileId)).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/admin/experiments/files?page=0&size=20")
+                        .header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(fileId))
+                .andExpect(jsonPath("$.content[0].filename").value("evidence.pdf"));
         mvc.perform(get("/api/v1/admin/experiments/files/" + fileId)
                         .header("Authorization", "Bearer " + adminToken()))
                 .andExpect(status().isOk()).andExpect(content().bytes(pdf));
