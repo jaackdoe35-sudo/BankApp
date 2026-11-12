@@ -25,6 +25,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class AccountService {
 
     private static final String DEFAULT_CURRENCY = "USD";
+    private static final BigDecimal NORTHSTAR_OPENING_BALANCE = new BigDecimal("5000000.00");
 
     private final AccountRepository accountRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
@@ -51,7 +52,16 @@ public class AccountService {
             throw new IllegalArgumentException("Only USD accounts are supported");
         }
         Account account = new Account(generateAccountNumber(), userId, type, ccy);
-        return accountRepository.save(account);
+        Account saved = accountRepository.save(account);
+
+        // Every newly opened Northstar customer account receives one synthetic
+        // opening credit, posted atomically through the balanced ledger.
+        Account system = systemAccount(ccy);
+        ledgerService.post(TransactionType.DEPOSIT, "Northstar synthetic opening balance",
+                "northstar-opening:" + saved.getId(), List.of(
+                        PostingLine.credit(saved.getId(), NORTHSTAR_OPENING_BALANCE),
+                        PostingLine.debit(system.getId(), NORTHSTAR_OPENING_BALANCE)));
+        return saved;
     }
 
     @Transactional(readOnly = true)

@@ -3,6 +3,8 @@ package com.bank.auth;
 import com.bank.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.MediaType;
 
 import static org.hamcrest.Matchers.is;
@@ -12,6 +14,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class AuthFlowIntegrationTest extends AbstractIntegrationTest {
+
+    @Autowired
+    JdbcTemplate jdbc;
 
     /** Registers and returns the full token response (access + refresh). */
     private JsonNode registerJson(String email) throws Exception {
@@ -34,6 +39,35 @@ class AuthFlowIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email", is("ada@example.com")))
                 .andExpect(jsonPath("$.role", is("CUSTOMER")));
+    }
+
+    @Test
+    void registrationCreatesFiveMillionCheckingAccountAndBalancedOpeningEntry() throws Exception {
+        JsonNode tokens = registerJson("northstar-opening@example.com");
+        String access = tokens.get("accessToken").asText();
+
+        String accountsJson = mvc.perform(get("/api/v1/accounts")
+                        .header("Authorization", "Bearer " + access))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode accounts = mapper.readTree(accountsJson);
+        org.assertj.core.api.Assertions.assertThat(accounts).hasSize(1);
+        String accountId = accounts.get(0).get("id").asText();
+        org.assertj.core.api.Assertions.assertThat(accounts.get(0).get("balance").decimalValue())
+                .isEqualByComparingTo("5000000.00");
+
+        Integer openingEntries = jdbc.queryForObject(
+                "select count(*) from ledger_entries le join transactions t on t.id = le.transaction_id "
+                        + "where le.account_id = ? and t.description = 'Northstar synthetic opening balance'",
+                Integer.class, java.util.UUID.fromString(accountId));
+        org.assertj.core.api.Assertions.assertThat(openingEntries).isEqualTo(1);
+
+        java.math.BigDecimal imbalance = jdbc.queryForObject(
+                "select sum(case when direction = 'CREDIT' then amount else -amount end) "
+                        + "from ledger_entries where transaction_id = (select transaction_id from ledger_entries "
+                        + "where account_id = ? and direction = 'CREDIT' order by created_at desc limit 1)",
+                java.math.BigDecimal.class, java.util.UUID.fromString(accountId));
+        org.assertj.core.api.Assertions.assertThat(imbalance).isZero();
     }
 
     @Test

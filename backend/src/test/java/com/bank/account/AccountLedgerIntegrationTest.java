@@ -38,15 +38,16 @@ class AccountLedgerIntegrationTest extends AbstractIntegrationTest {
 
         mvc.perform(get("/api/v1/accounts/" + accountId).header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.balance", is(100.00)));
+                .andExpect(jsonPath("$.balance", is(5000100.00)));
 
         String txns = mvc.perform(get("/api/v1/accounts/" + accountId + "/transactions")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         JsonNode arr = mapper.readTree(txns);
-        assertThat(arr).hasSize(1);
-        assertThat(arr.get(0).get("type").asText()).isEqualTo("DEPOSIT");
+        assertThat(arr).hasSize(2);
+        assertThat(arr).allSatisfy(entry ->
+                assertThat(entry.get("type").asText()).isEqualTo("DEPOSIT"));
     }
 
     @Test
