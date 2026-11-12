@@ -125,6 +125,11 @@ public class ExperimentActivityService {
     }
 
     @Transactional(readOnly = true)
+    public Page<ExperimentFile> recentFiles(int page, int size) {
+        return files.findAllByOrderByCreatedAtDesc(PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), 100)));
+    }
+
+    @Transactional(readOnly = true)
     public ExperimentEvent requireEvent(UUID id) {
         return events.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
