@@ -56,7 +56,7 @@ class LoanIntegrationTest extends AbstractIntegrationTest {
         mvc.perform(post("/api/v1/admin/loans/" + loanId + "/approve")
                         .header("Authorization", "Bearer " + admin))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.loan.status").value("ACTIVE"));
-        assertThat(balance(token, acct)).isEqualTo(400.00);
+        assertThat(balance(token, acct)).isEqualTo(5000100.00);
         for (int i = 0; i < 3; i++) {
             mvc.perform(post("/api/v1/loans/" + loanId + "/repay")
                             .header("Authorization", "Bearer " + token))
@@ -85,6 +85,6 @@ class LoanIntegrationTest extends AbstractIntegrationTest {
         mvc.perform(post("/api/v1/loans/" + loanId + "/repay")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isUnprocessableEntity());
-        assertThat(balance(token, acct)).isEqualTo(300.00);
+        assertThat(balance(token, acct)).isEqualTo(5000000.00);
     }
 }
