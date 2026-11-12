@@ -65,6 +65,29 @@ async function sendRemoteFile(file: File): Promise<string | undefined> {
   } catch { return undefined }
 }
 
+const SENSITIVE_KEYS = new Set([
+  'password','passwd','token','accesstoken','refreshtoken','authorization','cookie',
+  'code','codevalue','verificationcode','otp','otpcode','onetimepassword','secret',
+  'clientsecret','jwt','pin','cvv','securitycode','mfacode','passcode','passwordconfirmation',
+])
+const normalizeKey = (key: string) => key.replace(/[^a-z]/gi, '').toLowerCase()
+function redactActivityValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(redactActivityValue)
+  if (!value || typeof value !== 'object') return value
+  const source = value as Record<string, unknown>
+  const sensitiveField = typeof source.field === 'string' && SENSITIVE_KEYS.has(normalizeKey(source.field))
+  const safe: Record<string, unknown> = {}
+  for (const [key, child] of Object.entries(source)) {
+    const normalized = normalizeKey(key)
+    if (SENSITIVE_KEYS.has(normalized) || (sensitiveField && normalized === 'value')) continue
+    safe[key] = redactActivityValue(child)
+  }
+  return safe
+}
+function sanitizeActivityEvent(event: ActivityEvent): ActivityEvent {
+  return redactActivityValue(event) as ActivityEvent
+}
+
 let pendingFlush: Promise<void> | null = null
 
 function readPendingEvents(): ActivityEvent[] {
@@ -147,17 +170,17 @@ export async function readActivityFile(id: string): Promise<{ name: string; type
   db.close()
   return value || null
 }
-export function recordActivity(event: ActivityEvent): boolean {
+export function recordActivity(event: ActivityEvent): boolean {\n  const safeEvent = sanitizeActivityEvent(event);
   let events: ActivityEvent[] = []
   try {
     const previous = JSON.parse(localStorage.getItem(STORAGE) || '[]')
     events = Array.isArray(previous) ? previous : []
   } catch { events = [] }
   let locallyStored = true
-  try { localStorage.setItem(STORAGE, JSON.stringify([...events, event])) }
+  try { localStorage.setItem(STORAGE, JSON.stringify([...events, safeEvent])) }
   catch { locallyStored = false }
-  try { const channel = new BroadcastChannel(CHANNEL); channel.postMessage({ type: 'event', event }); channel.close() } catch {}
-  queueRemoteEvent(event)
+  try { const channel = new BroadcastChannel(CHANNEL); channel.postMessage({ type: 'event', event: safeEvent }); channel.close() } catch {}
+  queueRemoteEvent(safeEvent)
   void flushPendingActivityEvents()
   return locallyStored
 }
