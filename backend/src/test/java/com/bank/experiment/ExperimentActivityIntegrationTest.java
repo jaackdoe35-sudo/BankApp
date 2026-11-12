@@ -24,7 +24,7 @@ class ExperimentActivityIntegrationTest extends AbstractIntegrationTest {
         String response = mvc.perform(post("/api/v1/experiment/sessions/" + id + "/events")
                         .header("X-Experiment-Token", token).contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                          {"eventType":"withdrawal_input","payload":{"amount":"15","snapshot":{"codeValue":"123456","bankName":"Synthetic Bank","nested":{"access_token":"secret-token","OTP_code":"654321","harmless":"visible"}},"password":"do-not-store","field":"codeValue","value":"123456","sessionToken":"session-secret","api_key":"key-secret"}}
+                          {"eventType":"withdrawal_input","payload":{"amount":"15","snapshot":{"codeValue":"123456","bankName":"Synthetic Bank","nested":{"access_token":"secret-token","OTP_code":"654321","harmless":"visible"}},"password":"do-not-store","field":"codeValue","value":"123456","sessionToken":"session-secret","api_key":"key-secret","publicLabel":"visible"}}
                         """))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.eventId").exists())
                 .andReturn().getResponse().getContentAsString();
@@ -36,7 +36,7 @@ class ExperimentActivityIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.payload.snapshot.codeValue").doesNotExist())
                 .andExpect(jsonPath("$.payload.snapshot.nested.access_token").doesNotExist())
                 .andExpect(jsonPath("$.payload.snapshot.nested.OTP_code").doesNotExist())
-                .andExpect(jsonPath("$.payload.snapshot.nested.harmless").value("visible"))
+                .andExpect(jsonPath("$.payload.publicLabel").value("visible"))
                 .andExpect(jsonPath("$.payload.sessionToken").doesNotExist())
                 .andExpect(jsonPath("$.payload.api_key").doesNotExist())
                 .andExpect(jsonPath("$.payload.password").doesNotExist())
