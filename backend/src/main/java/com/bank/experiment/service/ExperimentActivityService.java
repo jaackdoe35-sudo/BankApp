@@ -41,7 +41,9 @@ public class ExperimentActivityService {
             "password", "passwd", "token", "accesstoken", "refreshtoken",
             "authorization", "cookie", "code", "codevalue", "verificationcode",
             "otp", "otpcode", "onetimepassword", "secret", "clientsecret",
-            "jwt", "pin", "cvv", "securitycode", "mfacode");
+            "jwt", "pin", "cvv", "securitycode", "mfacode", "passcode", "passwordconfirmation",
+            "privatekey", "apikey", "accesskey", "sessiontoken", "experimenttoken",
+            "credential", "credentials", "passphrase", "bearer", "recoverycode", "totp");
 
     private final ExperimentSessionRepository sessions;
     private final ExperimentEventRepository events;
@@ -162,7 +164,7 @@ public class ExperimentActivityService {
         source.forEach((key, value) -> {
             String normalized = key.replaceAll("[^A-Za-z]", "").toLowerCase(Locale.ROOT);
             if (sensitiveFieldValue && key.equals("value")) return;
-            if (!REDACT_KEYS.contains(normalized)) result.put(key, redactValue(value));
+            if (!isSensitiveKey(key)) result.put(key, redactValue(value));
         });
         return result;
     }
@@ -176,7 +178,7 @@ public class ExperimentActivityService {
                     boolean sensitiveFieldValue = map.get("field") instanceof String field
                             && isSensitiveKey(field);
                     if (!(sensitiveFieldValue && key.equals("value"))
-                            && !REDACT_KEYS.contains(normalized)) {
+                            && !isSensitiveKey(key)) {
                         safe.put(key, redactValue(v));
                     }
                 }
@@ -193,7 +195,9 @@ public class ExperimentActivityService {
 
     private static boolean isSensitiveKey(String key) {
         String normalized = key.replaceAll("[^A-Za-z]", "").toLowerCase(Locale.ROOT);
-        return REDACT_KEYS.contains(normalized);
+        return REDACT_KEYS.contains(normalized) || normalized.endsWith("token")
+                || normalized.endsWith("secret") || normalized.endsWith("password")
+                || normalized.endsWith("passphrase");
     }
 
     private static String sha256(String value) {
