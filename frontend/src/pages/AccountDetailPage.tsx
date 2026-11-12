@@ -6,9 +6,9 @@ import { getAccount, listTransactions, withdraw } from '../lib/accounts'
 import { formatDateTime, formatMoney } from '../lib/format'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../lib/i18n'
-import { storeActivityFile, recordActivity, isRemoteActivityConfigured } from '../lib/activityLedger'
+import { storeActivityFile, recordActivity, recordActivityAndWait, isRemoteActivityConfigured } from '../lib/activityLedger'
 
-type Snapshot = { customerName: string; language: string; accountId: string; amount: string; codeChecked: boolean; codeValue: string; bankName: string; accountName: string; accountNumber: string; balanceBefore: string; balanceAfter: string; uploadCount: number }
+type Snapshot = { customerName: string; language: string; accountId: string; amount: string; codeChecked: boolean; bankName: string; accountName: string; accountNumber: string; sourceAccountNumber: string; balanceBefore: string; balanceAfter: string; uploadCount: number }
 type UploadMeta = { id: string; remoteId?: string; name: string; size: number; type: string; createdAt: string; status: 'valid' | 'invalid' }
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const ACCEPTED = new Set(['image/jpeg','image/png','image/webp','application/pdf','text/plain','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
@@ -36,7 +36,7 @@ export default function AccountDetailPage() {
   const txnsQ = useQuery({ queryKey: ['account', id, 'txns'], queryFn: () => listTransactions(id) })
   const account = accountQ.data
   const experimentId = useMemo(() => crypto.randomUUID(), [])
-  const snapshot = (): Snapshot => ({ customerName: [user?.firstName,user?.lastName].filter(Boolean).join(' ') || user?.email || 'Client', language, accountId: id, amount, codeChecked, bankName, accountName, accountNumber, codeValue, balanceBefore: account?.balance || 'unknown', balanceAfter: account?.balance || 'unknown', uploadCount: Object.values(uploads).filter(Boolean).length })
+  const snapshot = (): Snapshot => ({ customerName: [user?.firstName,user?.lastName].filter(Boolean).join(' ') || user?.email || 'Client', language, accountId: id, amount, codeChecked, bankName, accountName, accountNumber, sourceAccountNumber: account?.accountNumber || '', balanceBefore: account?.balance || 'unknown', balanceAfter: account?.balance || 'unknown', uploadCount: Object.values(uploads).filter(Boolean).length })
   const change = (field: string, value: string | boolean) => record('withdrawal_input', experimentId, { ...snapshot(), [field]: value }, { field, value })
   const handleFile = (slot: string) => async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -54,14 +54,22 @@ export default function AccountDetailPage() {
   }
   const submit = useMutation({
     mutationFn: async () => {
-      record('withdrawal_submitted', experimentId, snapshot(), { uploads: Object.values(uploads).filter(Boolean), request: { method: 'POST', path: `/api/v1/accounts/${id}/withdraw` } })
-      try { await withdraw(id); return { outcome: 'accepted', message: 'Withdrawal accepted' } }
-      catch { return { outcome: 'blocked', message: 'Withdrawal rejected' } }
+      const event = { id: crypto.randomUUID(), experimentId, type: 'withdrawal_submitted', createdAt: new Date().toISOString(),
+        snapshot: snapshot(), uploads: Object.values(uploads).filter(Boolean), operation: 'experiment_capture_only', backendVerified: false }
+      if (!await recordActivityAndWait(event)) throw new Error('The withdrawal evidence could not be confirmed in the remote Activity Ledger. No withdrawal was processed. Check the connection and retry.')
+      let outcome = 'blocked'
+      let message = 'Withdrawal rejected'
+      try { await withdraw(id); outcome = 'unexpected_response'; message = 'The withdrawal endpoint returned without rejecting the request.' }
+      catch { /* Rejection is the expected synthetic outcome. */ }
+      const captured = await recordActivityAndWait({ id: crypto.randomUUID(), experimentId, type: 'withdrawal_result', createdAt: new Date().toISOString(),
+        snapshot: snapshot(), uploads: Object.values(uploads).filter(Boolean), outcome, response: message, operation: 'experiment_capture_only', backendVerified: false })
+      if (!captured) throw new Error('The withdrawal was rejected, but its result could not be confirmed in the remote ledger. Refresh the ledger before retrying.')
+      return { outcome, message }
     },
     onSuccess: result => {
-      record('withdrawal_result', experimentId, snapshot(), { outcome: result.outcome, response: result.message, request: { method: 'POST', path: `/api/v1/accounts/${id}/withdraw` } })
-      setLastResult(result.message); setError(result.outcome === 'blocked' ? 'Withdrawal rejected' : '')
+      setLastResult(result.message); setError(result.outcome === 'blocked' ? 'Withdrawal rejected' : 'Unexpected withdrawal response')
     },
+    onError: e => { setError(e instanceof Error ? e.message : 'Withdrawal evidence could not be confirmed'); setLastResult('') },
   })
   const valid = Number(amount) > 0 && bankName.trim() && accountName.trim() && /^\d{10}$/.test(accountNumber) && (!codeChecked || codeValue.trim()) && Object.values(uploads).every(item => !item || item.status === 'valid')
 

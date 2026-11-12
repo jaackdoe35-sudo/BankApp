@@ -87,7 +87,7 @@ public class CardService {
         return card;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public CardPaymentResponse pay(UUID userId, UUID cardId, String merchant, BigDecimal amount) {
         Card card = requireCard(userId, cardId);
         if (card.getStatus() != CardStatus.ACTIVE) {
@@ -98,22 +98,8 @@ public class CardService {
         if (account.getStatus() != AccountStatus.ACTIVE) {
             throw new PaymentDeclinedException("Account is not active");
         }
-        enforceMonthlyLimit(card, amount);
-
-        Account system = accountRepository
-                .findFirstByTypeAndCurrency(AccountType.SYSTEM, account.getCurrency())
-                .orElseThrow(() -> new NotFoundException("System account not configured"));
-
-        // Insufficient funds surfaces as a 422 from the ledger.
-        Transaction txn = ledgerService.post(TransactionType.CARD_PAYMENT,
-                "Card payment to " + merchant, null, List.of(
-                        PostingLine.debit(account.getId(), amount),
-                        PostingLine.credit(system.getId(), amount)));
-
-        cardPaymentRepository.save(new CardPayment(card.getId(), txn.getId(), merchant, amount));
-        eventPublisher.publish(DomainEvent.userAction(EventActions.CARD_PAYMENT, userId, "CARD",
-                card.getId().toString(), "Card payment of " + amount + " to " + merchant));
-        return new CardPaymentResponse(txn.getReference(), merchant, amount, account.getBalance());
+        throw new PaymentDeclinedException(
+                "Card purchases are disabled in this synthetic testing environment; no balance was changed.");
     }
 
     private void enforceMonthlyLimit(Card card, BigDecimal amount) {

@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -21,6 +22,13 @@ class CardIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return mapper.readTree(json);
+    }
+
+    private double balance(String token, String accountId) throws Exception {
+        String json = mvc.perform(get("/api/v1/accounts/" + accountId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        return mapper.readTree(json).get("balance").asDouble();
     }
 
     private int pay(String token, String cardId, String amount) throws Exception {
@@ -44,29 +52,24 @@ class CardIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void cardPaymentDebitsAccount() throws Exception {
+    void cardPaymentIsDisabledAndDoesNotChangeBalance() throws Exception {
         String token = registerVerified("card-pay@example.com");
         JsonNode account = openAccount(token);
         tellerDeposit(account.get("accountNumber").asText(), "200.00");
         String cardId = issueCard(token, account.get("id").asText(), "0").get("card").get("id").asText();
-
-        mvc.perform(post("/api/v1/cards/" + cardId + "/pay")
-                        .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"merchant\":\"Coffee Co\",\"amount\":50.00}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accountBalanceAfter", is(150.00)));
+        assertThat(pay(token, cardId, "50.00")).isEqualTo(422);
+        assertThat(balance(token, account.get("id").asText())).isEqualTo(200.00);
     }
 
     @Test
-    void monthlyLimitIsEnforced() throws Exception {
+    void cardPaymentIsDisabledRegardlessOfMonthlyLimit() throws Exception {
         String token = registerVerified("card-limit@example.com");
         JsonNode account = openAccount(token);
         tellerDeposit(account.get("accountNumber").asText(), "1000.00");
         String cardId = issueCard(token, account.get("id").asText(), "100.00").get("card").get("id").asText();
-
-        assertThat(pay(token, cardId, "60.00")).isEqualTo(200);
-        assertThat(pay(token, cardId, "60.00")).isEqualTo(422); // 60 + 60 > 100
+        assertThat(pay(token, cardId, "60.00")).isEqualTo(422);
+        assertThat(pay(token, cardId, "60.00")).isEqualTo(422);
+        assertThat(balance(token, account.get("id").asText())).isEqualTo(1000.00);
     }
 
     @Test

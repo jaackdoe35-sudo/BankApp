@@ -46,43 +46,27 @@ class LoanIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void fullLoanLifecycle() throws Exception {
+    void loanRepaymentIsDisabledAndDoesNotChangeBalance() throws Exception {
         String token = registerVerified("loan-life@example.com");
         String admin = adminToken();
         JsonNode account = openAccount(token);
         String acct = account.get("id").asText();
-        tellerDeposit(account.get("accountNumber").asText(), "100.00"); // buffer to cover interest
-
+        tellerDeposit(account.get("accountNumber").asText(), "100.00");
         String loanId = apply(token, acct, "300.00", 3).get("id").asText();
-
-        mvc.perform(post("/api/v1/admin/loans/" + loanId + "/approve")
-                        .header("Authorization", "Bearer " + token))
-                .andExpect(status().isForbidden());
-
         mvc.perform(post("/api/v1/admin/loans/" + loanId + "/approve")
                         .header("Authorization", "Bearer " + admin))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.loan.status").value("ACTIVE"))
-                .andExpect(jsonPath("$.schedule.length()").value(3));
-        assertThat(balance(token, acct)).isEqualTo(400.00); // 100 buffer + 300 principal
-
-        String last = "";
+                .andExpect(status().isOk()).andExpect(jsonPath("$.loan.status").value("ACTIVE"));
+        assertThat(balance(token, acct)).isEqualTo(400.00);
         for (int i = 0; i < 3; i++) {
-            last = mvc.perform(post("/api/v1/loans/" + loanId + "/repay")
+            mvc.perform(post("/api/v1/loans/" + loanId + "/repay")
                             .header("Authorization", "Bearer " + token))
-                    .andExpect(status().isOk())
-                    .andReturn().getResponse().getContentAsString();
+                    .andExpect(status().isUnprocessableEntity());
         }
-        assertThat(mapper.readTree(last).get("loan").get("status").asText()).isEqualTo("PAID_OFF");
-
-        BigDecimal sum = jdbc.queryForObject(
-                "select coalesce(sum(case when direction='CREDIT' then amount else -amount end),0) "
-                        + "from ledger_entries", BigDecimal.class);
-        assertThat(sum.signum()).isZero();
+        assertThat(balance(token, acct)).isEqualTo(400.00);
     }
 
     @Test
-    void withdrawalIsRejectedAndLoanRepaymentStillWorks() throws Exception {
+    void withdrawalAndLoanRepaymentAreRejectedWithoutBalanceDeduction() throws Exception {
         String token = register("loan-broke@example.com");
         String admin = adminToken();
         String acct = openAccount(token).get("id").asText();
@@ -100,6 +84,7 @@ class LoanIntegrationTest extends AbstractIntegrationTest {
 
         mvc.perform(post("/api/v1/loans/" + loanId + "/repay")
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk());
+                .andExpect(status().isUnprocessableEntity());
+        assertThat(balance(token, acct)).isEqualTo(300.00);
     }
 }

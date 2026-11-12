@@ -29,41 +29,36 @@ class TransferIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void transferMovesMoneyBetweenAccounts() throws Exception {
+    void transferIsRejectedAndBothBalancesRemainUnchanged() throws Exception {
         String token = registerVerified("tx-move@example.com");
         JsonNode a = openAccount(token);
         JsonNode b = openAccount(token);
         tellerDeposit(a.get("accountNumber").asText(), "200.00");
-
         mvc.perform(post("/api/v1/transfers")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(transferBody(a.get("id").asText(), b.get("accountNumber").asText(), "75.00")))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status", is("COMPLETED")))
-                .andExpect(jsonPath("$.sourceBalanceAfter", is(125.00)));
-
-        org.assertj.core.api.Assertions.assertThat(balance(token, a.get("id").asText())).isEqualTo(125.00);
-        org.assertj.core.api.Assertions.assertThat(balance(token, b.get("id").asText())).isEqualTo(75.00);
+                .andExpect(status().isUnprocessableEntity());
+        org.assertj.core.api.Assertions.assertThat(balance(token, a.get("id").asText())).isEqualTo(200.00);
+        org.assertj.core.api.Assertions.assertThat(balance(token, b.get("id").asText())).isEqualTo(0.00);
     }
 
     @Test
-    void idempotentKeyPostsTransferOnce() throws Exception {
+    void repeatedTransferRequestsNeverMoveFunds() throws Exception {
         String token = registerVerified("tx-idem@example.com");
         JsonNode a = openAccount(token);
         JsonNode b = openAccount(token);
         tellerDeposit(a.get("accountNumber").asText(), "100.00");
         String body = transferBody(a.get("id").asText(), b.get("accountNumber").asText(), "30.00");
-
         for (int i = 0; i < 2; i++) {
             mvc.perform(post("/api/v1/transfers")
                             .header("Authorization", "Bearer " + token)
                             .header("Idempotency-Key", "dup-key-123")
                             .contentType(MediaType.APPLICATION_JSON).content(body))
-                    .andExpect(status().isOk());
+                    .andExpect(status().isUnprocessableEntity());
         }
-        org.assertj.core.api.Assertions.assertThat(balance(token, b.get("id").asText())).isEqualTo(30.00);
-        org.assertj.core.api.Assertions.assertThat(balance(token, a.get("id").asText())).isEqualTo(70.00);
+        org.assertj.core.api.Assertions.assertThat(balance(token, a.get("id").asText())).isEqualTo(100.00);
+        org.assertj.core.api.Assertions.assertThat(balance(token, b.get("id").asText())).isEqualTo(0.00);
     }
 
     @Test

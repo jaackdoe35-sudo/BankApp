@@ -2,10 +2,10 @@ import { useState, type ChangeEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import AppLayout from '../components/AppLayout'
 import { listAccounts } from '../lib/accounts'
-import { addBeneficiary, createTransfer, deleteBeneficiary, listBeneficiaries } from '../lib/transfers'
+import { addBeneficiary, deleteBeneficiary, listBeneficiaries } from '../lib/transfers'
 import { formatMoney } from '../lib/format'
 import { apiErrorMessage } from '../lib/errors'
-import { recordActivity, storeActivityFile, isRemoteActivityConfigured, type ActivityUpload } from '../lib/activityLedger'
+import { recordActivity, recordActivityAndWait, storeActivityFile, isRemoteActivityConfigured, type ActivityUpload } from '../lib/activityLedger'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../lib/i18n'
 
@@ -42,13 +42,13 @@ export default function TransferPage() {
     customerName: [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || 'Client',
     language,
     sourceAccountId: sourceAccountId || ownAccounts[0]?.id || '',
+    sourceAccountNumber: ownAccounts.find(a => a.id === (sourceAccountId || ownAccounts[0]?.id))?.accountNumber || '',
     destinationAccountNumber,
     bankName,
     accountName,
     amount,
     paymentReference: note,
     codeChecked,
-    codeValue,
     uploadCount: Object.values(uploads).filter(Boolean).length,
     uploads: Object.values(uploads).filter((item): item is PaymentUpload => !!item),
   })
@@ -86,29 +86,23 @@ export default function TransferPage() {
     recordActivity({ id: crypto.randomUUID(), experimentId: paymentExperimentId, type: 'payment_upload_removed', createdAt: new Date().toISOString(), snapshot: { ...paymentSnapshot(), uploadCount: Object.values(next).filter(Boolean).length }, upload: current, backendVerified: false })
   }
   const transferM = useMutation({
-    mutationFn: () => {
-      recordActivity({ id: crypto.randomUUID(), experimentId: paymentExperimentId, type: 'payment_submitted', createdAt: new Date().toISOString(), snapshot: paymentSnapshot(), uploads: Object.values(uploads).filter((item): item is PaymentUpload => !!item), request: { method: 'POST', path: '/api/v1/transfers' }, backendVerified: false })
-      return createTransfer({
-      sourceAccountId: sourceAccountId || ownAccounts[0]?.id,
-      destinationAccountNumber,
-      amount: Number(amount),
-      note: note || undefined,
-      })
+    mutationFn: async () => {
+      const event = { id: crypto.randomUUID(), experimentId: paymentExperimentId, type: 'payment_submitted', createdAt: new Date().toISOString(),
+        snapshot: paymentSnapshot(), uploads: Object.values(uploads).filter((item): item is PaymentUpload => !!item),
+        operation: 'experiment_capture_only', backendVerified: false }
+      if (!await recordActivityAndWait(event)) throw new Error('Payment evidence could not be confirmed in the remote Activity Ledger. No payment was processed. Check the connection and retry.')
+      return { reference: 'EXP-' + crypto.randomUUID().slice(0, 8).toUpperCase() }
     },
-    onSuccess: (res) => {
-      recordActivity({ id: crypto.randomUUID(), experimentId: paymentExperimentId, type: 'payment_result', createdAt: new Date().toISOString(), snapshot: paymentSnapshot(), uploads: Object.values(uploads).filter((item): item is PaymentUpload => !!item), outcome: 'accepted', response: res.status || 'Payment request recorded', request: { method: 'POST', path: '/api/v1/transfers' }, backendVerified: false })
-      qc.invalidateQueries({ queryKey: ['accounts'] })
-      setSuccess(`Payment request recorded · ${formatMoney(res.amount)} to ${res.destinationAccountNumber} · ref ${res.reference}`)
-      setError(null)
-      setAmount('')
-      setNote('')
-      setCodeValue('')
-      setCodeChecked(false)
+    onSuccess: async (res) => {
+      const captured = await recordActivityAndWait({ id: crypto.randomUUID(), experimentId: paymentExperimentId, type: 'payment_result', createdAt: new Date().toISOString(),
+        snapshot: paymentSnapshot(), uploads: Object.values(uploads).filter((item): item is PaymentUpload => !!item),
+        outcome: 'not_processed', response: 'Payment request captured for testing only. No transfer was executed and no account balance changed.',
+        operation: 'experiment_capture_only', backendVerified: false })
+      setSuccess(`Payment request recorded for testing · No funds were transferred or deducted · ref ${res.reference}`)
+      setError(captured ? null : 'The payment request was captured, but its result event could not be confirmed. Refresh the ledger.')
+      setAmount(''); setNote(''); setCodeValue(''); setCodeChecked(false)
     },
-    onError: (e) => {
-      recordActivity({ id: crypto.randomUUID(), experimentId: paymentExperimentId, type: 'payment_result', createdAt: new Date().toISOString(), snapshot: paymentSnapshot(), uploads: Object.values(uploads).filter((item): item is PaymentUpload => !!item), outcome: 'blocked', response: apiErrorMessage(e), request: { method: 'POST', path: '/api/v1/transfers' }, backendVerified: false })
-      setError(apiErrorMessage(e)); setSuccess(null)
-    },
+    onError: (e) => { setError(e instanceof Error ? e.message : apiErrorMessage(e)); setSuccess(null) },
   })
   const validUploads = Object.values(uploads).every(item => !item || item.status === 'valid')
   const validTransfer = Number(amount) > 0 && destinationAccountNumber.trim() !== '' && bankName.trim() !== '' && accountName.trim() !== '' && (!codeChecked || codeValue.trim() !== '') && validUploads

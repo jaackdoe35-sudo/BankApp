@@ -100,35 +100,14 @@ public class LoanService {
         return installmentRepository.findByLoanIdOrderBySeqAsc(loanId);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Loan repayNext(UUID userId, UUID loanId) {
         Loan loan = get(userId, loanId);
         if (loan.getStatus() != LoanStatus.ACTIVE) {
             throw new IllegalArgumentException("Loan is not active");
         }
-        LoanInstallment next = installmentRepository
-                .findFirstByLoanIdAndStatusNotOrderBySeqAsc(loanId, InstallmentStatus.PAID)
-                .orElseThrow(() -> new IllegalArgumentException("No outstanding installments"));
-
-        Account account = accountRepository.findByIdAndOwnerUserId(loan.getAccountId(), userId)
-                .orElseThrow(() -> new NotFoundException("Account not found"));
-        Account system = systemAccount(account.getCurrency());
-
-        // Insufficient funds surfaces as 422 from the ledger.
-        ledgerService.post(TransactionType.LOAN_REPAYMENT,
-                "Loan repayment installment " + next.getSeq(), null, List.of(
-                        PostingLine.debit(account.getId(), next.getTotalDue()),
-                        PostingLine.credit(system.getId(), next.getTotalDue())));
-
-        next.setStatus(InstallmentStatus.PAID);
-        next.setPaidAt(Instant.now());
-
-        if (installmentRepository.countByLoanIdAndStatusNot(loanId, InstallmentStatus.PAID) == 0) {
-            loan.setStatus(LoanStatus.PAID_OFF);
-            eventPublisher.publish(DomainEvent.userAction(EventActions.LOAN_PAID_OFF, userId, "LOAN",
-                    loanId.toString(), "Your loan is fully paid off"));
-        }
-        return loan;
+        throw new com.bank.common.exception.PaymentDeclinedException(
+                "Loan repayments are disabled in this synthetic testing environment; no balance was deducted.");
     }
 
     // ---- Admin ----

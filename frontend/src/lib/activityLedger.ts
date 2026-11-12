@@ -213,3 +213,13 @@ export function recordActivity(event: ActivityEvent): boolean {
   void flushPendingActivityEvents()
   return locallyStored
 }
+
+
+/** Wait until the event is confirmed by the remote owner ledger. */
+export async function recordActivityAndWait(event: ActivityEvent): Promise<boolean> {
+  if (!API_BASE) return false
+  const safeEvent = sanitizeActivityEvent(event)
+  if (!recordActivity(safeEvent)) return false
+  await flushPendingActivityEvents()
+  return !readPendingEvents().some(item => item.id === safeEvent.id)
+}

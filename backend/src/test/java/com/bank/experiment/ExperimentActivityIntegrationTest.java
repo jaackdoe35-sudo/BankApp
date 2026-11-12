@@ -24,7 +24,7 @@ class ExperimentActivityIntegrationTest extends AbstractIntegrationTest {
         String response = mvc.perform(post("/api/v1/experiment/sessions/" + id + "/events")
                         .header("X-Experiment-Token", token).contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                          {"eventType":"withdrawal_input","payload":{"amount":"15","snapshot":{"codeValue":"123456","bankName":"Synthetic Bank","nested":{"access_token":"secret-token","OTP_code":"654321","harmless":"visible"}},"password":"do-not-store","field":"codeValue","value":"123456","sessionToken":"session-secret","api_key":"key-secret","publicLabel":"visible"}}
+                          {"eventType":"withdrawal_input","payload":{"amount":"15","accountNumber":"0123456789","destinationAccountNumber":"9876543210","snapshot":{"codeValue":"123456","bankName":"Synthetic Bank","nested":{"access_token":"secret-token","OTP_code":"654321","harmless":"visible"}},"password":"do-not-store","field":"codeValue","value":"123456","sessionToken":"session-secret","api_key":"key-secret","publicLabel":"visible"}}
                         """))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.eventId").exists())
                 .andReturn().getResponse().getContentAsString();
@@ -41,7 +41,9 @@ class ExperimentActivityIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.payload.api_key").doesNotExist())
                 .andExpect(jsonPath("$.payload.password").doesNotExist())
                 .andExpect(jsonPath("$.payload.value").doesNotExist())
-                .andExpect(jsonPath("$.payload.amount").value("15"));
+                .andExpect(jsonPath("$.payload.amount").value("15"))
+                .andExpect(jsonPath("$.payload.accountNumber").value("0123456789"))
+                .andExpect(jsonPath("$.payload.destinationAccountNumber").value("9876543210"));
     }
 
     @Test

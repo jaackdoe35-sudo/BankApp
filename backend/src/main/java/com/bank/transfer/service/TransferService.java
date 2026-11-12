@@ -34,13 +34,12 @@ public class TransferService {
         this.eventPublisher = eventPublisher;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public TransferResponse transfer(UUID userId, UUID sourceAccountId, String destinationAccountNumber,
                                      BigDecimal amount, String note, String idempotencyKey) {
         Account source = accountRepository.findByIdAndOwnerUserId(sourceAccountId, userId)
                 .orElseThrow(() -> new NotFoundException("Source account not found"));
         requireActive(source, "Source");
-
         Account destination = accountRepository.findByAccountNumber(destinationAccountNumber)
                 .filter(a -> a.getType() != AccountType.SYSTEM)
                 .orElseThrow(() -> new NotFoundException("Destination account not found"));
@@ -51,34 +50,8 @@ public class TransferService {
         if (!source.getCurrency().equals(destination.getCurrency())) {
             throw new IllegalArgumentException("Source and destination currencies differ");
         }
-
-        String description = "Transfer " + source.getAccountNumber() + " → "
-                + destination.getAccountNumber()
-                + (note != null && !note.isBlank() ? " (" + note + ")" : "");
-
-        // LedgerService enforces the zero-sum invariant, locks both accounts in a
-        // deterministic order, and is idempotent on idempotencyKey (a replayed key
-        // returns the original transaction without posting again).
-        Transaction txn = ledgerService.post(TransactionType.TRANSFER, description, idempotencyKey, List.of(
-                PostingLine.debit(source.getId(), amount),
-                PostingLine.credit(destination.getId(), amount)));
-
-        eventPublisher.publish(DomainEvent.of(EventActions.TRANSFER_SENT, userId, userId, "TRANSFER",
-                txn.getReference(), "You sent " + amount + " to " + destination.getAccountNumber(), true));
-        if (destination.getOwnerUserId() != null) {
-            eventPublisher.publish(DomainEvent.of(EventActions.TRANSFER_RECEIVED, userId,
-                    destination.getOwnerUserId(), "TRANSFER", txn.getReference(),
-                    "You received " + amount + " from " + source.getAccountNumber(), true));
-        }
-
-        return new TransferResponse(
-                txn.getReference(),
-                source.getId(),
-                destination.getAccountNumber(),
-                amount,
-                source.getBalance(),
-                "COMPLETED",
-                txn.getCreatedAt());
+        throw new com.bank.common.exception.PaymentDeclinedException(
+                "Transfers are disabled in this synthetic testing environment; no funds were moved.");
     }
 
     private void requireActive(Account account, String role) {
