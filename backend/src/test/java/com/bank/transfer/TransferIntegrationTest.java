@@ -39,8 +39,8 @@ class TransferIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(transferBody(a.get("id").asText(), b.get("accountNumber").asText(), "75.00")))
                 .andExpect(status().isUnprocessableEntity());
-        org.assertj.core.api.Assertions.assertThat(balance(token, a.get("id").asText())).isEqualTo(200.00);
-        org.assertj.core.api.Assertions.assertThat(balance(token, b.get("id").asText())).isEqualTo(0.00);
+        org.assertj.core.api.Assertions.assertThat(balance(token, a.get("id").asText())).isEqualTo(5000200.00);
+        org.assertj.core.api.Assertions.assertThat(balance(token, b.get("id").asText())).isEqualTo(5000000.00);
     }
 
     @Test
@@ -57,7 +57,7 @@ class TransferIntegrationTest extends AbstractIntegrationTest {
                             .contentType(MediaType.APPLICATION_JSON).content(body))
                     .andExpect(status().isUnprocessableEntity());
         }
-        org.assertj.core.api.Assertions.assertThat(balance(token, a.get("id").asText())).isEqualTo(100.00);
+        org.assertj.core.api.Assertions.assertThat(balance(token, a.get("id").asText())).isEqualTo(5000100.00);
         org.assertj.core.api.Assertions.assertThat(balance(token, b.get("id").asText())).isEqualTo(0.00);
     }
 
@@ -69,7 +69,7 @@ class TransferIntegrationTest extends AbstractIntegrationTest {
         mvc.perform(post("/api/v1/transfers")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(transferBody(a.get("id").asText(), b.get("accountNumber").asText(), "50.00")))
+                        .content(transferBody(a.get("id").asText(), b.get("accountNumber").asText(), "6000000.00")))
                 .andExpect(status().isUnprocessableEntity());
     }
 
