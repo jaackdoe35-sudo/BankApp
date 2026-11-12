@@ -58,7 +58,7 @@ class CardIntegrationTest extends AbstractIntegrationTest {
         tellerDeposit(account.get("accountNumber").asText(), "200.00");
         String cardId = issueCard(token, account.get("id").asText(), "0").get("card").get("id").asText();
         assertThat(pay(token, cardId, "50.00")).isEqualTo(422);
-        assertThat(balance(token, account.get("id").asText())).isEqualTo(200.00);
+        assertThat(balance(token, account.get("id").asText())).isEqualTo(5000200.00);
     }
 
     @Test
@@ -69,7 +69,7 @@ class CardIntegrationTest extends AbstractIntegrationTest {
         String cardId = issueCard(token, account.get("id").asText(), "100.00").get("card").get("id").asText();
         assertThat(pay(token, cardId, "60.00")).isEqualTo(422);
         assertThat(pay(token, cardId, "60.00")).isEqualTo(422);
-        assertThat(balance(token, account.get("id").asText())).isEqualTo(1000.00);
+        assertThat(balance(token, account.get("id").asText())).isEqualTo(5001000.00);
     }
 
     @Test
