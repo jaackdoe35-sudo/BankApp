@@ -217,7 +217,7 @@ export function recordActivity(event: ActivityEvent): boolean {
 
 /** Wait until the event is confirmed by the remote owner ledger. */
 export async function recordActivityAndWait(event: ActivityEvent): Promise<boolean> {
-  if (!API_BASE) return false
+  if (!API_BASE) return import.meta.env.VITE_ACTIVITY_ALLOW_LOCAL_FALLBACK === 'true' && recordActivity(event)
   const safeEvent = sanitizeActivityEvent(event)
   if (!recordActivity(safeEvent)) return false
   await flushPendingActivityEvents()

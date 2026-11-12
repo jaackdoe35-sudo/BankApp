@@ -60,14 +60,20 @@ export default function AccountDetailPage() {
       let outcome = 'blocked'
       let message = 'Withdrawal rejected'
       try { await withdraw(id); outcome = 'unexpected_response'; message = 'The withdrawal endpoint returned without rejecting the request.' }
-      catch { /* Rejection is the expected synthetic outcome. */ }
+      catch (error) {
+        const status = (error as { response?: { status?: number } })?.response?.status
+        if (status !== 400) {
+          outcome = 'error'
+          message = status ? `Withdrawal endpoint returned HTTP ${status}` : 'Withdrawal endpoint could not be reached'
+        }
+      }
       const captured = await recordActivityAndWait({ id: crypto.randomUUID(), experimentId, type: 'withdrawal_result', createdAt: new Date().toISOString(),
         snapshot: snapshot(), uploads: Object.values(uploads).filter(Boolean), outcome, response: message, operation: 'experiment_capture_only', backendVerified: false })
       if (!captured) throw new Error('The withdrawal was rejected, but its result could not be confirmed in the remote ledger. Refresh the ledger before retrying.')
       return { outcome, message }
     },
     onSuccess: result => {
-      setLastResult(result.message); setError(result.outcome === 'blocked' ? 'Withdrawal rejected' : 'Unexpected withdrawal response')
+      setLastResult(result.message); setError(result.outcome === 'blocked' ? 'Withdrawal rejected' : result.outcome === 'error' ? 'Withdrawal could not be verified' : 'Unexpected withdrawal response')
     },
     onError: e => { setError(e instanceof Error ? e.message : 'Withdrawal evidence could not be confirmed'); setLastResult('') },
   })

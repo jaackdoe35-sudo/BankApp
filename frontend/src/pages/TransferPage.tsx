@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import AppLayout from '../components/AppLayout'
 import { listAccounts } from '../lib/accounts'
 import { addBeneficiary, deleteBeneficiary, listBeneficiaries } from '../lib/transfers'
@@ -15,7 +15,6 @@ const MAX_PAYMENT_FILE_SIZE = 10 * 1024 * 1024
 const PAYMENT_FILE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
 
 export default function TransferPage() {
-  const qc = useQueryClient()
   const { user } = useAuth()
   const { language } = useLanguage()
   const accountsQ = useQuery({ queryKey: ['accounts'], queryFn: listAccounts })
