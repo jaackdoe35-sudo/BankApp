@@ -174,7 +174,8 @@ export async function readActivityFile(id: string): Promise<{ name: string; type
   db.close()
   return value || null
 }
-export function recordActivity(event: ActivityEvent): boolean {\n  const safeEvent = sanitizeActivityEvent(event);
+export function recordActivity(event: ActivityEvent): boolean {
+  const safeEvent = sanitizeActivityEvent(event);
   let events: ActivityEvent[] = []
   try {
     const previous = JSON.parse(localStorage.getItem(STORAGE) || '[]')
