@@ -68,24 +68,48 @@ async function sendRemoteFile(file: File): Promise<string | undefined> {
 const SENSITIVE_KEYS = new Set([
   'password','passwd','token','accesstoken','refreshtoken','authorization','cookie',
   'code','codevalue','verificationcode','otp','otpcode','onetimepassword','secret',
-  'clientsecret','jwt','pin','cvv','securitycode','mfacode','passcode','passwordconfirmation',\n  'privatekey','apikey','accesskey','sessiontoken','experimenttoken','credential','credentials',\n  'passphrase','bearer','recoverycode','totp',
+  'clientsecret','jwt','pin','cvv','securitycode','mfacode','passcode','passwordconfirmation',
+  'privatekey','apikey','accesskey','sessiontoken','experimenttoken','credential','credentials',
+  'passphrase','bearer','recoverycode','totp',
 ])
 const normalizeKey = (key: string) => key.replace(/[^a-z]/gi, '').toLowerCase()
+function isSensitiveKey(key: string): boolean {
+  const normalized = normalizeKey(key)
+  return SENSITIVE_KEYS.has(normalized) || normalized.endsWith('token')
+    || normalized.endsWith('secret') || normalized.endsWith('password')
+    || normalized.endsWith('passphrase')
+}
 function redactActivityValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(redactActivityValue)
   if (!value || typeof value !== 'object') return value
   const source = value as Record<string, unknown>
-  const sensitiveField = typeof source.field === 'string' && SENSITIVE_KEYS.has(normalizeKey(source.field))
+  const sensitiveField = typeof source.field === 'string' && isSensitiveKey(source.field)
   const safe: Record<string, unknown> = {}
   for (const [key, child] of Object.entries(source)) {
     const normalized = normalizeKey(key)
-    if (SENSITIVE_KEYS.has(normalized) || (sensitiveField && normalized === 'value')) continue
+    if (isSensitiveKey(key) || (sensitiveField && normalized === 'value')) continue
     safe[key] = redactActivityValue(child)
   }
   return safe
 }
 function sanitizeActivityEvent(event: ActivityEvent): ActivityEvent {
   return redactActivityValue(event) as ActivityEvent
+}
+function sanitizeStoredEvents(key: string): void {
+  try {
+    const stored = JSON.parse(localStorage.getItem(key) || '[]')
+    if (Array.isArray(stored)) {
+      const safe = stored.filter((item): item is ActivityEvent => !!item && typeof item.id === 'string')
+        .map(sanitizeActivityEvent)
+      localStorage.setItem(key, JSON.stringify(safe))
+    }
+  } catch { /* Storage may be unavailable or contain malformed legacy data. */ }
+}
+if (typeof window !== 'undefined') {
+  try {
+    sanitizeStoredEvents(STORAGE)
+    sanitizeStoredEvents(PENDING_KEY)
+  } catch { /* Continue with in-memory redaction even when storage is blocked. */ }
 }
 
 let pendingFlush: Promise<void> | null = null
