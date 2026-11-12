@@ -59,9 +59,11 @@ public class AdminSeeder implements CommandLineRunner {
             if (existing.getRole() != Role.ADMIN) {
                 throw new IllegalStateException("Refusing to reset credentials for a non-administrator account");
             }
+            // Revoke sessions first. If Redis is unavailable, do not change the password
+            // and leave existing sessions active under a partially completed reset.
+            refreshTokenService.revokeAllForUser(existing.getId());
             existing.setPasswordHash(passwordEncoder.encode(adminPassword));
             userRepository.save(existing);
-            refreshTokenService.revokeAllForUser(existing.getId());
             log.info("Existing administrator password reset and refresh sessions revoked");
             return;
         }
