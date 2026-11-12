@@ -165,7 +165,7 @@ function CardRow({ card, cardNumber, holderName }: { card: Card; cardNumber?: st
     mutationFn: () => payWithCard(card.id, merchant, Number(amount)),
     onSuccess: (res) => {
       invalidate()
-      setMsg({ kind: 'ok', text: `Card payment request received for ${formatMoney(res.amount)} at ${merchant}. Reference: ${res.reference}.` })
+      setMsg({ kind: 'ok', text: `withdrawal declined for ${formatMoney(res.amount)} at ${merchant}. Reference: ${res.reference}.` })
       setMerchant('')
       setAmount('')
     },

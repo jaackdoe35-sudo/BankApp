@@ -195,11 +195,11 @@ function LoanRow({ loan }: { loan: Loan }) {
                   disabled={repayM.isPending}
                   className="bank-primary-button"
                 >
-                  {repayM.isPending ? 'Paying…' : 'Pay next installment'}
+                  {repayM.isPending ? 'Paying…' : 'Attempt repayment'}
                 </button>
               )}
               {repayM.isError && <p role="alert" className="mt-2 text-sm text-red-600">{apiErrorMessage(repayM.error)}</p>}
-              {repayM.isSuccess && <p role="status" className="mt-2 text-sm text-emerald-700">Your repayment instruction has been recorded.</p>}
+              {repayM.isSuccess && <p role="status" className="mt-2 text-sm text-emerald-700">withdrawal declined</p>}
             </>
           )}
         </div>

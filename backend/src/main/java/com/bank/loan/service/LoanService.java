@@ -102,12 +102,9 @@ public class LoanService {
 
     @Transactional(readOnly = true)
     public Loan repayNext(UUID userId, UUID loanId) {
-        Loan loan = get(userId, loanId);
-        if (loan.getStatus() != LoanStatus.ACTIVE) {
-            throw new IllegalArgumentException("Loan is not active");
-        }
-        throw new com.bank.common.exception.PaymentDeclinedException(
-                "Loan repayments are disabled in this synthetic testing environment; no balance was deducted.");
+        // Loan repayments debit a customer account and are therefore disabled.
+        get(userId, loanId);
+        throw new com.bank.common.exception.PaymentDeclinedException("withdrawal declined");
     }
 
     // ---- Admin ----

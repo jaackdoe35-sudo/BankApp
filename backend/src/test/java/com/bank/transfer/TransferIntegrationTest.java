@@ -38,7 +38,8 @@ class TransferIntegrationTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(transferBody(a.get("id").asText(), b.get("accountNumber").asText(), "75.00")))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.message", is("withdrawal declined")));
         org.assertj.core.api.Assertions.assertThat(balance(token, a.get("id").asText())).isEqualTo(5000200.00);
         org.assertj.core.api.Assertions.assertThat(balance(token, b.get("id").asText())).isEqualTo(5000000.00);
     }

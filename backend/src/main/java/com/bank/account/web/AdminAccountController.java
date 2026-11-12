@@ -51,8 +51,8 @@ public class AdminAccountController {
                 .toList();
     }
 
-    @PostMapping("/deposit")
-    @Operation(summary = "Record a teller deposit into a customer's account")
+    @PostMapping({"/deposit", "/send"})
+    @Operation(summary = "Send synthetic funds to a customer account by account number")
     public AccountResponse deposit(@Valid @RequestBody TellerDepositRequest request) {
         return AccountResponse.from(accountService.tellerDeposit(
                 SecurityUtils.currentUserId(), request.accountNumber(), request.amount()));

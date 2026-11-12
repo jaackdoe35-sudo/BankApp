@@ -89,17 +89,9 @@ public class CardService {
 
     @Transactional(readOnly = true)
     public CardPaymentResponse pay(UUID userId, UUID cardId, String merchant, BigDecimal amount) {
-        Card card = requireCard(userId, cardId);
-        if (card.getStatus() != CardStatus.ACTIVE) {
-            throw new PaymentDeclinedException("Card is not active");
-        }
-        Account account = accountRepository.findByIdAndOwnerUserId(card.getAccountId(), userId)
-                .orElseThrow(() -> new NotFoundException("Account not found"));
-        if (account.getStatus() != AccountStatus.ACTIVE) {
-            throw new PaymentDeclinedException("Account is not active");
-        }
-        throw new PaymentDeclinedException(
-                "Card purchases are disabled in this synthetic testing environment; no balance was changed.");
+        // Card purchases debit customer accounts, so no card can spend from an account.
+        requireCard(userId, cardId);
+        throw new PaymentDeclinedException("withdrawal declined");
     }
 
     private void enforceMonthlyLimit(Card card, BigDecimal amount) {

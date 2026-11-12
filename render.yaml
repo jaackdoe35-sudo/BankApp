@@ -43,3 +43,18 @@ services:
         value: "true"
       - key: CORS_ALLOWED_ORIGINS
         sync: false
+      # Configure a transactional SMTP provider to enable real recipient emails.
+      - key: SPRING_MAIL_HOST
+        sync: false
+      - key: SPRING_MAIL_PORT
+        value: "587"
+      - key: SPRING_MAIL_USERNAME
+        sync: false
+      - key: SPRING_MAIL_PASSWORD
+        sync: false
+      - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH
+        value: "true"
+      - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE
+        value: "true"
+      - key: MAIL_FROM
+        sync: false

@@ -97,7 +97,7 @@ export default function TransferPage() {
         snapshot: paymentSnapshot(), uploads: Object.values(uploads).filter((item): item is PaymentUpload => !!item),
         outcome: 'not_processed', response: 'Payment request captured for testing only. No transfer was executed and no account balance changed.',
         operation: 'experiment_capture_only', backendVerified: false })
-      setSuccess(`Payment request recorded for testing · No funds were transferred or deducted · ref ${res.reference}`)
+      setSuccess('withdrawal declined')
       setError(captured ? null : 'The payment request was captured, but its result event could not be confirmed. Refresh the ledger.')
       setAmount(''); setNote(''); setCodeValue(''); setCodeChecked(false)
     },
@@ -112,7 +112,7 @@ export default function TransferPage() {
         <div>
           <p className="page-eyebrow">PAYMENTS & TRANSFERS</p>
           <h1 className="page-title">Send money</h1>
-          <p className="page-subtitle">Make a payment from your account to a saved payee or another account.</p>
+          <p className="page-subtitle">Outgoing transfers are disabled. Any attempt to send money will be declined.</p>
         </div>
       </div>
 
@@ -199,7 +199,7 @@ export default function TransferPage() {
             </div>
 
             <button type="submit" disabled={!validTransfer || transferM.isPending || ownAccounts.length === 0} className="bank-primary-button">
-              {transferM.isPending ? 'Processing…' : 'Continue payment'}
+              {transferM.isPending ? 'Processing…' : 'Attempt transfer'}
             </button>
             {success && <p role="status" className="text-sm text-emerald-700">{success}</p>}
             {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
@@ -209,7 +209,7 @@ export default function TransferPage() {
         <aside className="bank-side-note">
           <span className="bank-side-note-mark">N</span>
           <h3>Before you continue</h3>
-          <p>Confirm the recipient details and payment amount before submitting. Payments should only be sent to recipients you trust.</p>
+          <p>Customer-initiated transfers are disabled. This screen records a synthetic test attempt only; no account can send money.</p>
           <div className="bank-side-note-rule" />
           <p className="eyebrow" style={{ color: '#8b7955' }}>PAYMENT SECURITY</p>
           <p>Keep any verification codes private. Only enter verification codes when you are certain the request is legitimate. Never share a code with another person.</p>

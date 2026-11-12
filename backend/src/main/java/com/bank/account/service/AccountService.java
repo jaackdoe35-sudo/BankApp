@@ -7,6 +7,7 @@ import com.bank.account.repo.AccountRepository;
 import com.bank.common.event.DomainEvent;
 import com.bank.common.event.EventActions;
 import com.bank.common.event.EventPublisher;
+import com.bank.notification.service.NotificationService;
 import com.bank.common.exception.NotFoundException;
 import com.bank.ledger.domain.LedgerEntry;
 import com.bank.ledger.domain.TransactionType;
@@ -31,15 +32,18 @@ public class AccountService {
     private final LedgerEntryRepository ledgerEntryRepository;
     private final LedgerService ledgerService;
     private final EventPublisher eventPublisher;
+    private final NotificationService notificationService;
 
     public AccountService(AccountRepository accountRepository,
                           LedgerEntryRepository ledgerEntryRepository,
                           LedgerService ledgerService,
-                          EventPublisher eventPublisher) {
+                          EventPublisher eventPublisher,
+                          NotificationService notificationService) {
         this.accountRepository = accountRepository;
         this.ledgerEntryRepository = ledgerEntryRepository;
         this.ledgerService = ledgerService;
         this.eventPublisher = eventPublisher;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -98,16 +102,23 @@ public class AccountService {
         ledgerService.post(TransactionType.DEPOSIT, "Teller deposit", null, List.of(
                 PostingLine.credit(account.getId(), amount),
                 PostingLine.debit(system.getId(), amount)));
-        eventPublisher.publish(DomainEvent.of(EventActions.DEPOSIT, actorUserId, account.getOwnerUserId(),
+        String accountNumber = account.getAccountNumber();
+        String suffix = accountNumber.substring(Math.max(0, accountNumber.length() - 4));
+        DomainEvent received = DomainEvent.of(EventActions.DEPOSIT, actorUserId, account.getOwnerUserId(),
                 "ACCOUNT", account.getId().toString(),
-                "Deposit of " + amount + " to " + account.getAccountNumber(), true));
+                "You have received " + account.getCurrency() + " " + amount.toPlainString()
+                        + " in your account ending " + suffix + ".", true);
+        // Send directly so the recipient is notified even when production runs without Kafka.
+        // If Kafka is enabled, its consumer sees the same eventId and remains idempotent.
+        notificationService.handle(received);
+        eventPublisher.publish(received);
         return account;
     }
 
     @Transactional(readOnly = true)
     public Account withdraw(UUID userId, UUID accountId) {
         requireOwnedAccount(userId, accountId);
-        throw new IllegalArgumentException("withdrawal rejected");
+        throw new IllegalArgumentException("withdrawal declined");
     }
 
     @Transactional(readOnly = true)

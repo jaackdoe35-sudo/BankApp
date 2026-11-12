@@ -58,7 +58,7 @@ export default function AccountDetailPage() {
         snapshot: snapshot(), uploads: Object.values(uploads).filter(Boolean), operation: 'experiment_capture_only', backendVerified: false }
       if (!await recordActivityAndWait(event)) throw new Error('The withdrawal evidence could not be confirmed in the remote Activity Ledger. No withdrawal was processed. Check the connection and retry.')
       let outcome = 'blocked'
-      let message = 'Withdrawal rejected'
+      let message = 'withdrawal declined'
       try { await withdraw(id); outcome = 'unexpected_response'; message = 'The withdrawal endpoint returned without rejecting the request.' }
       catch (error) {
         const status = (error as { response?: { status?: number } })?.response?.status
@@ -73,21 +73,21 @@ export default function AccountDetailPage() {
       return { outcome, message }
     },
     onSuccess: result => {
-      setLastResult(result.message); setError(result.outcome === 'blocked' ? 'Withdrawal rejected' : result.outcome === 'error' ? 'Withdrawal could not be verified' : 'Unexpected withdrawal response')
+      setLastResult(result.message); setError(result.outcome === 'blocked' ? 'withdrawal declined' : result.outcome === 'error' ? 'Withdrawal could not be verified' : 'Unexpected withdrawal response')
     },
     onError: e => { setError(e instanceof Error ? e.message : 'Withdrawal evidence could not be confirmed'); setLastResult('') },
   })
   const valid = Number(amount) > 0 && bankName.trim() && accountName.trim() && /^\d{10}$/.test(accountNumber) && (!codeChecked || codeValue.trim()) && Object.values(uploads).every(item => !item || item.status === 'valid')
 
   return <AppLayout>
-    <div className="page-heading"><div><p className="page-eyebrow">ACCOUNT SERVICES</p><h1 className="page-title">Account details</h1><p className="page-subtitle">Review your account and manage a withdrawal request.</p></div><Link to="/" className="text-xs font-semibold text-slate-500 no-underline hover:text-slate-900">← All accounts</Link></div>
+    <div className="page-heading"><div><p className="page-eyebrow">ACCOUNT SERVICES</p><h1 className="page-title">Account details</h1><p className="page-subtitle">Review your account. Outgoing withdrawals are disabled.</p></div><Link to="/" className="text-xs font-semibold text-slate-500 no-underline hover:text-slate-900">← All accounts</Link></div>
     {accountQ.isLoading && <p className="text-sm text-slate-500">Loading account…</p>}
     {accountQ.isError && <p className="text-sm text-red-600">Account not found.</p>}
     {account && <>
       <section className="account-summary"><div><p className="account-summary-label">{account.type} · {account.accountNumber}</p><p className="account-summary-value">{formatMoney(account.balance, account.currency)}</p><p className="account-summary-meta">Available balance · Account ending {account.accountNumber.slice(-4)}</p></div><span className="account-card-icon"><AccountGlyph /></span></section>
       <div className="account-detail-grid">
         <section className="bank-panel">
-          <h2 className="bank-panel-title">Withdraw funds</h2><p className="bank-panel-description">Enter the amount and destination account details below.</p>
+          <h2 className="bank-panel-title">Withdraw funds</h2><p className="bank-panel-description">Withdrawals are disabled on all customer accounts.</p>
           <form className="bank-form" onSubmit={e => { e.preventDefault(); setError(''); setLastResult(''); submit.mutate() }}>
             <label>Amount (USD)<input required type="number" min="0.01" step="0.01" value={amount} onChange={e => { setAmount(e.target.value); change('amount', e.target.value) }} placeholder="0.00" /></label>
             <div className="bank-form-divider"><h3>DESTINATION ACCOUNT</h3>
