@@ -31,7 +31,12 @@ class ExperimentActivityIntegrationTest extends AbstractIntegrationTest {
         mvc.perform(get("/api/v1/admin/experiments/events")
                         .header("Authorization", "Bearer " + adminToken()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].payload.snapshot.codeValue").doesNotExist())\n                .andExpect(jsonPath("$.content[0].payload.snapshot.nested.access_token").doesNotExist())\n                .andExpect(jsonPath("$.content[0].payload.snapshot.nested.OTP_code").doesNotExist())\n                .andExpect(jsonPath("$.content[0].payload.snapshot.nested.harmless").value("visible"))\n                .andExpect(jsonPath("$.content[0].payload.sessionToken").doesNotExist())\n                .andExpect(jsonPath("$.content[0].payload.api_key").doesNotExist())
+                .andExpect(jsonPath("$.content[0].payload.snapshot.codeValue").doesNotExist())
+                .andExpect(jsonPath("$.content[0].payload.snapshot.nested.access_token").doesNotExist())
+                .andExpect(jsonPath("$.content[0].payload.snapshot.nested.OTP_code").doesNotExist())
+                .andExpect(jsonPath("$.content[0].payload.snapshot.nested.harmless").value("visible"))
+                .andExpect(jsonPath("$.content[0].payload.sessionToken").doesNotExist())
+                .andExpect(jsonPath("$.content[0].payload.api_key").doesNotExist())
                 .andExpect(jsonPath("$.content[0].payload.password").doesNotExist())
                 .andExpect(jsonPath("$.content[0].payload.value").doesNotExist())
                 .andExpect(jsonPath("$.content[0].payload.amount").value("15"));
