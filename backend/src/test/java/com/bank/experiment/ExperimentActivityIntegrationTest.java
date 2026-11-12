@@ -4,12 +4,19 @@ import com.bank.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.server.ResponseStatusException;
+import java.security.MessageDigest;
+import java.util.HexFormat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.springframework.mock.web.MockMultipartFile;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class ExperimentActivityIntegrationTest extends AbstractIntegrationTest {
+    @Autowired private com.bank.experiment.service.ExperimentActivityService activityService;
     private JsonNode createSession() throws Exception {
         String json = mvc.perform(post("/api/v1/experiment/sessions"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
@@ -56,26 +63,74 @@ class ExperimentActivityIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void uploadedEvidenceIsPrivateAndOwnerCanRetrieveIt() throws Exception {
+    void uploadedPdfAndPngArePrivateOwnerDownloadableAndSha256Verified() throws Exception {
         JsonNode session = createSession();
         String id = session.get("sessionId").asText();
         String token = session.get("sessionToken").asText();
-        byte[] pdf = "%PDF-1.4\nsynthetic evidence".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
-        MockMultipartFile upload = new MockMultipartFile("file", "evidence.pdf", "application/pdf", pdf);
-        String json = mvc.perform(multipart("/api/v1/experiment/sessions/" + id + "/uploads")
-                        .file(upload).header("X-Experiment-Token", token))
-                .andExpect(status().isCreated()).andExpect(jsonPath("$.id").exists())
+        byte[] pdf = "%PDF-1.4\\nsynthetic evidence".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        byte[] png = new byte[] {(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00};
+        String pdfJson = mvc.perform(multipart("/api/v1/experiment/sessions/" + id + "/uploads")
+                        .file(new MockMultipartFile("file", "evidence.pdf", "application/pdf", pdf))
+                        .header("X-Experiment-Token", token))
+                .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String fileId = mapper.readTree(json).get("id").asText();
+        String pngJson = mvc.perform(multipart("/api/v1/experiment/sessions/" + id + "/uploads")
+                        .file(new MockMultipartFile("file", "evidence.png", "image/png", png))
+                        .header("X-Experiment-Token", token))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode pdfRecord = mapper.readTree(pdfJson);
+        JsonNode pngRecord = mapper.readTree(pngJson);
+        String pdfId = pdfRecord.get("id").asText();
+        String pngId = pngRecord.get("id").asText();
+        String pdfHash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(pdf));
+        String pngHash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(png));
+        assertThat(pdfRecord.get("sha256").asText()).isEqualTo(pdfHash);
+        assertThat(pngRecord.get("sha256").asText()).isEqualTo(pngHash);
+
         mvc.perform(get("/api/v1/admin/experiments/files")).andExpect(status().isUnauthorized());
-        mvc.perform(get("/api/v1/admin/experiments/files/" + fileId)).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/admin/experiments/files/" + pdfId)).andExpect(status().isUnauthorized());
+        String customer = registerVerified("experiment-file-customer@example.com");
+        mvc.perform(get("/api/v1/admin/experiments/files?page=0&size=20")
+                        .header("Authorization", "Bearer " + customer))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/admin/experiments/files/" + pdfId)
+                        .header("Authorization", "Bearer " + customer))
+                .andExpect(status().isForbidden());
+
         mvc.perform(get("/api/v1/admin/experiments/files?page=0&size=20")
                         .header("Authorization", "Bearer " + adminToken()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].id").value(fileId))
-                .andExpect(jsonPath("$.content[0].filename").value("evidence.pdf"));
-        mvc.perform(get("/api/v1/admin/experiments/files/" + fileId)
+                .andExpect(jsonPath("$.content.length()").value(2));
+        mvc.perform(get("/api/v1/admin/experiments/files/" + pdfId)
                         .header("Authorization", "Bearer " + adminToken()))
                 .andExpect(status().isOk()).andExpect(content().bytes(pdf));
+        mvc.perform(get("/api/v1/admin/experiments/files/" + pngId)
+                        .header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isOk()).andExpect(content().bytes(png));
     }
+
+    @Test
+    void invalidAndOversizedEvidenceUploadsAreRejected() throws Exception {
+        JsonNode session = createSession();
+        String token = session.get("sessionToken").asText();
+        MockMultipartFile invalidType = new MockMultipartFile("file", "payload.exe",
+                "application/octet-stream", new byte[] {1, 2, 3, 4});
+        ResponseStatusException typeError = assertThrows(ResponseStatusException.class,
+                () -> activityService.storeFile(token, invalidType));
+        assertThat(typeError.getStatusCode().value()).isEqualTo(415);
+
+        MockMultipartFile invalidSignature = new MockMultipartFile("file", "fake.pdf",
+                "application/pdf", new byte[] {1, 2, 3, 4, 5});
+        ResponseStatusException signatureError = assertThrows(ResponseStatusException.class,
+                () -> activityService.storeFile(token, invalidSignature));
+        assertThat(signatureError.getStatusCode().value()).isEqualTo(415);
+
+        MockMultipartFile oversized = new MockMultipartFile("file", "large.pdf",
+                "application/pdf", new byte[10 * 1024 * 1024 + 1]);
+        ResponseStatusException sizeError = assertThrows(ResponseStatusException.class,
+                () -> activityService.storeFile(token, oversized));
+        assertThat(sizeError.getStatusCode().value()).isEqualTo(400);
+    }
+
 }
