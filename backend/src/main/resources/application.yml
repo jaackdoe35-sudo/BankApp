@@ -7,7 +7,6 @@ spring:
       max-request-size: 11MB
 
   mail:
-    host: ${SPRING_MAIL_HOST:}
     port: ${SPRING_MAIL_PORT:587}
     username: ${SPRING_MAIL_USERNAME:}
     password: ${SPRING_MAIL_PASSWORD:}
