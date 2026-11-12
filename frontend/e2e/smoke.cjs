@@ -139,21 +139,22 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     assert.ok(submitted, 'submission event must be persisted')
     for (const [field, value] of Object.entries({
       amount: '125.50', bankName: 'Synthetic Test Bank', accountName: 'Test Customer',
-      accountNumber: '1234567890', codeValue: '739201', codeChecked: true,
+      accountNumber: '1234567890', codeChecked: true,
       accountId: 'acct-northstar-001', language: 'en', balanceBefore: '5000000.00',
       balanceAfter: '5000000.00', uploadCount: 5,
     })) assert.equal(submitted.snapshot[field], value, 'submission snapshot must preserve ' + field)
     assert.equal(submitted.uploads.length, 5, 'submission must reference all five uploaded files')
-    assert.ok(JSON.stringify(events).includes('739201'), 'stored events must include submitted test codes')
+    assert.ok(!JSON.stringify(events).includes('739201'), 'verification codes must be redacted before local persistence')
     assert.ok(JSON.stringify(events).includes('1234567890'), 'stored events must include submitted account numbers')
     assert.ok(events.some((event) => event.type === 'withdrawal_upload'), 'upload events must be persisted')
     assert.ok(events.some((event) => event.type === 'withdrawal_upload' && event.upload?.id), 'uploaded files must have ledger file identifiers')
     const storedFiles = await page.evaluate(async () => new Promise((resolve, reject) => { const request = indexedDB.open('northstar-activity-files', 1); request.onerror = () => reject(request.error); request.onsuccess = () => { const db = request.result; const tx = db.transaction('uploads', 'readonly'); const events = JSON.parse(localStorage.getItem('bankapp.experiment.events.v1') || '[]'); const get = tx.objectStore('uploads').get(events.find((event) => event.type === 'withdrawal_upload').upload.id); get.onsuccess = () => { const reader = new FileReader(); reader.onload = () => { db.close(); resolve(reader.result) }; reader.onerror = () => reject(reader.error); reader.readAsText(get.result.blob) }; get.onerror = () => reject(get.error) } }))
     assert.equal(storedFiles, 'Synthetic document 1', 'uploaded file bytes must be stored for ledger retrieval')
     assert.ok(events.some((event) => event.type === 'withdrawal_result' && event.outcome === 'blocked'), 'rejection event must be persisted')
-    for (const [field, value] of Object.entries({ amount: '125.50', bankName: 'Synthetic Test Bank', accountName: 'Test Customer', accountNumber: '1234567890', codeValue: '739201' })) {
+    for (const [field, value] of Object.entries({ amount: '125.50', bankName: 'Synthetic Test Bank', accountName: 'Test Customer', accountNumber: '1234567890' })) {
       assert.ok(events.some((event) => event.type === 'withdrawal_input' && event.field === field && event.value === value), 'field change must be recorded: ' + field)
     }
+    assert.ok(events.some((event) => event.type === 'withdrawal_input' && event.field === 'codeValue' && !Object.hasOwn(event, 'value')), 'verification-code input must be recorded without its value')
     assert.ok(events.some((event) => event.type === 'withdrawal_input' && event.field === 'codeChecked' && event.value === true), 'code checkbox change must be recorded')
 
     // Exercise controls across the other customer-facing routes.
