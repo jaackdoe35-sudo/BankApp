@@ -103,7 +103,7 @@ export const localSimulationAdapter: AxiosAdapter = async (config) => {
 
   if (path === '/api/v1/accounts' && method === 'get') return ok(accounts())
   if (path === '/api/v1/accounts' && method === 'post') {
-    const item: Account = { id: id('acct'), accountNumber: '•••• ' + String(Math.floor(1000 + Math.random() * 9000)), type: body.type || 'CHECKING', currency: 'USD', balance: '0.00', status: 'ACTIVE', createdAt: now() }
+    const item: Account = { id: id('acct'), accountNumber: '•••• ' + String(Math.floor(1000 + Math.random() * 9000)), type: body.type || 'CHECKING', currency: 'USD', balance: '5000000.00', status: 'ACTIVE', createdAt: now() }
     writeAccounts([...accounts(), item]); addNotification('ACCOUNT', 'Account opened', `Your new ${item.type.toLowerCase()} account is ready.`)
     return ok(item)
   }
