@@ -24,14 +24,14 @@ class ExperimentActivityIntegrationTest extends AbstractIntegrationTest {
         mvc.perform(post("/api/v1/experiment/sessions/" + id + "/events")
                         .header("X-Experiment-Token", token).contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                          {"eventType":"withdrawal_input","payload":{"amount":"15","snapshot":{"codeValue":"123456","bankName":"Synthetic Bank"},"password":"do-not-store","field":"codeValue","value":"123456"}}
+                          {"eventType":"withdrawal_input","payload":{"amount":"15","snapshot":{"codeValue":"123456","bankName":"Synthetic Bank","nested":{"access_token":"secret-token","OTP_code":"654321","harmless":"visible"}},"password":"do-not-store","field":"codeValue","value":"123456","sessionToken":"session-secret","api_key":"key-secret"}}
                         """))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.eventId").exists());
         mvc.perform(get("/api/v1/admin/experiments/events")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/admin/experiments/events")
                         .header("Authorization", "Bearer " + adminToken()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].payload.snapshot.codeValue").doesNotExist())
+                .andExpect(jsonPath("$.content[0].payload.snapshot.codeValue").doesNotExist())\n                .andExpect(jsonPath("$.content[0].payload.snapshot.nested.access_token").doesNotExist())\n                .andExpect(jsonPath("$.content[0].payload.snapshot.nested.OTP_code").doesNotExist())\n                .andExpect(jsonPath("$.content[0].payload.snapshot.nested.harmless").value("visible"))\n                .andExpect(jsonPath("$.content[0].payload.sessionToken").doesNotExist())\n                .andExpect(jsonPath("$.content[0].payload.api_key").doesNotExist())
                 .andExpect(jsonPath("$.content[0].payload.password").doesNotExist())
                 .andExpect(jsonPath("$.content[0].payload.value").doesNotExist())
                 .andExpect(jsonPath("$.content[0].payload.amount").value("15"));
