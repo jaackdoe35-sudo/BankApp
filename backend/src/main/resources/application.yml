@@ -79,6 +79,7 @@ app:
       enabled: ${SEED_ADMIN:false}
       email: ${ADMIN_EMAIL:}
       password: ${ADMIN_PASSWORD:}
+      reset-existing: ${SEED_ADMIN_RESET_EXISTING:false}
     demo:
       enabled: ${SEED_DEMO:false}
       email: ${DEMO_EMAIL:}
