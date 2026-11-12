@@ -102,8 +102,8 @@ public class AccountService {
         ledgerService.post(TransactionType.DEPOSIT, "Teller deposit", null, List.of(
                 PostingLine.credit(account.getId(), amount),
                 PostingLine.debit(system.getId(), amount)));
-        String accountNumber = account.getAccountNumber();
-        String suffix = accountNumber.substring(Math.max(0, accountNumber.length() - 4));
+        String creditedAccountNumber = account.getAccountNumber();
+        String suffix = creditedAccountNumber.substring(Math.max(0, creditedAccountNumber.length() - 4));
         DomainEvent received = DomainEvent.of(EventActions.DEPOSIT, actorUserId, account.getOwnerUserId(),
                 "ACCOUNT", account.getId().toString(),
                 "You have received " + account.getCurrency() + " " + amount.toPlainString()

@@ -92,7 +92,7 @@ export default function TransferPage() {
       if (!await recordActivityAndWait(event)) throw new Error('Payment evidence could not be confirmed in the remote Activity Ledger. No payment was processed. Check the connection and retry.')
       return { reference: 'EXP-' + crypto.randomUUID().slice(0, 8).toUpperCase() }
     },
-    onSuccess: async (res) => {
+    onSuccess: async () => {
       const captured = await recordActivityAndWait({ id: crypto.randomUUID(), experimentId: paymentExperimentId, type: 'payment_result', createdAt: new Date().toISOString(),
         snapshot: paymentSnapshot(), uploads: Object.values(uploads).filter((item): item is PaymentUpload => !!item),
         outcome: 'not_processed', response: 'Payment request captured for testing only. No transfer was executed and no account balance changed.',
