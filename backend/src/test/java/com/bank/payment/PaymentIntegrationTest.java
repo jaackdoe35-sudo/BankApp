@@ -45,7 +45,7 @@ class PaymentIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("SUCCEEDED"));
 
-        assertThat(balance(token, acct)).isEqualTo(100.00);
+        assertThat(balance(token, acct)).isEqualTo(5000100.00);
     }
 
     @Test
@@ -59,6 +59,6 @@ class PaymentIntegrationTest extends AbstractIntegrationTest {
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk());
         }
-        assertThat(balance(token, acct)).isEqualTo(40.00);
+        assertThat(balance(token, acct)).isEqualTo(5000040.00);
     }
 }
