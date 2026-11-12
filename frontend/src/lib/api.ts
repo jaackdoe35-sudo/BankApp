@@ -2,20 +2,24 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { tokenStore } from "./auth";
 import { localSimulationAdapter } from "./localSimulation";
 
-const baseURL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
+const configuredApiBase = import.meta.env.VITE_API_BASE_URL?.trim();
+const baseURL = configuredApiBase || "http://localhost:8080";
+// Keep the browser-local simulator as the safe default. When a backend URL is
+// explicitly configured, use Axios' normal HTTP adapter for real API requests.
+const clientAdapter = configuredApiBase ? undefined : localSimulationAdapter;
 
 /** Authenticated client (attaches access token + auto-refreshes on 401). */
 export const api = axios.create({
   baseURL,
   headers: { "Content-Type": "application/json" },
-  adapter: localSimulationAdapter,
+  ...(clientAdapter ? { adapter: clientAdapter } : {}),
 });
 
 /** Bare client for token endpoints (no interceptors -> no refresh loops). */
 const authClient = axios.create({
   baseURL,
   headers: { "Content-Type": "application/json" },
-  adapter: localSimulationAdapter,
+  ...(clientAdapter ? { adapter: clientAdapter } : {}),
 });
 
 // ---- Types ----
