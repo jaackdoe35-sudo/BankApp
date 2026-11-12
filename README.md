@@ -1,218 +1,106 @@
-# BankApp — Northstar Private | Banking Interface Security Demo
+# BankApp — Northstar Private
 
-A browser-based banking-interface demonstration for application-security testing, covering form handling, file uploads, browser storage, activity recording, localization and security evaluation.
+A synthetic banking web application and application-security test environment. It demonstrates customer-facing account, payment and withdrawal workflows, file evidence capture, localization, and a remote activity ledger.
 
-> **DEMO ENVIRONMENT · SYNTHETIC DATA ONLY.** Use test information and files only. Do not submit real credentials, identity documents or financial information.
+> **SYNTHETIC TEST SYSTEM ONLY.** No real funds, bank rails, payment gateway, or real customer accounts are involved. Use synthetic names, account numbers, amounts, and files only.
 
-## Public demonstration
+## Live application
 
 - **Application:** https://bankapp-withdrawal-lab.vercel.app
 - **Activity Ledger:** https://bankapp-withdrawal-lab.vercel.app/test-ledger/
-- **Source code:** https://github.com/jaackdoe35-sudo/BankApp
+- **Backend:** https://banking-backend-nzjt.onrender.com
+- **Repository:** https://github.com/jaackdoe35-sudo/BankApp
+- **Release verification record:** [docs/RELEASE_VERIFICATION.md](docs/RELEASE_VERIFICATION.md)
 
-The public frontend currently uses a **browser-local simulation adapter**. Signup, authentication and account operations are simulated in the browser. The deployed frontend is **not connected to the Spring Boot backend** described later in this repository; backend source code and tests are a separate workstream.
+## Architecture
 
-### Data handling in the current demo
+- **Frontend:** React, TypeScript, Vite, React Router, React Query.
+- **Backend:** Java 21, Spring Boot 3.5, Spring Security, JPA, PostgreSQL, Redis, Flyway.
+- **Database:** Neon PostgreSQL.
+- **Hosting:** Vercel frontend and Render backend.
+- **Automation:** GitHub Actions, Maven verification, frontend build, dependency audit and Playwright browser checks.
 
-- Application simulation state is stored in this browser.
-- Activity events are stored in browser `localStorage`.
-- Uploaded test-file blobs are stored in browser IndexedDB.
-- The Activity Ledger reads the same browser-origin storage.
-- Data is not synchronized to a server or another device.
-- Withdrawal requests are recorded for testing and rejected; the simulated balance is not debited.
-- Use synthetic test values and files only.
+The production frontend is configured with the backend API base URL. The application uses the browser-to-backend APIs for account/authentication workflows when configured, and the Activity Ledger's experiment API for remote event and file capture. A CI pass or a reachable page does not by itself prove every live end-to-end flow; see the release verification record for checks actually performed and checks still outstanding.
 
-## Technology in this repository
+## Synthetic money-handling boundaries
 
-- **Backend codebase:** Java 21, Spring Boot, Spring Security, JPA, PostgreSQL, Redis, Kafka, Flyway and springdoc/OpenAPI.
-- **Frontend:** React, TypeScript, Vite, Tailwind CSS, React Query and React Router.
-- **Testing and CI:** Maven, Testcontainers, Playwright and GitHub Actions.
+- Payment processing is simulated; external payment processing is disabled.
+- Withdrawal requests are captured for security testing and rejected. They must not debit balances.
+- Test events preserve relevant non-secret form fields, including account numbers, amounts, currency and status.
+- Passwords, PINs, OTPs, access/refresh tokens, JWTs, API keys and other secret material must be redacted.
+- The experiment ledger is an evidence-capture facility, not a payment settlement ledger.
 
-The backend modules and API documentation are retained as a separate development workstream. Their presence and passing backend tests do not establish that the deployed frontend is using them or that a live production backend exists.
+## Remote Activity Ledger
 
-See [PROJECT_PLAN.md](./PROJECT_PLAN.md) for the broader architecture and development roadmap.
+The frontend sends experiment evidence to the backend:
 
-## Project status
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/v1/experiment/sessions` | Create an evidence-capture session |
+| POST | `/api/v1/experiment/sessions/{sessionId}/events` | Record a redacted event payload |
+| POST | `/api/v1/experiment/sessions/{sessionId}/uploads` | Upload an evidence file |
 
-- **Public frontend:** browser-local synthetic simulation, deployed on Vercel.
-- **Withdrawal workflow:** five upload slots, browser-local file storage, activity capture and rejected withdrawal outcome.
-- **Activity Ledger:** same-origin, browser-local read-only viewer with JSON/CSV export and file retrieval.
-- **Localization:** 13 bundled language options; CI checks language switching and a route matrix across the bundled locales. Native-speaker and full visual layout review remain outstanding.
-- **Spring Boot backend:** source code and automated tests exist, but production deployment and frontend integration are not verified.
-- **Release status:** public demonstration preview; not a real banking service and not a production full-stack application.
+Administrator-only ledger routes:
 
-> The API sections below document backend code in this repository. They are not evidence that the public browser simulation currently calls those endpoints.
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/api/v1/admin/experiments/events` | List captured events |
+| GET | `/api/v1/admin/experiments/events/{id}` | Retrieve an event |
+| GET | `/api/v1/admin/experiments/files` | List uploaded evidence files |
+| GET | `/api/v1/admin/experiments/files/{id}` | Download an evidence file |
 
-## Security review — public demo
+The event and upload endpoints use a short-lived experiment session token. Administrator ledger endpoints require an authenticated ADMIN identity. The application stores file bytes and SHA-256 metadata in PostgreSQL; the backend validates supported file types, file signatures and the 10 MiB size limit.
 
-The following boundaries are intentional and must be understood when evaluating this project:
+## Authentication endpoints
 
-- **Authentication and authorization:** the public frontend uses a local simulation adapter. Login accepts non-empty credentials and creates local demo tokens; those tokens are not server-issued credentials. Role checks in the browser are not a security boundary.
-- **Data integrity:** account balances, profiles, roles and application state are browser-local and can be changed by the browser owner. Displayed balances and account statuses are illustrative, not authoritative.
-- **Activity Ledger:** the Ledger is a same-origin browser-local viewer, not an independently authenticated audit service. It reads localStorage events and IndexedDB file blobs. Records and exports can contain entered form values, account numbers and verification-code test values.
-- **File handling:** the browser checks filename extension, MIME type and maximum size. These are client-side checks only; there is no server-side malware scanning, content-signature validation or quarantine in the public demo.
-- **Transfers and withdrawals:** transfer requests are recorded as simulated requests and do not debit an account or move money. Withdrawal requests are rejected in the demo.
-- **CSV export:** spreadsheet formula-like values are prefixed to reduce CSV formula injection when opened in spreadsheet software. JSON exports preserve raw test values.
+| Method | Endpoint | Access |
+|---|---|---|
+| POST | `/api/v1/auth/register` | Public customer registration |
+| POST | `/api/v1/auth/login` | Public login |
+| POST | `/api/v1/auth/refresh` | Refresh-token rotation |
+| POST | `/api/v1/auth/logout` | Refresh-token revocation |
+| GET | `/api/v1/users/me` | Authenticated user |
+| GET | `/api/v1/admin/users` | ADMIN |
 
-### Verification boundaries
+Do not commit passwords or other credentials. The production administrator password is configured as a Render secret and must be retained in a password manager controlled by the project owner. Never put it in this README, source code, issue comments or CI logs.
 
-- CI validates the frontend build, production dependency audit, Playwright browser workflow and backend Maven test suite.
-- The Playwright suite exercises all 13 locale codes and a customer-facing route matrix, but this does not establish translation quality or native-speaker correctness.
-- Browser storage-denial, corrupted-storage, cross-browser isolation, concurrent-tab write conflicts and real-device accessibility remain separate manual verification items.
-- A successful preview deployment is not a production release and does not prove backend integration.
+## Local development
 
-
-### Notifications & Audit API (Phase 6)
-
-| Method | Path | Auth | Purpose |
-|---|---|---|---|
-| GET | `/api/v1/notifications` | bearer | List my notifications |
-| GET | `/api/v1/notifications/unread-count` | bearer | Unread count (bell badge) |
-| POST | `/api/v1/notifications/{id}/read` `/read-all` | bearer | Mark read |
-| GET | `/api/v1/admin/audit` | ADMIN | Recent audit entries |
-
-Domain events flow over Kafka topic `banking.events`; two consumer groups
-(`notifications`, `audit`) process every event independently and idempotently (deduped by
-`eventId`). Email is **simulated by default**; set `SPRING_MAIL_HOST` (e.g. Mailtrap) for real SMTP.
-
-### Loans API (Phase 5)
-
-| Method | Path | Auth | Purpose |
-|---|---|---|---|
-| POST | `/api/v1/loans` | bearer | Apply for a loan |
-| GET | `/api/v1/loans` `/{id}` | bearer | List / view loan + amortization schedule |
-| POST | `/api/v1/loans/{id}/repay` | bearer | Pay the next installment |
-| GET | `/api/v1/admin/loans` | ADMIN | List loans (optional `?status=PENDING`) |
-| POST | `/api/v1/admin/loans/{id}/approve` `/reject` | ADMIN | Approve (disburse + schedule) / reject |
-
-Equal monthly payments via the standard amortization formula (`BigDecimal`, configurable
-`app.loans.annual-rate`, default 12%). A daily `@Scheduled` job marks overdue installments.
-
-### Cards & Payments API (Phase 4)
-
-| Method | Path | Auth | Purpose |
-|---|---|---|---|
-| POST | `/api/v1/cards` | bearer | Issue a virtual card (full number returned once) |
-| GET | `/api/v1/cards` | bearer | List my cards |
-| POST | `/api/v1/cards/{id}/freeze` `/unfreeze` `/cancel` | bearer | Card lifecycle |
-| POST | `/api/v1/cards/{id}/pay` | bearer | Card purchase (debits the account) |
-| POST | `/api/v1/payments/top-up` | bearer | Start a top-up (gateway intent) |
-| POST | `/api/v1/payments/{id}/confirm` | bearer | Confirm a top-up (simulated gateway) |
-| POST | `/api/v1/payments/webhook` | public | Stripe-signed webhook (real mode) |
-
-**Payment gateway:** runs in **simulated** mode by default (no secrets — top-ups confirm via
-the `/confirm` endpoint). Set `STRIPE_SECRET_KEY` to switch to **real Stripe test mode**
-(PaymentIntents + signature-verified webhooks):
+Prerequisites: Java 21, Node.js, Maven wrapper and Docker.
 
 ```bash
-# .env
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-# forward Stripe webhooks to the app, then pay with test card 4242 4242 4242 4242
-stripe listen --forward-to localhost:8080/api/v1/payments/webhook
-```
-
-### Transfers API (Phase 3)
-
-| Method | Path | Auth | Purpose |
-|---|---|---|---|
-| POST | `/api/v1/transfers` | bearer | Transfer money (send `Idempotency-Key` header) |
-| GET | `/api/v1/beneficiaries` | bearer | List saved payees |
-| POST | `/api/v1/beneficiaries` | bearer | Save a payee |
-| DELETE | `/api/v1/beneficiaries/{id}` | bearer | Delete a payee |
-
-Supplying an `Idempotency-Key` makes a transfer safe to retry: the server posts the
-underlying ledger transaction at most once per key.
-
-### Accounts API (Phase 2)
-
-| Method | Path | Auth | Purpose |
-|---|---|---|---|
-| POST | `/api/v1/accounts` | bearer | Open an account (CHECKING/SAVINGS) |
-| GET | `/api/v1/accounts` | bearer | List my accounts |
-| GET | `/api/v1/accounts/{id}` | bearer | Get one account |
-| POST | `/api/v1/accounts/{id}/deposit` | bearer | Deposit (amount) |
-| POST | `/api/v1/accounts/{id}/withdraw` | bearer | Rejects requests with `withdrawal rejected` after the customer enters bank details in the UI |
-| GET | `/api/v1/accounts/{id}/transactions` | bearer | Transaction history (newest first) |
-
-Every money movement posts a balanced set of ledger entries (debits + credits net to
-zero) against the customer account and a system settlement account, in one DB transaction.
-
-### Auth API (Phase 1)
-
-| Method | Path | Auth | Purpose |
-|---|---|---|---|
-| POST | `/api/v1/auth/register` | public | Create a customer, returns tokens |
-| POST | `/api/v1/auth/login` | public | Authenticate, returns tokens |
-| POST | `/api/v1/auth/refresh` | public | Rotate refresh token → new pair |
-| POST | `/api/v1/auth/logout` | public | Revoke a refresh token |
-| GET | `/api/v1/users/me` | bearer | Current user profile |
-| PUT | `/api/v1/users/me/profile` | bearer | Update customer profile |
-| GET | `/api/v1/admin/users` | ADMIN | List all customer profiles |
-
-**Demo admin** (seeded at startup): `admin@bank.local` / `Admin123!`
-(override via `ADMIN_EMAIL` / `ADMIN_PASSWORD`).
-
-## Prerequisites
-
-- Java 21, Maven (the `./mvnw` wrapper is included), Node 20+, Docker.
-
-## Run locally
-
-```bash
-# 1. (optional) create your env file
-cp .env.example .env
-
-# 2. start Postgres + Redis + Kafka  (Postgres host port 5433 -> container 5432)
+# Start local dependencies
 docker compose up -d postgres redis kafka
 
-# 3. run the backend
-cd backend && ./mvnw spring-boot:run
-#   http://localhost:8080/actuator/health   -> {"status":"UP"}
-#   http://localhost:8080/swagger-ui.html   -> API docs
+# Backend
+cd backend
+./mvnw spring-boot:run
 
-# 4. run the frontend (in another terminal)
-cd frontend && npm install && npm run dev
-#   http://localhost:5173  -> shows "Backend: UP"
+# Frontend, in a separate terminal
+cd frontend
+npm install
+npm run dev
 ```
 
-> **Port note:** the Docker Postgres is published on host port **5433** to avoid
-> clashing with a local Postgres on 5432. Inside Docker it remains 5432.
+Use the repository's `.env.example` as a starting point. Do not copy production secrets into a local file or commit a populated `.env`.
 
-### Run the whole stack in Docker
+## Verification
 
 ```bash
-docker compose --profile full up --build
+# Backend tests
+cd backend
+./mvnw verify
+
+# Frontend production build
+cd frontend
+npm ci
+npm run build
 ```
 
-### Observability (local)
+GitHub Actions also runs the dependency audit and Playwright browser checks. Browser tests verify the test cases encoded in the repository; they are not a substitute for authenticated live-backend testing.
 
-```bash
-docker compose --profile monitoring up -d   # Prometheus :9090 + Grafana :3000 (admin/admin)
-# backend exposes metrics at /actuator/prometheus; Grafana auto-loads the "Banking System" dashboard
-```
+## Release status
 
-## Deployment and integration status
+The frontend and backend have live deployments. Backend health, production CORS, anonymous admin denial, synthetic remote event capture and a synthetic file upload have been verified. Administrator login, authenticated ledger download, customer-role denial, and a full browser-submitted payment/withdrawal round trip remain pending acceptance tests. The exact status and evidence are maintained in [docs/RELEASE_VERIFICATION.md](docs/RELEASE_VERIFICATION.md).
 
-The public Vercel frontend is deployed from the `remove-kyc-disable-withdrawals` branch. Its project domain is configured for public viewing. The current public frontend uses browser-local simulation and does not require a backend API environment variable.
-
-The Spring Boot backend has not been verified as a healthy production service connected to this frontend. The repository includes Render deployment configuration and references to PostgreSQL, Redis, CORS and production secrets, but those should be treated as a **separate future integration task**.
-
-Do not add real banking credentials, real customer data, identity documents or payment details to this demonstration. Do not treat a successful frontend deployment or CI run as proof of backend integration or production readiness.
-
-## Test
-
-```bash
-cd backend && ./mvnw verify   # runs the Testcontainers smoke test (real Postgres)
-cd frontend && npm run build  # type-check + production build
-```
-
-## Layout
-
-```
-backend/     Spring Boot (modular packages under com.bank.*)
-frontend/    React + TypeScript (Vite)
-docker-compose.yml
-.github/workflows/ci.yml
-PROJECT_PLAN.md
-```
+PR #1 remains open and draft. It has not been merged. Do not treat this synthetic application as a real banking product or use real customer financial data.
