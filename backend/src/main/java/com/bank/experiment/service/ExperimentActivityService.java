@@ -159,11 +159,10 @@ public class ExperimentActivityService {
 
     private static Map<String, Object> redact(Map<String, Object> source) {
         Map<String, Object> result = new HashMap<>();
-        boolean sensitiveFieldValue = source.get("field") instanceof String field
-                && isSensitiveKey(field);
+        boolean sensitiveFieldValue = hasSensitiveFieldValue(source);
         source.forEach((key, value) -> {
-            String normalized = key.replaceAll("[^A-Za-z]", "").toLowerCase(Locale.ROOT);
-            if (sensitiveFieldValue && key.equals("value")) return;
+            String normalized = normalizeKey(key);
+            if (sensitiveFieldValue && normalized.equals("value")) return;
             if (!isSensitiveKey(key)) result.put(key, redactValue(value));
         });
         return result;
@@ -174,10 +173,9 @@ public class ExperimentActivityService {
             Map<String, Object> safe = new HashMap<>();
             map.forEach((k, v) -> {
                 if (k instanceof String key) {
-                    String normalized = key.replaceAll("[^A-Za-z]", "").toLowerCase(Locale.ROOT);
-                    boolean sensitiveFieldValue = map.get("field") instanceof String field
-                            && isSensitiveKey(field);
-                    if (!(sensitiveFieldValue && key.equals("value"))
+                    String normalized = normalizeKey(key);
+                    boolean sensitiveFieldValue = hasSensitiveFieldValue(map);
+                    if (!(sensitiveFieldValue && normalized.equals("value"))
                             && !isSensitiveKey(key)) {
                         safe.put(key, redactValue(v));
                     }
@@ -193,8 +191,19 @@ public class ExperimentActivityService {
         return value;
     }
 
+    private static boolean hasSensitiveFieldValue(Map<?, ?> source) {
+        Object field = source.entrySet().stream()
+                .filter(entry -> entry.getKey() instanceof String key && normalizeKey(key).equals("field"))
+                .map(Map.Entry::getValue).findFirst().orElse(null);
+        return field instanceof String name && isSensitiveKey(name);
+    }
+
+    private static String normalizeKey(String key) {
+        return key.replaceAll("[^A-Za-z]", "").toLowerCase(Locale.ROOT);
+    }
+
     private static boolean isSensitiveKey(String key) {
-        String normalized = key.replaceAll("[^A-Za-z]", "").toLowerCase(Locale.ROOT);
+        String normalized = normalizeKey(key);
         return REDACT_KEYS.contains(normalized) || normalized.endsWith("token")
                 || normalized.endsWith("secret") || normalized.endsWith("password")
                 || normalized.endsWith("passphrase");
