@@ -29,6 +29,15 @@ public class AdminExperimentController {
         return service.recentEvents(page, size).map(ExperimentEventResponse::from);
     }
 
+    @GetMapping("/files")
+    public Page<com.bank.experiment.dto.ExperimentFileResponse> files(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        return service.recentFiles(page, size).map(file -> new com.bank.experiment.dto.ExperimentFileResponse(
+                file.getId(), file.getOriginalFilename(), file.getContentType(),
+                file.getSizeBytes(), file.getSha256(), file.getCreatedAt()));
+    }
+
     @GetMapping("/events/{id}")
     public ExperimentEventResponse event(@PathVariable UUID id) {
         return ExperimentEventResponse.from(service.requireEvent(id));
