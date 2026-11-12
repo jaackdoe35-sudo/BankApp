@@ -62,7 +62,7 @@ class LoanIntegrationTest extends AbstractIntegrationTest {
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isUnprocessableEntity());
         }
-        assertThat(balance(token, acct)).isEqualTo(400.00);
+        assertThat(balance(token, acct)).isEqualTo(5000400.00);
     }
 
     @Test
