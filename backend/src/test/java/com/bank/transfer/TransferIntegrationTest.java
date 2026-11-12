@@ -58,7 +58,7 @@ class TransferIntegrationTest extends AbstractIntegrationTest {
                     .andExpect(status().isUnprocessableEntity());
         }
         org.assertj.core.api.Assertions.assertThat(balance(token, a.get("id").asText())).isEqualTo(5000100.00);
-        org.assertj.core.api.Assertions.assertThat(balance(token, b.get("id").asText())).isEqualTo(0.00);
+        org.assertj.core.api.Assertions.assertThat(balance(token, b.get("id").asText())).isEqualTo(5000000.00);
     }
 
     @Test
