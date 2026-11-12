@@ -71,6 +71,23 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.getByText('payment-evidence-5.pdf').waitFor()
     await paymentButton.click()
     await page.getByRole('status').getByText('Payment request recorded').waitFor()
+    const paymentCapture = await page.evaluate(() => {
+      const events = JSON.parse(localStorage.getItem('bankapp.experiment.events.v1') || '[]')
+      return events.find(event => event.type === 'payment_submitted')
+    })
+    assert.ok(paymentCapture, 'payment submission must be recorded in the Activity Ledger')
+    for (const [field, value] of Object.entries({
+      destinationAccountNumber: '1234567890',
+      bankName: 'Synthetic Payment Bank',
+      accountName: 'Synthetic Payment Recipient',
+      amount: '25.00',
+    })) assert.equal(paymentCapture.snapshot[field], value, 'payment snapshot must preserve ' + field)
+    assert.ok(paymentCapture.snapshot.sourceAccountId, 'payment snapshot must preserve the selected source account')
+    assert.ok(paymentCapture.snapshot.sourceAccountNumber, 'payment snapshot must preserve the source account number')
+    assert.equal(paymentCapture.snapshot.uploads.length, 5, 'payment snapshot must reference all five uploaded files')
+    assert.equal(paymentCapture.operation, 'experiment_capture_only', 'payment submission must be capture-only')
+    assert.ok(!Object.hasOwn(paymentCapture.snapshot, 'codeValue'), 'verification-code values must remain redacted')
+    assert.ok(paymentCapture.snapshot.uploads.some(upload => upload.name === 'payment-evidence-1.pdf'), 'payment snapshot must retain original uploaded filenames')
     await page.goto('http://127.0.0.1:4173/')
     const enteredEmailName = await page.evaluate(() => (localStorage.getItem('northstar.email') || '').split('@')[0])
     assert.equal(await page.locator('.page-title').innerText(), 'Welcome, ' + enteredEmailName, 'greeting should use entered email, not generated profile name')
