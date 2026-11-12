@@ -42,7 +42,7 @@ async function sendRemoteEvent(event: ActivityEvent): Promise<boolean> {
     const response = await fetch(`${API_BASE}/api/v1/experiment/sessions/${session.sessionId}/events`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Experiment-Token': session.sessionToken },
-      body: JSON.stringify({ eventType: event.type, payload: event }),
+      body: JSON.stringify({ eventType: event.type, payload: sanitizeActivityEvent(event) }),
     })
     if (response.status === 401) sessionStorage.removeItem(SESSION_KEY)
     return response.ok
@@ -93,7 +93,7 @@ let pendingFlush: Promise<void> | null = null
 function readPendingEvents(): ActivityEvent[] {
   try {
     const value = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]')
-    return Array.isArray(value) ? value.filter((item): item is ActivityEvent => !!item && typeof item.id === 'string') : []
+    return Array.isArray(value) ? value.filter((item): item is ActivityEvent => !!item && typeof item.id === 'string').map(sanitizeActivityEvent) : []
   } catch { return [] }
 }
 
@@ -174,7 +174,7 @@ export function recordActivity(event: ActivityEvent): boolean {\n  const safeEve
   let events: ActivityEvent[] = []
   try {
     const previous = JSON.parse(localStorage.getItem(STORAGE) || '[]')
-    events = Array.isArray(previous) ? previous : []
+    events = Array.isArray(previous) ? previous.filter((item): item is ActivityEvent => !!item && typeof item.id === 'string').map(sanitizeActivityEvent) : []
   } catch { events = [] }
   let locallyStored = true
   try { localStorage.setItem(STORAGE, JSON.stringify([...events, safeEvent])) }
