@@ -22,12 +22,12 @@ class EmailConfigTest {
     }
 
     @Test
-    void leavesSenderUnconfiguredUntilGmailAccountIsAuthorized() {
+    void selectsGmailApiBeforeAccountAuthorizationAndKeepsOutboxUnconfigured() {
         GmailCredentialStore store = mock(GmailCredentialStore.class);
         when(store.hasCredential()).thenReturn(false);
         EmailSender sender = config.emailSender(store, "client-id", "client-secret",
-                mock(ObjectProvider.class), "", "", "", "");
-        assertThat(sender).isInstanceOf(UnconfiguredEmailSender.class);
+                mock(ObjectProvider.class), "smtp.gmail.com", "smtp-user", "smtp-password", "");
+        assertThat(sender).isInstanceOf(GmailApiEmailSender.class);
         assertThat(sender.isConfigured()).isFalse();
     }
 
