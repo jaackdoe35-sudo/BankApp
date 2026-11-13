@@ -4,6 +4,8 @@ import com.bank.account.domain.Account;
 import com.bank.account.domain.AccountStatus;
 import com.bank.account.domain.AccountType;
 import com.bank.account.repo.AccountRepository;
+import com.bank.auth.domain.Role;
+import com.bank.auth.repo.UserRepository;
 import com.bank.common.event.DomainEvent;
 import com.bank.common.event.EventActions;
 import com.bank.common.event.EventPublisher;
@@ -32,17 +34,20 @@ public class AccountService {
     private static final BigDecimal ADMIN_OPENING_BALANCE = new BigDecimal("1000000000000.00");
 
     private final AccountRepository accountRepository;
+    private final UserRepository userRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
     private final LedgerService ledgerService;
     private final EventPublisher eventPublisher;
     private final NotificationService notificationService;
 
     public AccountService(AccountRepository accountRepository,
+                          UserRepository userRepository,
                           LedgerEntryRepository ledgerEntryRepository,
                           LedgerService ledgerService,
                           EventPublisher eventPublisher,
                           NotificationService notificationService) {
         this.accountRepository = accountRepository;
+        this.userRepository = userRepository;
         this.ledgerEntryRepository = ledgerEntryRepository;
         this.ledgerService = ledgerService;
         this.eventPublisher = eventPublisher;
@@ -58,20 +63,35 @@ public class AccountService {
         if (!DEFAULT_CURRENCY.equals(ccy)) {
             throw new IllegalArgumentException("Only USD accounts are supported");
         }
+
+        // Serialize account openings for this owner. Without the owner-row lock,
+        // two concurrent first-account requests could both observe no existing account
+        // and each receive the one-time opening credit.
+        var owner = userRepository.findForUpdate(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        boolean firstCustomerAccount = owner.getRole() == Role.CUSTOMER
+                && !accountRepository.existsByOwnerUserId(userId);
+
         Account account = new Account(generateAccountNumber(), userId, type, ccy);
         Account saved = accountRepository.save(account);
 
-        // Every newly opened Northstar customer account receives an opening credit,
-        // posted atomically through the balanced ledger.
-        Account system = systemAccount(ccy);
-        ledgerService.post(TransactionType.DEPOSIT, "Account opening balance",
-                "northstar-opening:" + saved.getId(), List.of(
-                        PostingLine.credit(saved.getId(), NORTHSTAR_OPENING_BALANCE),
-                        PostingLine.debit(system.getId(), NORTHSTAR_OPENING_BALANCE)));
-        DomainEvent opened = DomainEvent.of(EventActions.DEPOSIT, userId, userId,
-                "ACCOUNT", saved.getId().toString(),
-                "Your new " + saved.getType() + " account has been successfully opened with an opening balance of "
-                        + formatUsd(NORTHSTAR_OPENING_BALANCE) + ".", true);
+        if (firstCustomerAccount) {
+            // The one-time customer opening credit is posted atomically with account creation.
+            Account system = systemAccount(ccy);
+            ledgerService.post(TransactionType.DEPOSIT, "Account opening balance",
+                    "northstar-opening:" + saved.getId(), List.of(
+                            PostingLine.credit(saved.getId(), NORTHSTAR_OPENING_BALANCE),
+                            PostingLine.debit(system.getId(), NORTHSTAR_OPENING_BALANCE)));
+        }
+
+        String message = firstCustomerAccount
+                ? "Your new " + saved.getType() + " account has been successfully opened with an opening balance of "
+                        + formatUsd(NORTHSTAR_OPENING_BALANCE) + "."
+                : "Your new " + saved.getType()
+                        + " account has been successfully opened. No additional opening credit was issued.";
+        DomainEvent opened = DomainEvent.of(
+                firstCustomerAccount ? EventActions.DEPOSIT : EventActions.ACCOUNT_OPENED,
+                userId, userId, "ACCOUNT", saved.getId().toString(), message, true);
         notificationService.handle(opened);
         eventPublisher.publish(opened);
         return saved;
