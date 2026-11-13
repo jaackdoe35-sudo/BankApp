@@ -1,5 +1,5 @@
 package com.bank;
-
+ 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Shared base for integration tests: real Postgres + Redis + Kafka via Testcontainers
  * (singleton pattern so the cached Spring context stays valid across classes), plus
- * common HTTP helpers (auth, account opening, teller deposits).
+ * common HTTP helpers (auth, account retrieval/opening, teller deposits).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -99,8 +99,23 @@ public abstract class AbstractIntegrationTest {
         return mapper.readTree(json).get("userId").asText();
     }
 
-    /** Opens a CHECKING account; returns the account JSON (id, accountNumber, balance, ...). */
+    /**
+     * Returns the first account automatically provisioned during registration.
+     * Use openAdditionalAccount() when a test needs to exercise POST /accounts.
+     */
     protected JsonNode openAccount(String token) throws Exception {
+        String json = mvc.perform(get("/api/v1/accounts").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode accounts = mapper.readTree(json);
+        if (accounts.isEmpty()) {
+            throw new IllegalStateException("Registration did not provision the customer's first account");
+        }
+        return accounts.get(0);
+    }
+
+    /** Opens a genuinely additional account; under the one-time opening-credit rule it starts at zero. */
+    protected JsonNode openAdditionalAccount(String token) throws Exception {
         String json = mvc.perform(post("/api/v1/accounts").header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"type\":\"CHECKING\"}"))
                 .andExpect(status().isCreated())
