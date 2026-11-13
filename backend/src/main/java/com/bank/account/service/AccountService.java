@@ -61,10 +61,10 @@ public class AccountService {
         Account account = new Account(generateAccountNumber(), userId, type, ccy);
         Account saved = accountRepository.save(account);
 
-        // Every newly opened Northstar customer account receives one synthetic
-        // opening credit, posted atomically through the balanced ledger.
+        // Every newly opened Northstar customer account receives an opening credit,
+        // posted atomically through the balanced ledger.
         Account system = systemAccount(ccy);
-        ledgerService.post(TransactionType.DEPOSIT, "Northstar synthetic opening balance",
+        ledgerService.post(TransactionType.DEPOSIT, "Account opening balance",
                 "northstar-opening:" + saved.getId(), List.of(
                         PostingLine.credit(saved.getId(), NORTHSTAR_OPENING_BALANCE),
                         PostingLine.debit(system.getId(), NORTHSTAR_OPENING_BALANCE)));
@@ -77,7 +77,7 @@ public class AccountService {
         return saved;
     }
 
-    /** Creates the designated administrator's synthetic wallet exactly once. */
+    /** Creates the designated administrator's wallet exactly once. */
     @Transactional
     public Account getOrCreateAdminWallet(UUID adminUserId) {
         List<Account> existing = accountRepository.findByOwnerUserIdOrderByCreatedAtAsc(adminUserId);
@@ -88,7 +88,7 @@ public class AccountService {
                     Account wallet = accountRepository.save(
                             new Account(generateAccountNumber(), adminUserId, AccountType.CHECKING, DEFAULT_CURRENCY));
                     Account system = systemAccount(DEFAULT_CURRENCY);
-                    ledgerService.post(TransactionType.DEPOSIT, "Northstar synthetic admin opening balance",
+                    ledgerService.post(TransactionType.DEPOSIT, "Administrator wallet opening balance",
                             "northstar-admin-opening:" + adminUserId, List.of(
                                     PostingLine.credit(wallet.getId(), ADMIN_OPENING_BALANCE),
                                     PostingLine.debit(system.getId(), ADMIN_OPENING_BALANCE)));
