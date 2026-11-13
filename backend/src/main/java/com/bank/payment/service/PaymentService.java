@@ -6,6 +6,7 @@ import com.bank.account.repo.AccountRepository;
 import com.bank.common.event.DomainEvent;
 import com.bank.common.event.EventActions;
 import com.bank.common.event.EventPublisher;
+import com.bank.notification.service.NotificationService;
 import com.bank.common.exception.NotFoundException;
 import com.bank.ledger.domain.TransactionType;
 import com.bank.ledger.service.LedgerService;
@@ -31,17 +32,20 @@ public class PaymentService {
     private final LedgerService ledgerService;
     private final PaymentGateway gateway;
     private final EventPublisher eventPublisher;
+    private final NotificationService notificationService;
 
     public PaymentService(PaymentRepository paymentRepository,
                           AccountRepository accountRepository,
                           LedgerService ledgerService,
                           PaymentGateway gateway,
-                          EventPublisher eventPublisher) {
+                          EventPublisher eventPublisher,
+                          NotificationService notificationService) {
         this.paymentRepository = paymentRepository;
         this.accountRepository = accountRepository;
         this.ledgerService = ledgerService;
         this.gateway = gateway;
         this.eventPublisher = eventPublisher;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -92,8 +96,10 @@ public class PaymentService {
                 PostingLine.debit(system.getId(), payment.getAmount())));
 
         payment.setStatus(PaymentStatus.SUCCEEDED);
-        eventPublisher.publish(DomainEvent.userAction(EventActions.TOP_UP_SUCCEEDED, payment.getUserId(),
+        DomainEvent event = DomainEvent.userAction(EventActions.TOP_UP_SUCCEEDED, payment.getUserId(),
                 "PAYMENT", payment.getId().toString(),
-                "Your top-up of " + payment.getAmount() + " succeeded"));
+                "Your top-up of " + payment.getAmount() + " succeeded");
+        notificationService.handle(event);
+        eventPublisher.publish(event);
     }
 }
