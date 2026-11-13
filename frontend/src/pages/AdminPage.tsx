@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useState } from 'react'
 import {
   listAdminAccounts,
+  getAdminWallet,
   listAudit,
   tellerDeposit,
 } from '../lib/admin'
@@ -34,6 +35,7 @@ export default function AdminPage() {
 function TellerDeposit() {
   const qc = useQueryClient()
   const { data } = useQuery({ queryKey: ['admin-accounts'], queryFn: listAdminAccounts })
+  const { data: wallet } = useQuery({ queryKey: ['admin-wallet'], queryFn: getAdminWallet })
   const [amounts, setAmounts] = useState<Record<string, string>>({})
   const [accountNumber, setAccountNumber] = useState('')
   const [sendAmount, setSendAmount] = useState('')
@@ -44,19 +46,20 @@ function TellerDeposit() {
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ['admin-accounts'] })
       setAmounts((a) => ({ ...a, [vars.number]: '' }))
-      setMsg({ kind: 'ok', text: `Deposit request recorded for ${vars.number}` })
+      setMsg({ kind: 'ok', text: `Transfer recorded for ${vars.number}` })
     },
     onError: (e) => setMsg({ kind: 'err', text: apiErrorMessage(e) }),
   })
 
   const accounts = data ?? []
-  const sendM = useMutation({ mutationFn: () => tellerDeposit(accountNumber.trim(), Number(sendAmount)), onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-accounts'] }); setAccountNumber(''); setSendAmount(''); setMsg({ kind: 'ok', text: 'Funds sent. The account holder has been notified.' }) }, onError: (e) => setMsg({ kind: 'err', text: apiErrorMessage(e) }) })
+  const sendM = useMutation({ mutationFn: () => tellerDeposit(accountNumber.trim(), Number(sendAmount)), onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-accounts'] }); qc.invalidateQueries({ queryKey: ['admin-wallet'] }); setAccountNumber(''); setSendAmount(''); setMsg({ kind: 'ok', text: 'Funds sent. The account holder has been notified.' }) }, onError: (e) => setMsg({ kind: 'err', text: apiErrorMessage(e) }) })
 
   return (
     <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6">
-      <h2 className="text-lg font-semibold">Send money to any account</h2>
+      <h2 className="text-lg font-semibold">Admin funding wallet</h2>
+      <p className="mt-1 text-sm text-slate-600">Available synthetic balance: {wallet ? formatMoney(wallet.balance, wallet.currency) : "Loading wallet…"}</p>
       <p className="mt-1 text-sm text-slate-500">Enter any existing customer account number and the amount to credit. The recipient receives an account notification.</p>
-      <div className="mt-4 flex flex-wrap items-end gap-3"><label className="block text-sm">Account number<input value={accountNumber} onChange={e => setAccountNumber(e.target.value)} inputMode="numeric" autoComplete="off" placeholder="Enter account number" className="mt-1 block w-56 rounded-lg border border-slate-300 px-3 py-2 font-mono" /></label><label className="block text-sm">Amount (USD)<input type="number" min="0.01" step="0.01" value={sendAmount} onChange={e => setSendAmount(e.target.value)} placeholder="0.00" className="mt-1 block w-36 rounded-lg border border-slate-300 px-3 py-2" /></label><button onClick={() => sendM.mutate()} disabled={!accountNumber.trim() || !(Number(sendAmount)>0) || sendM.isPending} className="bank-primary-button">{sendM.isPending ? 'Sending…' : 'Send funds'}</button></div>
+      <div className="mt-4 flex flex-wrap items-end gap-3"><label className="block text-sm">Select customer account<select value={accountNumber} onChange={e => setAccountNumber(e.target.value)} className="mt-1 block w-64 rounded-lg border border-slate-300 px-3 py-2"><option value="">Choose an account</option>{accounts.map(a => <option key={a.accountNumber} value={a.accountNumber}>{a.accountNumber} · {a.ownerEmail} · {formatMoney(a.balance, a.currency)}</option>)}</select></label><label className="block text-sm">Amount (USD)<input type="number" min="0.01" step="0.01" value={sendAmount} onChange={e => setSendAmount(e.target.value)} placeholder="0.00" className="mt-1 block w-36 rounded-lg border border-slate-300 px-3 py-2" /></label><button onClick={() => sendM.mutate()} disabled={!accountNumber.trim() || !(Number(sendAmount)>0) || sendM.isPending} className="bank-primary-button">{sendM.isPending ? 'Sending…' : 'Send funds'}</button></div>
       <h3 className="mt-8 text-sm font-semibold text-slate-700">Customer account directory</h3>
       <p className="mt-1 text-xs text-slate-500">You can also credit a listed account directly.</p>
       <div className="mt-4 space-y-2">
