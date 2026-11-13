@@ -2,6 +2,7 @@ package com.bank.notification.service;
 
 import com.bank.auth.repo.UserRepository;
 import com.bank.common.event.DomainEvent;
+import com.bank.common.event.EventActions;
 import com.bank.common.exception.NotFoundException;
 import com.bank.notification.domain.Notification;
 import com.bank.notification.repo.NotificationRepository;
@@ -49,7 +50,7 @@ public class NotificationService {
                 INSERT INTO email_outbox (id, event_id, recipient, subject, body)
                 VALUES (?, ?, ?, ?, ?)
                 ON CONFLICT (event_id) DO NOTHING
-                """, event.eventId(), event.eventId(), recipient.getEmail(), title, event.message());
+                """, event.eventId(), event.eventId(), recipient.getEmail(), emailSubject(event.action()), event.message());
     }
 
     @Transactional(readOnly = true)
@@ -72,6 +73,16 @@ public class NotificationService {
     @Transactional
     public void markAllRead(UUID userId) {
         notificationRepository.findByUserIdOrderByCreatedAtDesc(userId).forEach(n -> n.setRead(true));
+    }
+
+    private String emailSubject(String action) {
+        return switch (action) {
+            case EventActions.DEPOSIT -> "Deposit confirmation";
+            case EventActions.TOP_UP_SUCCEEDED -> "Top-up confirmation";
+            case EventActions.LOAN_APPROVED -> "Loan approval confirmation";
+            case EventActions.LOAN_PAID_OFF -> "Loan repayment confirmation";
+            default -> humanize(action);
+        };
     }
 
     private String humanize(String action) {
