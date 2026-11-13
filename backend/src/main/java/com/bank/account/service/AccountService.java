@@ -18,7 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -68,8 +70,8 @@ public class AccountService {
                         PostingLine.debit(system.getId(), NORTHSTAR_OPENING_BALANCE)));
         DomainEvent opened = DomainEvent.of(EventActions.DEPOSIT, userId, userId,
                 "ACCOUNT", saved.getId().toString(),
-                "Your new " + saved.getType() + " account has been opened with a synthetic "
-                        + saved.getCurrency() + " " + NORTHSTAR_OPENING_BALANCE + " opening balance.", true);
+                "Your new " + saved.getType() + " account has been successfully opened with an opening balance of "
+                        + formatUsd(NORTHSTAR_OPENING_BALANCE) + ".", true);
         notificationService.handle(opened);
         eventPublisher.publish(opened);
         return saved;
@@ -92,12 +94,16 @@ public class AccountService {
                                     PostingLine.debit(system.getId(), ADMIN_OPENING_BALANCE)));
                     DomainEvent opened = DomainEvent.of(EventActions.DEPOSIT, adminUserId, adminUserId,
                             "ACCOUNT", wallet.getId().toString(),
-                            "Your administrator wallet has been opened with a synthetic USD "
-                                    + ADMIN_OPENING_BALANCE + " opening balance.", true);
+                            "Your administrator wallet has been successfully opened with an opening balance of "
+                                    + formatUsd(ADMIN_OPENING_BALANCE) + ".", true);
                     notificationService.handle(opened);
                     eventPublisher.publish(opened);
                     return wallet;
                 });
+    }
+
+    private static String formatUsd(BigDecimal amount) {
+        return "USD " + NumberFormat.getNumberInstance(Locale.US).format(amount);
     }
 
     /** Credits a customer from the designated administrator's wallet. */
