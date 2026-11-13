@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.atLeast;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -66,6 +67,13 @@ class AdminDepositIntegrationTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.balance", is(5000250.00)));
+    }
+
+    @Test
+    void designatedAdminGetsOneTrillionDollarWallet() throws Exception {
+        mvc.perform(get("/api/v1/admin/accounts/wallet").header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.balance", is(1000000000000.00)));
     }
 
     @Test
@@ -127,7 +135,7 @@ class AdminDepositIntegrationTest extends AbstractIntegrationTest {
             }
         }
         assertThat(received).isTrue();
-        verify(emailSender).send(eq(recipientEmail), eq("Deposit"), anyString());
+        verify(emailSender, atLeast(2)).send(eq(recipientEmail), eq("Deposit"), anyString());
     }
 
 }
