@@ -48,7 +48,7 @@ class TransferIntegrationTest extends AbstractIntegrationTest {
     void repeatedTransferRequestsNeverMoveFunds() throws Exception {
         String token = registerVerified("tx-idem@example.com");
         JsonNode a = openAccount(token);
-        JsonNode b = openAccount(token);
+        JsonNode b = openAdditionalAccount(token);
         tellerDeposit(a.get("accountNumber").asText(), "100.00");
         String body = transferBody(a.get("id").asText(), b.get("accountNumber").asText(), "30.00");
         for (int i = 0; i < 2; i++) {
@@ -66,7 +66,7 @@ class TransferIntegrationTest extends AbstractIntegrationTest {
     void insufficientFundsRejected() throws Exception {
         String token = registerVerified("tx-insuf@example.com");
         JsonNode a = openAccount(token);
-        JsonNode b = openAccount(token);
+        JsonNode b = openAdditionalAccount(token);
         mvc.perform(post("/api/v1/transfers")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
