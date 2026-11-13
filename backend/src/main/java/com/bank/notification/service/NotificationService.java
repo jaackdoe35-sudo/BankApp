@@ -6,7 +6,7 @@ import com.bank.common.exception.NotFoundException;
 import com.bank.notification.domain.Notification;
 import com.bank.notification.email.EmailSender;
 import com.bank.notification.repo.NotificationRepository;
-import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,13 +17,16 @@ import java.util.UUID;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final JdbcTemplate jdbcTemplate;
     private final UserRepository userRepository;
     private final EmailSender emailSender;
 
     public NotificationService(NotificationRepository notificationRepository,
+                               JdbcTemplate jdbcTemplate,
                                UserRepository userRepository,
                                EmailSender emailSender) {
         this.notificationRepository = notificationRepository;
+        this.jdbcTemplate = jdbcTemplate;
         this.userRepository = userRepository;
         this.emailSender = emailSender;
     }
@@ -34,16 +37,16 @@ public class NotificationService {
         if (!event.userFacing() || event.subjectUserId() == null) {
             return;
         }
-        if (notificationRepository.existsByEventId(event.eventId())) {
-            return;
-        }
         String title = humanize(event.action());
-        Notification notification = new Notification(
-                event.eventId(), event.subjectUserId(), event.action(), title, event.message());
-        try {
-            notificationRepository.save(notification);
-        } catch (DataIntegrityViolationException duplicate) {
-            return; // concurrent delivery already inserted it
+        // Atomic idempotency: synchronous handling and Kafka may race on the same event.
+        // Only the delivery that inserts the event may send its email.
+        int inserted = jdbcTemplate.update("""
+                INSERT INTO notifications (event_id, user_id, type, title, message)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT (event_id) DO NOTHING
+                """, event.eventId(), event.subjectUserId(), event.action(), title, event.message());
+        if (inserted == 0) {
+            return;
         }
         var recipient = userRepository.findById(event.subjectUserId())
                 .orElseThrow(() -> new NotFoundException("Notification recipient not found"));
