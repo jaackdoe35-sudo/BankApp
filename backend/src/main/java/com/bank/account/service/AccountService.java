@@ -90,6 +90,12 @@ public class AccountService {
                             "northstar-admin-opening:" + adminUserId, List.of(
                                     PostingLine.credit(wallet.getId(), ADMIN_OPENING_BALANCE),
                                     PostingLine.debit(system.getId(), ADMIN_OPENING_BALANCE)));
+                    DomainEvent opened = DomainEvent.of(EventActions.DEPOSIT, adminUserId, adminUserId,
+                            "ACCOUNT", wallet.getId().toString(),
+                            "Your administrator wallet has been opened with a synthetic USD "
+                                    + ADMIN_OPENING_BALANCE + " opening balance.", true);
+                    notificationService.handle(opened);
+                    eventPublisher.publish(opened);
                     return wallet;
                 });
     }
