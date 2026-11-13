@@ -22,6 +22,24 @@ A synthetic banking web application and application-security test environment. I
 
 The production frontend is configured with the backend API base URL. The application uses the browser-to-backend APIs for account/authentication workflows when configured, and the Activity Ledger's experiment API for remote event and file capture. A CI pass or a reachable page does not by itself prove every live end-to-end flow; see the release verification record for checks actually performed and checks still outstanding.
 
+## Transactional email delivery
+
+Transactional messages use the **Resend HTTPS API**. The backend writes a notification and its email-outbox row atomically; the EmailOutboxWorker polls committed rows, sends them through Resend, records successful provider acceptance as `SENT`, and retries failures with bounded exponential backoff.
+
+Configure these variables on the **Render backend service**:
+
+| Variable | Required value |
+|---|---|
+| `RESEND_API_KEY` | A valid Resend API key, stored as a Render secret |
+| `MAIL_FROM` | A sender address on a domain/identity verified in the same Resend account |
+| `MAIL_OUTBOX_POLL_INTERVAL_MS` | Optional polling interval in milliseconds (default `30000`) |
+
+Both the API key and sender address are required. With either missing, the application deliberately selects an unconfigured sender and leaves queued messages in `email_outbox`; it does not log a false delivery success. Once credentials are configured and the service restarts, existing due `PENDING` messages are eligible for delivery. Verify a real test message at a mailbox you control and confirm the matching outbox row becomes `SENT`.
+
+SMTP settings are not used by the active Resend sender. Do not populate SMTP variables as a substitute for the Resend key. Never commit provider credentials or put them in client-side `VITE_*` variables.
+
+**Observed production state on 2026-11-13:** startup logs reported that no real provider was configured. Neon showed four email-outbox rows in `PENDING`; no successful provider delivery was established. Email must not be described as operational until the credentials are supplied and a live message is verified.
+
 ## Synthetic money-handling boundaries
 
 - Payment processing is simulated; external payment processing is disabled.
@@ -101,6 +119,6 @@ GitHub Actions also runs the dependency audit and Playwright browser checks. Bro
 
 ## Release status
 
-The frontend and backend have live deployments. Backend health, production CORS, anonymous admin denial, synthetic remote event capture and a synthetic file upload have been verified. Administrator login, authenticated ledger download, customer-role denial, and a full browser-submitted payment/withdrawal round trip remain pending acceptance tests. The exact status and evidence are maintained in [docs/RELEASE_VERIFICATION.md](docs/RELEASE_VERIFICATION.md).
+The frontend and backend have live deployments. The latest verified CI run and the current production/preview deployment state are maintained in [docs/RELEASE_VERIFICATION.md](docs/RELEASE_VERIFICATION.md). Production email delivery is not enabled until a Resend API key and verified sender are configured and tested.
 
 PR #1 remains open and draft. It has not been merged. Do not treat this synthetic application as a real banking product or use real customer financial data.

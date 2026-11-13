@@ -43,18 +43,11 @@ services:
         value: "true"
       - key: CORS_ALLOWED_ORIGINS
         sync: false
-      # Configure a transactional SMTP provider to enable real recipient emails.
-      - key: SPRING_MAIL_HOST
+      # Resend HTTPS API: requires a real key and an account-verified sender identity.
+      # Keep the key as a Render secret; do not commit it or use SMTP placeholders.
+      - key: RESEND_API_KEY
         sync: false
-      - key: SPRING_MAIL_PORT
-        value: "587"
-      - key: SPRING_MAIL_USERNAME
-        sync: false
-      - key: SPRING_MAIL_PASSWORD
-        sync: false
-      - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH
-        value: "true"
-      - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE
-        value: "true"
       - key: MAIL_FROM
         sync: false
+      - key: MAIL_OUTBOX_POLL_INTERVAL_MS
+        value: "30000"

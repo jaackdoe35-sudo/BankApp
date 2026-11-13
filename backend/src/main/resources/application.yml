@@ -6,17 +6,6 @@ spring:
       max-file-size: 10MB
       max-request-size: 11MB
 
-  mail:
-    port: ${SPRING_MAIL_PORT:587}
-    username: ${SPRING_MAIL_USERNAME:}
-    password: ${SPRING_MAIL_PASSWORD:}
-    properties:
-      mail:
-        smtp:
-          auth: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:true}
-          starttls:
-            enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:true}
-
   datasource:
     url: ${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:banking}}
     username: ${DB_USERNAME:banking}
@@ -105,7 +94,13 @@ app:
     topic: ${EVENTS_TOPIC:banking.events}
     enabled: ${EVENTS_ENABLED:true}
   mail:
-    from: ${MAIL_FROM:no-reply@bank.local}
+    # The sender must be an identity/domain verified by Resend. No fake default sender.
+    from: ${MAIL_FROM:}
+    resend:
+      # Canonical Render/local variable; never commit the secret.
+      api-key: ${RESEND_API_KEY:}
+    outbox:
+      poll-interval-ms: ${MAIL_OUTBOX_POLL_INTERVAL_MS:30000}
   ratelimit:
     enabled: ${RATELIMIT_ENABLED:true}
     auth-per-minute: ${RATELIMIT_AUTH_PER_MINUTE:20}
