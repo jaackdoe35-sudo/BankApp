@@ -212,7 +212,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.getByText('Withdraw funds').waitFor()
     await page.getByText('$5,000,000.00').first().waitFor()
     const languageSelect = page.locator('.language-picker select')
-    assert.equal(await languageSelect.locator('option').count(), 13, 'language dropdown must list only bundled offline languages')
+    assert.equal(await languageSelect.locator('option').count(), 14, 'language dropdown must list only bundled offline languages')
     await languageSelect.selectOption('fr')
     await page.getByText('Vue d’ensemble').waitFor()
     assert.equal(await page.evaluate(() => document.documentElement.lang), 'fr', 'language code must be applied')
@@ -289,7 +289,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded' })
     // Every selectable locale is local-only; RTL metadata is checked for Arabic.
     const localeSelect = page.locator('.language-picker select')
-    for (const code of ['en','fr','es','pt','ar','ha','yo','fil','ms','ko','zh-CN','zh-TW','id']) {
+    for (const code of ['en','fr','es','pt','de','ar','ha','yo','fil','ms','ko','zh-CN','zh-TW','id']) {
       await localeSelect.selectOption(code)
       assert.equal(await page.evaluate(() => document.documentElement.lang), code, 'selected locale metadata must match ' + code)
     }
@@ -319,6 +319,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
       fr: ['Bienvenue','Ouvrir votre compte','Envoyer de l’argent','Cartes','Prêts','Profil','Notifications','Détails du compte','Réservé aux administrateurs.'],
       es: ['Bienvenido','Abre tu cuenta','Enviar dinero','Tarjetas','Préstamos','Perfil','Notificaciones','Detalles de la cuenta','Solo administradores.'],
       pt: ['Boas-vindas','Abra a sua conta','Enviar dinheiro','Cartões','Empréstimos','Perfil','Notificações','Detalhes da conta','Apenas administradores.'],
+      de: ['Willkommen','Konto eröffnen','Geld senden','Karten','Kredite','Profil','Benachrichtigungen','Kontodetails','Nur für Administratoren.'],
       ar: ['مرحبًا','افتح حسابك','إرسال الأموال','البطاقات','القروض','الملف الشخصي','الإشعارات','تفاصيل الحساب','للمسؤولين فقط.'],
       ha: ['Barka','Buɗe asusunka','Aika kuɗi','Katuna','Lamuni','Bayani','Sanarwa','Bayanan asusu','Na masu gudanarwa kawai.'],
       yo: ['Ẹ káàbọ̀','Ṣí àkọọ́lẹ̀ rẹ','Fi owó ránṣẹ́','Káàdì','Àwìn','Àkọ́ọ́lẹ̀','Àwọn ìfitónilétí','Àlàyé àkọọ́lẹ̀','Fún àwọn alákóso nìkan.'],
@@ -342,12 +343,19 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
       }
       await page.goto('http://127.0.0.1:4173/login', { waitUntil: 'domcontentloaded' })
       const loginButtonText = {
-        en: 'Sign in', fr: 'Se connecter', es: 'Iniciar sesión', pt: 'Iniciar sessão',
+        en: 'Sign in', fr: 'Se connecter', es: 'Iniciar sesión', pt: 'Iniciar sessão', de: 'Anmelden',
         ar: 'تسجيل الدخول', ha: 'Shiga', yo: 'Wọlé', fil: 'Mag-sign in', ms: 'Log masuk',
         ko: '로그인', 'zh-CN': '登录', 'zh-TW': '登入', id: 'Masuk',
       }[code]
       await page.getByRole('button', { name: loginButtonText }).waitFor({ state: 'visible' })
     }
+
+    await localeSelect.selectOption('de')
+    await page.waitForFunction(() => document.documentElement.lang === 'de')
+    await page.getByText('Übersicht').first().waitFor()
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await page.waitForFunction(() => document.documentElement.lang === 'de')
+    await page.getByText('Übersicht').first().waitFor()
 
     await localeSelect.selectOption('en')
     await page.goto('http://127.0.0.1:4173/accounts/acct-northstar-001', { waitUntil: 'networkidle' })
