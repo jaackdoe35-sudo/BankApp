@@ -15,21 +15,38 @@ public class EmailConfig {
     @Bean
     public EmailSender emailSender(
             ObjectProvider<JavaMailSender> mailSenderProvider,
-            @Value("${spring.mail.host:}") String host,
-            @Value("${spring.mail.username:}") String username,
-            @Value("${spring.mail.password:}") String password,
+            @Value("${app.mail.emailjs.service-id:}") String emailJsServiceId,
+            @Value("${app.mail.emailjs.template-id:}") String emailJsTemplateId,
+            @Value("${app.mail.emailjs.public-key:}") String emailJsPublicKey,
+            @Value("${app.mail.emailjs.private-key:}") String emailJsPrivateKey,
+            @Value("${spring.mail.host:}") String smtpHost,
+            @Value("${spring.mail.username:}") String smtpUsername,
+            @Value("${spring.mail.password:}") String smtpPassword,
             @Value("${app.mail.from:}") String configuredFrom) {
-        if (host.isBlank() || username.isBlank() || password.isBlank()) {
-            log.warn("Email: Gmail SMTP credentials incomplete; messages remain queued");
-            return new UnconfiguredEmailSender();
+
+        if (present(emailJsServiceId) && present(emailJsTemplateId)
+                && present(emailJsPublicKey) && present(emailJsPrivateKey)) {
+            log.info("Email: EmailJS HTTPS provider configured");
+            return new EmailJsEmailSender(emailJsServiceId.trim(), emailJsTemplateId.trim(),
+                    emailJsPublicKey.trim(), emailJsPrivateKey.trim(),
+                    present(configuredFrom) ? configuredFrom.trim() : "");
         }
-        JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
-        if (mailSender == null) {
+
+        if (present(smtpHost) && present(smtpUsername) && present(smtpPassword)) {
+            JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
+            if (mailSender != null) {
+                String from = present(configuredFrom) ? configuredFrom.trim() : smtpUsername.trim();
+                log.info("Email: SMTP provider configured for host {}", smtpHost);
+                return new SmtpEmailSender(mailSender, from);
+            }
             log.error("Email: SMTP credentials exist but JavaMailSender is unavailable");
-            return new UnconfiguredEmailSender();
         }
-        String from = configuredFrom.isBlank() ? username.trim() : configuredFrom.trim();
-        log.info("Email: SMTP sender configured for host {}", host);
-        return new SmtpEmailSender(mailSender, from);
+
+        log.warn("Email: no supported provider configured; messages will remain queued");
+        return new UnconfiguredEmailSender();
+    }
+
+    private static boolean present(String value) {
+        return value != null && !value.isBlank();
     }
 }
