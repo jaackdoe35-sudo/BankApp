@@ -6,7 +6,7 @@ export default function TransferPage() {
       <div className="page-heading">
         <div>
           <p className="page-eyebrow">PAYMENTS & TRANSFERS</p>
-          <h1 className="page-title">Outgoing transfers disabled</h1>
+          <h1 className="page-title">Send money</h1>
           <p className="page-subtitle">Customer accounts cannot send, withdraw, or transfer funds.</p>
         </div>
       </div>
