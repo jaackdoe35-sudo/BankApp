@@ -107,7 +107,7 @@ public class GmailOAuthController {
 
     private static String googleErrorCode(String body) {
         if (body == null) return "";
-        int key = body.indexOf("\\"error\\"");
+        int key = body.indexOf("\"error\"");
         if (key < 0) return "";
         int colon = body.indexOf(':', key);
         int firstQuote = colon < 0 ? -1 : body.indexOf('"', colon + 1);
