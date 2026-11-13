@@ -44,10 +44,14 @@ public class CustomerService {
     @Transactional
     public ProfileResponse updateProfile(UUID userId, UpdateProfileRequest request) {
         User user = requireUser(userId);
-        CustomerProfile profile = requireProfile(userId);
-        if (request.firstName() != null) profile.setFirstName(request.firstName());
-        if (request.lastName() != null) profile.setLastName(request.lastName());
-        return toResponse(user, profile);
+        // Staff/admin users may predate customer profile creation. Create the
+        // profile on first edit instead of rejecting a valid authenticated user.
+        CustomerProfile profile = profileRepository.findByUserId(userId)
+                .orElseGet(() -> new CustomerProfile(userId, null, null));
+        if (request.firstName() != null) profile.setFirstName(request.firstName().trim());
+        if (request.lastName() != null) profile.setLastName(request.lastName().trim());
+        CustomerProfile saved = profileRepository.save(profile);
+        return toResponse(user, saved);
     }
 
     @Transactional(readOnly = true)
@@ -63,11 +67,6 @@ public class CustomerService {
     private User requireUser(UUID userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
-    }
-
-    private CustomerProfile requireProfile(UUID userId) {
-        return profileRepository.findByUserId(userId)
-                .orElseThrow(() -> new NotFoundException("Profile not found"));
     }
 
     private ProfileResponse toResponse(User user, CustomerProfile p) {
