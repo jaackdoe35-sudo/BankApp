@@ -1,0 +1,33 @@
+name: Live API acceptance
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bankapp-live-acceptance-\${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  live-acceptance:
+    name: Production backend authenticated acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: \${{ github.event.pull_request.head.sha }}
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exercise authenticated production customer workflows
+        env:
+          BANKAPP_API_BASE_URL: https://banking-backend-nzjt.onrender.com
+          GITHUB_RUN_ID: \${{ github.run_id }}
+          GITHUB_RUN_ATTEMPT: \${{ github.run_attempt }}
+        run: node backend/scripts/live-acceptance.mjs
