@@ -14,22 +14,18 @@ public class EmailConfig {
 
     @Bean
     public EmailSender emailSender(
+            GmailCredentialStore gmailCredentialStore,
+            @Value("${app.mail.oauth.client-id:}") String gmailClientId,
+            @Value("${app.mail.oauth.client-secret:}") String gmailClientSecret,
             ObjectProvider<JavaMailSender> mailSenderProvider,
-            @Value("${app.mail.emailjs.service-id:}") String emailJsServiceId,
-            @Value("${app.mail.emailjs.template-id:}") String emailJsTemplateId,
-            @Value("${app.mail.emailjs.public-key:}") String emailJsPublicKey,
-            @Value("${app.mail.emailjs.private-key:}") String emailJsPrivateKey,
             @Value("${spring.mail.host:}") String smtpHost,
             @Value("${spring.mail.username:}") String smtpUsername,
             @Value("${spring.mail.password:}") String smtpPassword,
             @Value("${app.mail.from:}") String configuredFrom) {
 
-        if (present(emailJsServiceId) && present(emailJsTemplateId)
-                && present(emailJsPublicKey) && present(emailJsPrivateKey)) {
-            log.info("Email: EmailJS HTTPS provider configured");
-            return new EmailJsEmailSender(emailJsServiceId.trim(), emailJsTemplateId.trim(),
-                    emailJsPublicKey.trim(), emailJsPrivateKey.trim(),
-                    present(configuredFrom) ? configuredFrom.trim() : "");
+        if (present(gmailClientId) && present(gmailClientSecret) && gmailCredentialStore.hasCredential()) {
+            log.info("Email: Gmail API HTTPS sender configured");
+            return new GmailApiEmailSender(gmailClientId.trim(), gmailClientSecret.trim(), gmailCredentialStore);
         }
 
         if (present(smtpHost) && present(smtpUsername) && present(smtpPassword)) {
@@ -39,10 +35,9 @@ public class EmailConfig {
                 log.info("Email: SMTP provider configured for host {}", smtpHost);
                 return new SmtpEmailSender(mailSender, from);
             }
-            log.error("Email: SMTP credentials exist but JavaMailSender is unavailable");
         }
 
-        log.warn("Email: no supported provider configured; messages will remain queued");
+        log.warn("Email: no authorized provider configured; messages will remain queued");
         return new UnconfiguredEmailSender();
     }
 
