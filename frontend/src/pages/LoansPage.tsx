@@ -190,13 +190,10 @@ function LoanRow({ loan }: { loan: Loan }) {
                 </tbody>
               </table>
               {loan.status === 'ACTIVE' && (
-                <button
-                  onClick={() => repayM.mutate()}
-                  disabled={repayM.isPending}
-                  className="bank-primary-button"
-                >
-                  {repayM.isPending ? 'Paying…' : 'Attempt repayment'}
-                </button>
+                <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                  <p className="font-medium">Loan repayments are currently disabled.</p>
+                  <p className="mt-1">No payment will be taken from your account. Repayment functionality is not available in this testing release.</p>
+                </div>
               )}
               {repayM.isError && <p role="alert" className="mt-2 text-sm text-red-600">{apiErrorMessage(repayM.error)}</p>}
               {repayM.isSuccess && <p role="status" className="mt-2 text-sm text-emerald-700">withdrawal declined</p>}
