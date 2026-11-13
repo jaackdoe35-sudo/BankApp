@@ -80,7 +80,7 @@ class LoanIntegrationTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"amount\":300.00}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("withdrawal rejected"));
+                .andExpect(jsonPath("$.message").value("withdrawal declined"));
 
         mvc.perform(post("/api/v1/loans/" + loanId + "/repay")
                         .header("Authorization", "Bearer " + token))
