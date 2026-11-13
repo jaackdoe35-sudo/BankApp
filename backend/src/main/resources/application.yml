@@ -110,8 +110,13 @@ app:
     topic: ${EVENTS_TOPIC:banking.events}
     enabled: ${EVENTS_ENABLED:true}
   mail:
-    # Defaults to the configured Gmail account unless MAIL_FROM is explicitly set.
-    from: ${MAIL_FROM:${SPRING_MAIL_USERNAME:}}
+    # Gmail API is preferred; SMTP is retained only for hosts that permit outbound SMTP.
+    from: ${MAIL_FROM:}
+    oauth:
+      client-id: ${GMAIL_OAUTH_CLIENT_ID:}
+      client-secret: ${GMAIL_OAUTH_CLIENT_SECRET:}
+      redirect-uri: ${GMAIL_OAUTH_REDIRECT_URI:}
+      encryption-key: ${GMAIL_TOKEN_ENCRYPTION_KEY:}
     outbox:
       poll-interval-ms: ${MAIL_OUTBOX_POLL_INTERVAL_MS:30000}
   ratelimit:
