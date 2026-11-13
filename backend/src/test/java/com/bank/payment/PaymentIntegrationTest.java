@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 class PaymentIntegrationTest extends AbstractIntegrationTest {
 
@@ -46,6 +47,12 @@ class PaymentIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.status").value("SUCCEEDED"));
 
         assertThat(balance(token, acct)).isEqualTo(5000100.00);
+
+        mvc.perform(get("/api/v1/notifications")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(
+                        "Your USD 100.00 top-up was successful and has been credited to your account ending")));
     }
 
     @Test
