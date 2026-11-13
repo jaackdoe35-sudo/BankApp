@@ -1,9 +1,7 @@
 name: Live API acceptance
 
+# Manual only: this workflow creates persistent test records in production.
 on:
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 permissions:
