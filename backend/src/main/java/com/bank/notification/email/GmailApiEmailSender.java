@@ -88,7 +88,7 @@ public class GmailApiEmailSender implements EmailSender {
     private String buildRawMessage(String from, String to, String subject, String body) {
         try {
             MimeMessage message = new MimeMessage(Session.getInstance(new Properties()));
-            message.setFrom(new InternetAddress(from));
+            message.setFrom(new InternetAddress(from, "Northstar Private Banking", StandardCharsets.UTF_8.name()));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to, false));
             message.setSubject(subject == null ? "" : subject, StandardCharsets.UTF_8.name());
             message.setText(body == null ? "" : body, StandardCharsets.UTF_8.name());
