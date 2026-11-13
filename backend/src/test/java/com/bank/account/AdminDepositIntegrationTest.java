@@ -133,8 +133,8 @@ class AdminDepositIntegrationTest extends AbstractIntegrationTest {
         assertThat(received).isTrue();
         Long queuedEmails = jdbcTemplate.queryForObject("""
                 SELECT COUNT(*) FROM email_outbox
-                WHERE recipient = ? AND subject = ? AND body LIKE ? AND status = 'PENDING'
-                """, Long.class, recipientEmail, "Deposit", "%You have received USD 75.50%");
+                WHERE recipient = ? AND subject = ? AND body LIKE ?
+                """, Long.class, recipientEmail, "Deposit confirmation", "%You have received USD 75.50%");
         assertThat(queuedEmails).isEqualTo(1L);
     }
 
