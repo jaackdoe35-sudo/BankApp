@@ -34,8 +34,8 @@ class AccountLedgerIntegrationTest extends AbstractIntegrationTest {
         assertThat(existingAccounts).hasSize(1);
         String firstAccountId = existingAccounts.get(0).get("id").asText();
 
-        JsonNode secondAccount = openAccount(token);
-        JsonNode thirdAccount = openAccount(token);
+        JsonNode secondAccount = openAdditionalAccount(token);
+        JsonNode thirdAccount = openAdditionalAccount(token);
 
         assertThat(secondAccount.get("balance").decimalValue())
                 .isEqualByComparingTo(BigDecimal.ZERO);
