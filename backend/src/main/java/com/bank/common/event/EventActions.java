@@ -7,6 +7,7 @@ public final class EventActions {
     }
 
     public static final String USER_REGISTERED = "USER_REGISTERED";
+    public static final String ACCOUNT_OPENED = "ACCOUNT_OPENED";
     public static final String DEPOSIT = "DEPOSIT";
     public static final String TRANSFER_SENT = "TRANSFER_SENT";
     public static final String TRANSFER_RECEIVED = "TRANSFER_RECEIVED";
