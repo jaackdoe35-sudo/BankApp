@@ -23,13 +23,13 @@ class AdminDepositIntegrationTest extends AbstractIntegrationTest {
     JdbcTemplate jdbcTemplate;
 
     @Test
-    void customerCanOpenAccountImmediatelyAfterRegistration() throws Exception {
+    void registrationProvisionedFirstAccountAndAdditionalAccountGetsNoOpeningCredit() throws Exception {
         String token = register("account-open@example.com");
-        mvc.perform(post("/api/v1/accounts").header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"type\":\"CHECKING\"}"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.currency", is("USD")))
-                .andExpect(jsonPath("$.balance", is(5000000.00)));
+        JsonNode first = openAccount(token);
+        JsonNode additional = openAdditionalAccount(token);
+
+        assertThat(first.get("balance").decimalValue()).isEqualByComparingTo("5000000.00");
+        assertThat(additional.get("balance").decimalValue()).isEqualByComparingTo("0.00");
     }
 
     @Test
@@ -46,7 +46,6 @@ class AdminDepositIntegrationTest extends AbstractIntegrationTest {
     void customerCannotUseTellerDeposit() throws Exception {
         String token = registerVerified("teller-denied@example.com");
         String number = openAccount(token).get("accountNumber").asText();
-        // The customer's own token may not hit the admin teller endpoint.
         mvc.perform(post("/api/v1/admin/accounts/deposit").header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"accountNumber\":\"" + number + "\",\"amount\":100.00}"))
@@ -81,9 +80,9 @@ class AdminDepositIntegrationTest extends AbstractIntegrationTest {
         String json = mvc.perform(get("/api/v1/admin/accounts").header("Authorization", "Bearer " + admin))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        // The newly opened account appears with its owner's email.
-        org.assertj.core.api.Assertions.assertThat(json).contains(number).contains("teller-list@example.com");
+        assertThat(json).contains(number).contains("teller-list@example.com");
     }
+
     @Test
     void registrationAutomaticallyAssignsDistinctAccountNumbers() throws Exception {
         Set<String> accountNumbers = new HashSet<>();
@@ -104,11 +103,7 @@ class AdminDepositIntegrationTest extends AbstractIntegrationTest {
     void adminCanSendToAccountNumberAndRecipientGetsNotificationAndQueuesEmail() throws Exception {
         String recipientEmail = "admin-send-recipient@example.com";
         String recipientToken = register(recipientEmail);
-        String accountsJson = mvc.perform(get("/api/v1/accounts")
-                        .header("Authorization", "Bearer " + recipientToken))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        JsonNode account = mapper.readTree(accountsJson).get(0);
+        JsonNode account = openAccount(recipientToken);
         String accountNumber = account.get("accountNumber").asText();
 
         mvc.perform(post("/api/v1/admin/accounts/send").header("Authorization", "Bearer " + adminToken())
@@ -137,5 +132,4 @@ class AdminDepositIntegrationTest extends AbstractIntegrationTest {
                 """, Long.class, recipientEmail, "Deposit confirmation", "%You have received USD 75.50%");
         assertThat(queuedEmails).isEqualTo(1L);
     }
-
 }
