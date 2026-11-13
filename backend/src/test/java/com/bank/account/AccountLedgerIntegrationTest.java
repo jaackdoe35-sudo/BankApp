@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,6 +21,43 @@ class AccountLedgerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     JdbcTemplate jdbc;
+
+    @Test
+    void onlyTheFirstCustomerAccountReceivesTheOpeningCredit() throws Exception {
+        String token = register("first-account-credit@example.com");
+
+        String accountsJson = mvc.perform(get("/api/v1/accounts")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode existingAccounts = mapper.readTree(accountsJson);
+        assertThat(existingAccounts).hasSize(1);
+        String firstAccountId = existingAccounts.get(0).get("id").asText();
+
+        JsonNode secondAccount = openAccount(token);
+        JsonNode thirdAccount = openAccount(token);
+
+        assertThat(secondAccount.get("balance").decimalValue())
+                .isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(thirdAccount.get("balance").decimalValue())
+                .isEqualByComparingTo(BigDecimal.ZERO);
+
+        String firstAccountJson = mvc.perform(get("/api/v1/accounts/" + firstAccountId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(mapper.readTree(firstAccountJson).get("balance").decimalValue())
+                .isEqualByComparingTo("5000000.00");
+
+        for (JsonNode additionalAccount : List.of(secondAccount, thirdAccount)) {
+            String transactionsJson = mvc.perform(get("/api/v1/accounts/"
+                            + additionalAccount.get("id").asText() + "/transactions")
+                            .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+            assertThat(mapper.readTree(transactionsJson)).hasSize(0);
+        }
+    }
 
     @Test
     void withdrawalIsDisabledAndDoesNotChangeBalance() throws Exception {
