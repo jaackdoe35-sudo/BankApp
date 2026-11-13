@@ -87,7 +87,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     assert.equal(await ledger.getByText('Payment request received').count(), 0, 'Ledger must not expose local payment events before owner authentication')
 
     await page.getByRole('button', { name: 'Continue withdrawal' }).click()
-    await page.getByRole('status').getByText('Withdrawal rejected').waitFor()
+    await page.getByRole('alert').getByText('withdrawal declined').waitFor()
     await ledger.reload({ waitUntil: 'networkidle' })
     assert.equal(await ledger.locator('#loginPanel').isVisible(), true, 'Ledger remains owner-authenticated after new activity is submitted')
     assert.equal(await ledger.locator('#ledgerPanel').isVisible(), false, 'Withdrawal evidence must not be readable without owner authentication')
