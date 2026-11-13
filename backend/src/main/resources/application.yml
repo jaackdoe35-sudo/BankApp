@@ -80,6 +80,7 @@ springdoc:
 app:
   admin:
     owner-user-id: ${ADMIN_OWNER_USER_ID:}
+    owner-email: ${ADMIN_OWNER_EMAIL:}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
   jwt:
