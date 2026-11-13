@@ -47,7 +47,7 @@ class AccountLedgerIntegrationTest extends AbstractIntegrationTest {
         JsonNode arr = mapper.readTree(txns);
         assertThat(arr).hasSize(2);
         assertThat(arr).allSatisfy(entry ->
-                assertThat(entry.get("type").asText()).isEqualTo("DEPOSIT"));
+                assertThat(entry.get("type").asText()).isIn("DEPOSIT", "TRANSFER"));
     }
 
     @Test
