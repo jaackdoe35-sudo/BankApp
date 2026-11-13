@@ -70,7 +70,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     }
     await page.getByText('payment-evidence-5.pdf').waitFor()
     await paymentButton.click()
-    await page.getByRole('status').getByText('withdrawal declined').waitFor()
+    await page.getByRole('status').getByText('Test request recorded. No transfer was made and no account balance changed.').waitFor()
     const paymentCapture = await page.evaluate(() => {
       const events = JSON.parse(localStorage.getItem('bankapp.experiment.events.v1') || '[]')
       return events.find(event => event.type === 'payment_submitted')
