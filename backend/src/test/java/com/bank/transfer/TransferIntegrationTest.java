@@ -32,7 +32,7 @@ class TransferIntegrationTest extends AbstractIntegrationTest {
     void transferIsRejectedAndBothBalancesRemainUnchanged() throws Exception {
         String token = registerVerified("tx-move@example.com");
         JsonNode a = openAccount(token);
-        JsonNode b = openAccount(token);
+        JsonNode b = openAdditionalAccount(token);
         tellerDeposit(a.get("accountNumber").asText(), "200.00");
         mvc.perform(post("/api/v1/transfers")
                         .header("Authorization", "Bearer " + token)
@@ -41,7 +41,7 @@ class TransferIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.message", is("withdrawal declined")));
         org.assertj.core.api.Assertions.assertThat(balance(token, a.get("id").asText())).isEqualTo(5000200.00);
-        org.assertj.core.api.Assertions.assertThat(balance(token, b.get("id").asText())).isEqualTo(5000000.00);
+        org.assertj.core.api.Assertions.assertThat(balance(token, b.get("id").asText())).isEqualTo(0.00);
     }
 
     @Test
