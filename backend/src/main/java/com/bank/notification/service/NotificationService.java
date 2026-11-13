@@ -45,8 +45,12 @@ public class NotificationService {
         } catch (DataIntegrityViolationException duplicate) {
             return; // concurrent delivery already inserted it
         }
-        userRepository.findById(event.subjectUserId())
-                .ifPresent(user -> emailSender.send(user.getEmail(), title, event.message()));
+        var recipient = userRepository.findById(event.subjectUserId())
+                .orElseThrow(() -> new NotFoundException("Notification recipient not found"));
+        if (recipient.getEmail() == null || recipient.getEmail().isBlank()) {
+            throw new IllegalStateException("Notification recipient has no email address");
+        }
+        emailSender.send(recipient.getEmail(), title, event.message());
     }
 
     @Transactional(readOnly = true)
