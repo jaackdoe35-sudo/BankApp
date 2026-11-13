@@ -3,30 +3,30 @@ if (!BASE) throw new Error('BANKAPP_API_BASE_URL is required')
 
 const runId = process.env.GITHUB_RUN_ID || String(Date.now())
 const attempt = process.env.GITHUB_RUN_ATTEMPT || '1'
-const email = \`jaack.doe35+bankapp-live-\${runId}-\${attempt}@gmail.com\`
+const email = `jaack.doe35+bankapp-live-${runId}-${attempt}@gmail.com`
 const password = 'Live-Acceptance-Only-2026!'
 
 let passed = 0
 function check(name, condition) {
-  if (!condition) throw new Error(\`FAIL: \${name}\`)
+  if (!condition) throw new Error(`FAIL: ${name}`)
   passed += 1
-  console.log(\`PASS: \${name}\`)
+  console.log(`PASS: ${name}`)
 }
 
 async function call(path, { method = 'GET', token, body, expected = 200, label = path } = {}) {
   const headers = { Accept: 'application/json' }
   if (body !== undefined) headers['Content-Type'] = 'application/json'
-  if (token) headers.Authorization = \`Bearer \${token}\`
+  if (token) headers.Authorization = `Bearer ${token}`
   let response
   for (let attemptNo = 1; attemptNo <= 3; attemptNo += 1) {
     try {
-      response = await fetch(\`\${BASE}\${path}\`, {
+      response = await fetch(`${BASE}${path}`, {
         method, headers, body: body === undefined ? undefined : JSON.stringify(body),
         signal: AbortSignal.timeout(45000),
       })
       if (![502, 503, 504].includes(response.status) || attemptNo === 3) break
     } catch (error) {
-      if (attemptNo === 3) throw new Error(\`\${label}: network request failed after retries (\${error.name})\`)
+      if (attemptNo === 3) throw new Error(`${label}: network request failed after retries (${error.name})`)
     }
     await new Promise(resolve => setTimeout(resolve, attemptNo * 3000))
   }
@@ -34,7 +34,7 @@ async function call(path, { method = 'GET', token, body, expected = 200, label =
   let data = null
   try { data = raw ? JSON.parse(raw) : null } catch { /* status-only diagnostics */ }
   const accepted = Array.isArray(expected) ? expected.includes(response.status) : response.status === expected
-  if (!accepted) throw new Error(\`\${label}: expected HTTP \${Array.isArray(expected) ? expected.join('/') : expected}, received HTTP \${response.status}\`)
+  if (!accepted) throw new Error(`${label}: expected HTTP ${Array.isArray(expected) ? expected.join('/') : expected}, received HTTP ${response.status}`)
   return { response, data }
 }
 
@@ -64,9 +64,9 @@ const secondResult = await call('/api/v1/accounts', {
 })
 const second = secondResult.data
 check('Additional account also opens with USD 5,000,000.00', second.currency === 'USD' && Number(second.balance).toFixed(2) === '5000000.00')
-const detail = await call(\`/api/v1/accounts/\${accountId}\`, { token: initialAccess, label: 'Own account detail' })
+const detail = await call(`/api/v1/accounts/${accountId}`, { token: initialAccess, label: 'Own account detail' })
 check('Customer can retrieve own account detail', detail.data?.id === accountId)
-const transactions = await call(\`/api/v1/accounts/\${accountId}/transactions\`, { token: initialAccess, label: 'Own transaction history' })
+const transactions = await call(`/api/v1/accounts/${accountId}/transactions`, { token: initialAccess, label: 'Own transaction history' })
 check('Customer can retrieve own transaction history', Array.isArray(transactions.data) && transactions.data.length >= 1)
 
 const profile = await call('/api/v1/users/me/profile', {
@@ -83,7 +83,7 @@ const beneficiaryId = beneficiary.data?.id
 check('Customer can create beneficiary', Boolean(beneficiaryId))
 const beneficiaries = await call('/api/v1/beneficiaries', { token: initialAccess, label: 'List beneficiaries' })
 check('Customer can list own beneficiary', Array.isArray(beneficiaries.data) && beneficiaries.data.some(item => item.id === beneficiaryId))
-await call(\`/api/v1/beneficiaries/\${beneficiaryId}\`, { method: 'DELETE', token: initialAccess, expected: 204, label: 'Delete beneficiary' })
+await call(`/api/v1/beneficiaries/${beneficiaryId}`, { method: 'DELETE', token: initialAccess, expected: 204, label: 'Delete beneficiary' })
 check('Customer can delete own beneficiary', true)
 
 const card = await call('/api/v1/cards', {
@@ -92,16 +92,16 @@ const card = await call('/api/v1/cards', {
 })
 const cardId = card.data?.card?.id
 check('Customer can issue virtual card', Boolean(cardId && card.data?.card?.last4))
-const declinedCardPay = await call(\`/api/v1/cards/\${cardId}/pay\`, {
+const declinedCardPay = await call(`/api/v1/cards/${cardId}/pay`, {
   method: 'POST', token: initialAccess, expected: 422, label: 'Disabled card payment',
   body: { merchant: 'Synthetic Acceptance Test', amount: 10 },
 })
 check('Card payment is rejected', declinedCardPay.response.status === 422)
-const frozen = await call(\`/api/v1/cards/\${cardId}/freeze\`, { method: 'POST', token: initialAccess, label: 'Freeze card' })
+const frozen = await call(`/api/v1/cards/${cardId}/freeze`, { method: 'POST', token: initialAccess, label: 'Freeze card' })
 check('Customer can freeze card', frozen.data?.status === 'FROZEN')
-const unfrozen = await call(\`/api/v1/cards/\${cardId}/unfreeze\`, { method: 'POST', token: initialAccess, label: 'Unfreeze card' })
+const unfrozen = await call(`/api/v1/cards/${cardId}/unfreeze`, { method: 'POST', token: initialAccess, label: 'Unfreeze card' })
 check('Customer can unfreeze card', unfrozen.data?.status === 'ACTIVE')
-const cancelled = await call(\`/api/v1/cards/\${cardId}/cancel\`, { method: 'POST', token: initialAccess, label: 'Cancel card' })
+const cancelled = await call(`/api/v1/cards/${cardId}/cancel`, { method: 'POST', token: initialAccess, label: 'Cancel card' })
 check('Customer can cancel card', cancelled.data?.status === 'CANCELLED')
 
 const loan = await call('/api/v1/loans', {
@@ -112,7 +112,7 @@ const loanId = loan.data?.id
 check('Customer can submit loan application', Boolean(loanId))
 const loans = await call('/api/v1/loans', { token: initialAccess, label: 'List loans' })
 check('Customer can list own loans', Array.isArray(loans.data) && loans.data.some(item => item.id === loanId))
-const loanDetail = await call(\`/api/v1/loans/\${loanId}\`, { token: initialAccess, label: 'Loan detail' })
+const loanDetail = await call(`/api/v1/loans/${loanId}`, { token: initialAccess, label: 'Loan detail' })
 check('Customer can retrieve own loan detail', loanDetail.data?.loan?.id === loanId || loanDetail.data?.id === loanId)
 
 const payment = await call('/api/v1/payments/top-up', {
@@ -120,11 +120,11 @@ const payment = await call('/api/v1/payments/top-up', {
   body: { accountId, amount: 25 },
 })
 check('Top-up is handled by simulated gateway', payment.data?.manualConfirm === true && Boolean(payment.data?.paymentId))
-const confirmed = await call(\`/api/v1/payments/\${payment.data.paymentId}/confirm\`, {
+const confirmed = await call(`/api/v1/payments/${payment.data.paymentId}/confirm`, {
   method: 'POST', token: initialAccess, label: 'Confirm simulated top-up',
 })
 check('Simulated top-up confirms successfully', confirmed.data?.status === 'SUCCEEDED')
-const afterTopup = await call(\`/api/v1/accounts/\${accountId}\`, { token: initialAccess, label: 'Balance after top-up' })
+const afterTopup = await call(`/api/v1/accounts/${accountId}`, { token: initialAccess, label: 'Balance after top-up' })
 check('Top-up credits exactly USD 25.00', Number(afterTopup.data?.balance).toFixed(2) === '5000025.00')
 
 const deniedTransfer = await call('/api/v1/transfers', {
@@ -132,11 +132,11 @@ const deniedTransfer = await call('/api/v1/transfers', {
   body: { sourceAccountId: accountId, destinationAccountNumber: second.accountNumber, amount: 10 },
 })
 check('Customer transfer is rejected', deniedTransfer.response.status === 422)
-const deniedWithdrawal = await call(\`/api/v1/accounts/\${accountId}/withdraw\`, {
+const deniedWithdrawal = await call(`/api/v1/accounts/${accountId}/withdraw`, {
   method: 'POST', token: initialAccess, expected: 400, label: 'Disabled withdrawal',
 })
 check('Customer withdrawal is rejected', deniedWithdrawal.response.status === 400)
-const afterDeniedDebits = await call(\`/api/v1/accounts/\${accountId}\`, { token: initialAccess, label: 'Balance after denied debits' })
+const afterDeniedDebits = await call(`/api/v1/accounts/${accountId}`, { token: initialAccess, label: 'Balance after denied debits' })
 check('Rejected debit operations do not change balance', Number(afterDeniedDebits.data?.balance).toFixed(2) === '5000025.00')
 
 const notifications = await call('/api/v1/notifications', { token: initialAccess, label: 'Customer notifications' })
@@ -144,7 +144,7 @@ check('Customer can list notifications', Array.isArray(notifications.data) && no
 const unread = await call('/api/v1/notifications/unread-count', { token: initialAccess, label: 'Unread notification count' })
 check('Customer can read unread notification count', typeof unread.data?.count === 'number')
 if (notifications.data?.[0]?.id) {
-  await call(\`/api/v1/notifications/\${notifications.data[0].id}/read\`, {
+  await call(`/api/v1/notifications/${notifications.data[0].id}/read`, {
     method: 'POST', token: initialAccess, expected: 204, label: 'Mark notification read',
   })
   check('Customer can mark notification read', true)
@@ -154,8 +154,8 @@ const unreadAfter = await call('/api/v1/notifications/unread-count', { token: in
 check('Read-all clears unread notifications', unreadAfter.data?.count === 0)
 
 for (const path of ['/api/v1/admin/users', '/api/v1/admin/accounts', '/api/v1/admin/experiments/events', '/api/v1/admin/experiments/files']) {
-  const denied = await call(path, { token: initialAccess, expected: 403, label: \`Customer denied from \${path}\` })
-  check(\`Customer receives 403 for \${path}\`, denied.response.status === 403)
+  const denied = await call(path, { token: initialAccess, expected: 403, label: `Customer denied from ${path}` })
+  check(`Customer receives 403 for ${path}`, denied.response.status === 403)
 }
 
 const login = await call('/api/v1/auth/login', {
