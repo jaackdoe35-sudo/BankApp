@@ -105,7 +105,7 @@ class TransferIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(transferBody(aliceAcct.get("id").asText(),
                                 bobAcct.get("accountNumber").asText(), "5.00")))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isUnprocessableEntity());
     }
 
     @Test
