@@ -90,7 +90,7 @@ class TransferIntegrationTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(transferBody(a.get("id").asText(), a.get("accountNumber").asText(), "5.00")))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isUnprocessableEntity());
     }
 
     @Test
