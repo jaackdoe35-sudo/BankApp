@@ -28,7 +28,8 @@ public class SmtpEmailSender implements EmailSender {
             message.setText(body);
             mailSender.send(message);
         } catch (Exception e) {
-            log.warn("Failed to send email to {}: {}", to, e.getMessage());
+            log.error("Transactional email delivery failed for recipient {}", to, e);
+            throw new IllegalStateException("Transactional email delivery failed", e);
         }
     }
 }
