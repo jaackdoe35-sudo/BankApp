@@ -1,4 +1,5 @@
 import { api } from './api'
+import type { Account } from './accounts'
 
 export interface AuditEntry {
   id: string
@@ -22,6 +23,12 @@ export interface AdminAccount {
   currency: string
   status: string
   ownerEmail: string
+}
+
+
+export async function getAdminWallet(): Promise<Account> {
+  const { data } = await api.get<Account>('/api/v1/admin/accounts/wallet')
+  return data
 }
 
 export async function listAdminAccounts(): Promise<AdminAccount[]> {
