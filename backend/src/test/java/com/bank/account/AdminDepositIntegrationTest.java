@@ -2,20 +2,16 @@ package com.bank.account;
 
 import com.bank.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.bank.notification.email.EmailSender;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 
 import java.util.HashSet;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.MediaType;
 
 import static org.hamcrest.Matchers.is;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.atLeast;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -23,8 +19,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class AdminDepositIntegrationTest extends AbstractIntegrationTest {
 
-    @SpyBean
-    EmailSender emailSender;
+    @Autowired
+    JdbcTemplate jdbcTemplate;
 
     @Test
     void customerCanOpenAccountImmediatelyAfterRegistration() throws Exception {
@@ -105,7 +101,7 @@ class AdminDepositIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void adminCanSendToAccountNumberAndRecipientGetsNotificationAndEmail() throws Exception {
+    void adminCanSendToAccountNumberAndRecipientGetsNotificationAndQueuesEmail() throws Exception {
         String recipientEmail = "admin-send-recipient@example.com";
         String recipientToken = register(recipientEmail);
         String accountsJson = mvc.perform(get("/api/v1/accounts")
@@ -135,7 +131,11 @@ class AdminDepositIntegrationTest extends AbstractIntegrationTest {
             }
         }
         assertThat(received).isTrue();
-        verify(emailSender, atLeast(2)).send(eq(recipientEmail), eq("Deposit"), anyString());
+        Long queuedEmails = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM email_outbox
+                WHERE recipient = ? AND subject = ? AND body LIKE ? AND status = 'PENDING'
+                """, Long.class, recipientEmail, "Deposit", "%You have received USD 75.50%");
+        assertThat(queuedEmails).isEqualTo(1L);
     }
 
 }
