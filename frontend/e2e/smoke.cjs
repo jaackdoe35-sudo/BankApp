@@ -350,7 +350,10 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
       await page.getByRole('button', { name: loginButtonText }).waitFor({ state: 'visible' })
     }
 
-    await localeSelect.selectOption('de')
+    // Persist German from the authenticated dashboard, where the navigation label is rendered.
+    await page.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded' })
+    const germanSelect = page.locator('.language-picker select')
+    await germanSelect.selectOption('de')
     await page.waitForFunction(() => document.documentElement.lang === 'de')
     await page.getByText('Übersicht').first().waitFor()
     await page.reload({ waitUntil: 'domcontentloaded' })
