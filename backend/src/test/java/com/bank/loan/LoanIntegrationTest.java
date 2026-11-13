@@ -84,7 +84,8 @@ class LoanIntegrationTest extends AbstractIntegrationTest {
 
         mvc.perform(post("/api/v1/loans/" + loanId + "/repay")
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.message").value("Loan repayments are currently disabled. No payment was taken."));
         assertThat(balance(token, acct)).isEqualTo(5000300.00);
     }
 }
