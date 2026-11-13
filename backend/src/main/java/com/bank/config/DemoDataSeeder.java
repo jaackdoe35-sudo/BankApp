@@ -72,7 +72,6 @@ public class DemoDataSeeder implements CommandLineRunner {
         profileRepository.save(profile);
 
         Account account = accountService.createAccount(user.getId(), AccountType.CHECKING, "USD");
-        accountService.tellerDeposit(user.getId(), account.getAccountNumber(), new BigDecimal("5000.00"));
         cardService.issue(user.getId(), account.getId(), new BigDecimal("1000.00"));
         loanService.apply(user.getId(), account.getId(), new BigDecimal("2000.00"), 12);
 
