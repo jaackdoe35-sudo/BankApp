@@ -36,21 +36,11 @@ function TellerDeposit() {
   const qc = useQueryClient()
   const { data } = useQuery({ queryKey: ['admin-accounts'], queryFn: listAdminAccounts })
   const { data: wallet } = useQuery({ queryKey: ['admin-wallet'], queryFn: getAdminWallet })
-  const [amounts, setAmounts] = useState<Record<string, string>>({})
   const [accountNumber, setAccountNumber] = useState('')
   const [sendAmount, setSendAmount] = useState('')
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
 
-  const depositM = useMutation({
-    mutationFn: ({ number, amount }: { number: string; amount: number }) => tellerDeposit(number, amount),
-    onSuccess: (_d, vars) => {
-      qc.invalidateQueries({ queryKey: ['admin-accounts'] })
-      qc.invalidateQueries({ queryKey: ['admin-wallet'] })
-      setAmounts((a) => ({ ...a, [vars.number]: '' }))
-      setMsg({ kind: 'ok', text: `Transfer recorded for ${vars.number}` })
-    },
-    onError: (e) => setMsg({ kind: 'err', text: apiErrorMessage(e) }),
-  })
+
 
   const accounts = data ?? []
   const sendM = useMutation({ mutationFn: () => tellerDeposit(accountNumber.trim(), Number(sendAmount)), onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-accounts'] }); qc.invalidateQueries({ queryKey: ['admin-wallet'] }); setAccountNumber(''); setSendAmount(''); setMsg({ kind: 'ok', text: 'Funds sent. The account holder has been notified.' }) }, onError: (e) => setMsg({ kind: 'err', text: apiErrorMessage(e) }) })
