@@ -13,6 +13,35 @@ function check(name, condition) {
   console.log(`PASS: ${name}`)
 }
 
+const STARTUP_TIMEOUT_MS = 6 * 60 * 1000
+
+async function waitForBackendReady() {
+  const deadline = Date.now() + STARTUP_TIMEOUT_MS
+  let lastResult = 'no response'
+  let probes = 0
+
+  while (Date.now() < deadline) {
+    probes += 1
+    try {
+      const response = await fetch(`${BASE}/actuator/health`, {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(20000),
+      })
+      const health = await response.json().catch(() => null)
+      if (response.ok && health?.status === 'UP') {
+        console.log(`PASS: Backend health is UP after ${probes} probe(s)`)
+        return
+      }
+      lastResult = `HTTP ${response.status}${health?.status ? ` (${health.status})` : ''}`
+    } catch (error) {
+      lastResult = error?.name || 'request error'
+    }
+    const remaining = deadline - Date.now()
+    if (remaining > 0) await new Promise(resolve => setTimeout(resolve, Math.min(10000, remaining)))
+  }
+  throw new Error(`Backend did not report healthy within six minutes; last result: ${lastResult}`)
+}
+
 async function call(path, { method = 'GET', token, body, expected = 200, label = path } = {}) {
   const headers = { Accept: 'application/json' }
   if (body !== undefined) headers['Content-Type'] = 'application/json'
@@ -37,6 +66,8 @@ async function call(path, { method = 'GET', token, body, expected = 200, label =
   if (!accepted) throw new Error(`${label}: expected HTTP ${Array.isArray(expected) ? expected.join('/') : expected}, received HTTP ${response.status}`)
   return { response, data }
 }
+
+await waitForBackendReady()
 
 const unauth = await call('/api/v1/users/me', { expected: 401, label: 'Unauthenticated profile' })
 check('Unauthenticated profile request returns 401', unauth.response.status === 401)
@@ -140,6 +171,7 @@ const afterDeniedDebits = await call(`/api/v1/accounts/${accountId}`, { token: i
 check('Rejected debit operations do not change balance', Number(afterDeniedDebits.data?.balance).toFixed(2) === '5000025.00')
 
 const notifications = await call('/api/v1/notifications', { token: initialAccess, label: 'Customer notifications' })
+check('Customer notification messages contain no synthetic label', Array.isArray(notifications.data) && notifications.data.every(item => !`${item.title || ''} ${item.message || ''}`.toLowerCase().includes('synthetic')))
 check('Customer can list notifications', Array.isArray(notifications.data) && notifications.data.length >= 1)
 const unread = await call('/api/v1/notifications/unread-count', { token: initialAccess, label: 'Unread notification count' })
 check('Customer can read unread notification count', typeof unread.data?.count === 'number')
