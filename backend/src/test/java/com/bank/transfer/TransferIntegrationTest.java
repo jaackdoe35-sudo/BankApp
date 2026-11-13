@@ -84,7 +84,7 @@ class TransferIntegrationTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(transferBody(a.get("id").asText(), "999999999999", "5.00")))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isUnprocessableEntity());
 
         mvc.perform(post("/api/v1/transfers")
                         .header("Authorization", "Bearer " + token)
