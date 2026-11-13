@@ -43,11 +43,14 @@ services:
         value: "true"
       - key: CORS_ALLOWED_ORIGINS
         sync: false
-      # Resend HTTPS API: requires a real key and an account-verified sender identity.
-      # Keep the key as a Render secret; do not commit it or use SMTP placeholders.
-      - key: RESEND_API_KEY
+      # Gmail API OAuth: secrets are entered in Render, never committed to the repository.
+      - key: GMAIL_OAUTH_CLIENT_ID
         sync: false
-      - key: MAIL_FROM
+      - key: GMAIL_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: GMAIL_OAUTH_REDIRECT_URI
+        value: https://banking-backend-nzjt.onrender.com/api/v1/admin/email/oauth/callback
+      - key: GMAIL_TOKEN_ENCRYPTION_KEY
         sync: false
       - key: MAIL_OUTBOX_POLL_INTERVAL_MS
         value: "30000"
