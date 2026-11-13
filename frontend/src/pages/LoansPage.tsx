@@ -184,8 +184,6 @@ function LoanRow({ loan }: { loan: Loan }) {
                   <p className="mt-1">No payment will be taken from your account. Repayment functionality is not available in this testing release.</p>
                 </div>
               )}
-              {repayM.isError && <p role="alert" className="mt-2 text-sm text-red-600">{apiErrorMessage(repayM.error)}</p>}
-              {repayM.isSuccess && <p role="status" className="mt-2 text-sm text-emerald-700">withdrawal declined</p>}
             </>
           )}
         </div>
