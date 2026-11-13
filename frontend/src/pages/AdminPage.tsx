@@ -9,6 +9,7 @@ import {
 } from '../lib/admin'
 import { formatDateTime, formatMoney } from '../lib/format'
 import { apiErrorMessage } from '../lib/errors'
+import { api } from '../lib/api'
 
 export default function AdminPage() {
   const { user } = useAuth()
@@ -25,9 +26,59 @@ export default function AdminPage() {
     <AppLayout>
       <h1 className="text-2xl font-bold tracking-tight">Admin</h1>
 
+      <GmailConnection />
       <TellerDeposit />
       <AuditLog />
     </AppLayout>
+  )
+}
+
+
+function GmailConnection() {
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['admin-email-gmail-status'],
+    queryFn: async () => (await api.get<{
+      oauthConfigured: boolean
+      connected: boolean
+      senderEmail: string
+    }>('/api/v1/admin/email/status')).data,
+  })
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function connect() {
+    setBusy(true)
+    setError('')
+    try {
+      const response = await api.get<{ authorizationUrl: string }>('/api/v1/admin/email/oauth/authorize')
+      window.location.assign(response.data.authorizationUrl)
+    } catch (e) {
+      setError(apiErrorMessage(e))
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
+      <h2 className="text-lg font-semibold">Transactional email · Gmail</h2>
+      <p className="mt-1 text-sm text-slate-500">
+        Connect the bank's Gmail sender using Google's secure authorization. The refresh token is encrypted in the backend database.
+      </p>
+      {isLoading ? <p className="mt-3 text-sm text-slate-500">Checking connection…</p> : (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <span className={'rounded-full px-3 py-1 text-xs font-medium ' + (data?.connected ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700')}>
+            {data?.connected ? 'Connected' : 'Not connected'}
+          </span>
+          {data?.senderEmail && <span className="text-sm text-slate-600">{data.senderEmail}</span>}
+          {!data?.oauthConfigured && <span className="text-sm text-amber-700">Google OAuth client settings are not configured in Render.</span>}
+          <button onClick={connect} disabled={!data?.oauthConfigured || busy} className="bank-primary-button">
+            {busy ? 'Opening Google…' : data?.connected ? 'Reconnect Gmail' : 'Connect Gmail'}
+          </button>
+          <button onClick={() => refetch()} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">Refresh status</button>
+        </div>
+      )}
+      {error && <p role="alert" className="mt-2 text-sm text-red-600">{error}</p>}
+    </section>
   )
 }
 
