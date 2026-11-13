@@ -78,6 +78,8 @@ springdoc:
     path: /v3/api-docs
 
 app:
+  admin:
+    owner-user-id: ${ADMIN_OWNER_USER_ID:}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
   jwt:
