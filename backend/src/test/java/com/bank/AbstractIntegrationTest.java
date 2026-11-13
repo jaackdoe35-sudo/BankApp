@@ -57,6 +57,7 @@ public abstract class AbstractIntegrationTest {
         // so admin-authorized integration tests do not depend on production seed settings.
         registry.add("app.seed.admin.enabled", () -> "true");
         registry.add("app.seed.admin.email", () -> "admin@bank.local");
+        registry.add("app.admin.owner-email", () -> "admin@bank.local");
         registry.add("app.seed.admin.password", () -> TEST_ADMIN_PASSWORD);
     }
 
