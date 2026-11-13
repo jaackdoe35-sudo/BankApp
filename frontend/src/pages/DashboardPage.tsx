@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import AppLayout from '../components/AppLayout'
 import { useAuth } from '../context/AuthContext'
 import { createAccount, listAccounts, type AccountType } from '../lib/accounts'
+import { getAdminWallet } from '../lib/admin'
 import { formatMoney } from '../lib/format'
 import { apiErrorMessage } from '../lib/errors'
 import { useLanguage } from '../lib/i18n'
@@ -17,9 +18,22 @@ export default function DashboardPage() {
   const { user } = useAuth()
   const { t } = useLanguage()
   const [type, setType] = useState<AccountType>('CHECKING')
-  const { data: accounts, isLoading, isError } = useQuery({ queryKey: ['accounts'], queryFn: listAccounts })
+  const isAdmin = user?.role === 'ADMIN'
+  const { data: customerAccounts, isLoading: accountsLoading, isError: accountsError } = useQuery({
+    queryKey: ['accounts'],
+    queryFn: listAccounts,
+    enabled: !isAdmin,
+  })
+  const { data: adminWallet, isLoading: walletLoading, isError: walletError } = useQuery({
+    queryKey: ['admin-wallet'],
+    queryFn: getAdminWallet,
+    enabled: isAdmin,
+    retry: false,
+  })
   const open = useMutation({ mutationFn: () => createAccount(type), onSuccess: () => qc.invalidateQueries({ queryKey: ['accounts'] }) })
-  const list = accounts ?? []
+  const list = isAdmin ? (adminWallet ? [adminWallet] : []) : (customerAccounts ?? [])
+  const isLoading = isAdmin ? walletLoading : accountsLoading
+  const isError = isAdmin ? walletError : accountsError
   const total = list.reduce((sum, account) => sum + Number(account.balance), 0)
   const emailLabel = user?.email?.trim().split('@')[0] || ''
 
@@ -60,14 +74,14 @@ export default function DashboardPage() {
 
       <div className="section-heading">
         <div><h2>{t('accounts')}</h2><p>Account details and available balances</p></div>
-        <div className="flex items-center gap-2">
+        {!isAdmin && <div className="flex items-center gap-2">
           <select aria-label="New account type" value={type} onChange={(e) => setType(e.target.value as AccountType)} className="max-w-32 rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm">
             <option value="CHECKING">Checking</option><option value="SAVINGS">Savings</option>
           </select>
           <button onClick={() => open.mutate()} disabled={open.isPending} className="bank-primary-button">{open.isPending ? 'Opening…' : 'Open account'}</button>
-        </div>
+        </div>}
       </div>
-      {open.isError && <p className="mb-3 text-sm text-red-600">{apiErrorMessage(open.error)}</p>}
+      {!isAdmin && open.isError && <p className="mb-3 text-sm text-red-600">{apiErrorMessage(open.error)}</p>}
       <div id="account-list" className="account-list">
         {isLoading && <p className="py-5 text-sm text-slate-500">Loading accounts…</p>}
         {isError && <p className="py-5 text-sm text-red-600">Unable to load accounts.</p>}
