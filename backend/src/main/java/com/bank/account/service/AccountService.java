@@ -27,6 +27,7 @@ public class AccountService {
 
     private static final String DEFAULT_CURRENCY = "USD";
     private static final BigDecimal NORTHSTAR_OPENING_BALANCE = new BigDecimal("5000000.00");
+    private static final BigDecimal ADMIN_OPENING_BALANCE = new BigDecimal("1000000000000.00");
 
     private final AccountRepository accountRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
@@ -66,6 +67,52 @@ public class AccountService {
                         PostingLine.credit(saved.getId(), NORTHSTAR_OPENING_BALANCE),
                         PostingLine.debit(system.getId(), NORTHSTAR_OPENING_BALANCE)));
         return saved;
+    }
+
+    /** Creates the designated administrator's synthetic wallet exactly once. */
+    @Transactional
+    public Account getOrCreateAdminWallet(UUID adminUserId) {
+        List<Account> existing = accountRepository.findByOwnerUserIdOrderByCreatedAtAsc(adminUserId);
+        return existing.stream()
+                .filter(a -> a.getType() == AccountType.CHECKING && "USD".equals(a.getCurrency()))
+                .findFirst()
+                .orElseGet(() -> {
+                    Account wallet = accountRepository.save(
+                            new Account(generateAccountNumber(), adminUserId, AccountType.CHECKING, DEFAULT_CURRENCY));
+                    Account system = systemAccount(DEFAULT_CURRENCY);
+                    ledgerService.post(TransactionType.DEPOSIT, "Northstar synthetic admin opening balance",
+                            "northstar-admin-opening:" + adminUserId, List.of(
+                                    PostingLine.credit(wallet.getId(), ADMIN_OPENING_BALANCE),
+                                    PostingLine.debit(system.getId(), ADMIN_OPENING_BALANCE)));
+                    return wallet;
+                });
+    }
+
+    /** Credits a customer from the designated administrator's wallet. */
+    @Transactional
+    public Account adminTransfer(UUID adminUserId, String accountNumber, BigDecimal amount) {
+        if (amount == null || amount.signum() <= 0 || amount.scale() > 2) {
+            throw new IllegalArgumentException("Amount must be positive and have at most two decimal places");
+        }
+        Account recipient = accountRepository.findByAccountNumber(accountNumber)
+                .filter(a -> a.getType() != AccountType.SYSTEM && !adminUserId.equals(a.getOwnerUserId()))
+                .orElseThrow(() -> new NotFoundException("Customer account not found"));
+        if (recipient.getStatus() != AccountStatus.ACTIVE) {
+            throw new IllegalArgumentException("Account is not active");
+        }
+        Account wallet = getOrCreateAdminWallet(adminUserId);
+        ledgerService.post(TransactionType.TRANSFER, "Administrator customer credit", null, List.of(
+                PostingLine.debit(wallet.getId(), amount),
+                PostingLine.credit(recipient.getId(), amount)));
+        String suffix = recipient.getAccountNumber().substring(
+                Math.max(0, recipient.getAccountNumber().length() - 4));
+        DomainEvent received = DomainEvent.of(EventActions.DEPOSIT, adminUserId, recipient.getOwnerUserId(),
+                "ACCOUNT", recipient.getId().toString(),
+                "You have received " + recipient.getCurrency() + " " + amount.toPlainString()
+                        + " in your account ending " + suffix + ".", true);
+        notificationService.handle(received);
+        eventPublisher.publish(received);
+        return recipient;
     }
 
     @Transactional(readOnly = true)
