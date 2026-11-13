@@ -19,10 +19,17 @@ public class EmailConfig {
 
     @Bean
     public EmailSender emailSender(ObjectProvider<JavaMailSender> mailSender,
-                                   @Value("${app.mail.from:no-reply@bank.local}") String from) {
+                                   @Value("${app.mail.from:}") String configuredFrom,
+                                   @Value("${spring.mail.username:}") String smtpUsername) {
         JavaMailSender sender = mailSender.getIfAvailable();
         if (sender != null) {
-            log.info("Email: SMTP (mail host configured)");
+            String from = configuredFrom == null || configuredFrom.isBlank()
+                    ? smtpUsername : configuredFrom.trim();
+            if (from == null || from.isBlank()) {
+                throw new IllegalStateException(
+                        "SMTP is configured but neither MAIL_FROM nor SPRING_MAIL_USERNAME provides a sender address");
+            }
+            log.info("Email: SMTP (mail host configured); sender address resolved");
             return new SmtpEmailSender(sender, from);
         }
         log.info("Email: SIMULATED (no mail host configured)");
