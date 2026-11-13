@@ -29,6 +29,11 @@ export async function listAdminAccounts(): Promise<AdminAccount[]> {
   return data
 }
 
+export async function getAdminWallet(): Promise<{ accountNumber: string; balance: string; currency: string }> {
+  const { data } = await api.get('/api/v1/admin/accounts/wallet')
+  return data
+}
+
 export async function tellerDeposit(accountNumber: string, amount: number): Promise<void> {
-  await api.post('/api/v1/admin/accounts/deposit', { accountNumber, amount })
+  await api.post('/api/v1/admin/accounts/transfer', { accountNumber, amount })
 }
