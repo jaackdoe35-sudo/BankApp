@@ -6,6 +6,22 @@ spring:
       max-file-size: 10MB
       max-request-size: 11MB
 
+  mail:
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:true}
+            required: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED:true}
+          connectiontimeout: ${SPRING_MAIL_CONNECTION_TIMEOUT:10000}
+          timeout: ${SPRING_MAIL_TIMEOUT:10000}
+          writetimeout: ${SPRING_MAIL_WRITE_TIMEOUT:10000}
+
   datasource:
     url: ${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:banking}}
     username: ${DB_USERNAME:banking}
@@ -94,11 +110,8 @@ app:
     topic: ${EVENTS_TOPIC:banking.events}
     enabled: ${EVENTS_ENABLED:true}
   mail:
-    # The sender must be an identity/domain verified by Resend. No fake default sender.
-    from: ${MAIL_FROM:}
-    resend:
-      # Canonical Render/local variable; never commit the secret.
-      api-key: ${RESEND_API_KEY:}
+    # Defaults to the configured Gmail account unless MAIL_FROM is explicitly set.
+    from: ${MAIL_FROM:${SPRING_MAIL_USERNAME:}}
     outbox:
       poll-interval-ms: ${MAIL_OUTBOX_POLL_INTERVAL_MS:30000}
   ratelimit:
