@@ -13,6 +13,7 @@ import com.bank.ledger.domain.Transaction;
 import com.bank.ledger.domain.TransactionType;
 import com.bank.ledger.service.LedgerService;
 import com.bank.ledger.service.PostingLine;
+import com.bank.notification.service.NotificationService;
 import com.bank.loan.domain.InstallmentStatus;
 import com.bank.loan.domain.Loan;
 import com.bank.loan.domain.LoanInstallment;
@@ -44,6 +45,7 @@ public class LoanService {
     private final BigDecimal maxPrincipal;
     private final int maxTermMonths;
     private final EventPublisher eventPublisher;
+    private final NotificationService notificationService;
 
     public LoanService(LoanRepository loanRepository,
                        LoanInstallmentRepository installmentRepository,
@@ -51,6 +53,7 @@ public class LoanService {
                        LedgerService ledgerService,
                        AmortizationCalculator calculator,
                        EventPublisher eventPublisher,
+                       NotificationService notificationService,
                        @Value("${app.loans.annual-rate:0.12}") BigDecimal annualRate,
                        @Value("${app.loans.min-principal:100}") BigDecimal minPrincipal,
                        @Value("${app.loans.max-principal:50000}") BigDecimal maxPrincipal,
@@ -61,6 +64,7 @@ public class LoanService {
         this.ledgerService = ledgerService;
         this.calculator = calculator;
         this.eventPublisher = eventPublisher;
+        this.notificationService = notificationService;
         this.annualRate = annualRate;
         this.minPrincipal = minPrincipal;
         this.maxPrincipal = maxPrincipal;
@@ -142,9 +146,11 @@ public class LoanService {
 
         loan.setStatus(LoanStatus.ACTIVE);
         loan.setDisbursedAt(Instant.now());
-        eventPublisher.publish(DomainEvent.of(EventActions.LOAN_APPROVED, SecurityUtils.currentUserId(),
+        DomainEvent event = DomainEvent.of(EventActions.LOAN_APPROVED, SecurityUtils.currentUserId(),
                 loan.getUserId(), "LOAN", loanId.toString(),
-                "Your loan of " + loan.getPrincipal() + " was approved and disbursed", true));
+                "Your loan of " + loan.getPrincipal() + " was approved and disbursed", true);
+        notificationService.handle(event);
+        eventPublisher.publish(event);
         return loan;
     }
 
