@@ -32,7 +32,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
 
     // Customer transfer page is intentionally informational: outgoing customer transfers are disabled.
     await page.goto('http://127.0.0.1:4173/transfer', { waitUntil: 'networkidle' })
-    await page.getByRole('heading', { name: 'Outgoing transfers disabled' }).waitFor()
+    await page.getByRole('heading', { name: 'Send money' }).waitFor()
     await page.getByText('Customer accounts cannot send, withdraw, or transfer funds.').waitFor()
 
     await page.goto('http://127.0.0.1:4173/')
