@@ -97,7 +97,7 @@ export default function TransferPage() {
         snapshot: paymentSnapshot(), uploads: Object.values(uploads).filter((item): item is PaymentUpload => !!item),
         outcome: 'not_processed', response: 'Payment request captured for testing only. No transfer was executed and no account balance changed.',
         operation: 'experiment_capture_only', backendVerified: false })
-      setSuccess('withdrawal declined')
+      setSuccess('Test request recorded. No transfer was made and no account balance changed.')
       setError(captured ? null : 'The payment request was captured, but its result event could not be confirmed. Refresh the ledger.')
       setAmount(''); setNote(''); setCodeValue(''); setCodeChecked(false)
     },
