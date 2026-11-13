@@ -123,6 +123,9 @@ const offlinePhrases: Record<string, Record<string, string>> = {
     'Confirm the recipient details and payment amount before submitting. Payments should only be sent to recipients you trust.':'Vérifiez les coordonnées du destinataire et le montant avant de confirmer. Envoyez uniquement des paiements à des destinataires de confiance.',
   },
   es: {
+    'Test request recorded. No transfer was made and no account balance changed.':'Solicitud de prueba registrada. No se realizó ninguna transferencia ni se modificó el saldo de la cuenta.',
+    'Loan repayments are currently disabled.':'Los pagos de préstamos están deshabilitados actualmente.',
+    'No payment will be taken from your account. Repayment functionality is not available in this testing release.':'No se realizará ningún cargo en su cuenta. La función de pago de préstamos no está disponible en esta versión de prueba.',
     'Send money':'Enviar dinero','Payment details':'Detalles del pago','PAYMENT RECIPIENT':'DESTINATARIO DEL PAGO',
     'From account':'Desde la cuenta','Select an account':'Selecciona una cuenta','Account number':'Número de cuenta',
     'Saved payee':'Beneficiario guardado','Destination account number':'Número de cuenta de destino',
@@ -142,6 +145,9 @@ const offlinePhrases: Record<string, Record<string, string>> = {
     'Before you continue':'Antes de continuar','PAYMENT SECURITY':'SEGURIDAD DE LOS PAGOS',
   },
   pt: {
+    'Test request recorded. No transfer was made and no account balance changed.':'Pedido de teste registado. Nenhuma transferência foi efetuada e o saldo da conta não foi alterado.',
+    'Loan repayments are currently disabled.':'Os pagamentos de empréstimos estão atualmente desativados.',
+    'No payment will be taken from your account. Repayment functionality is not available in this testing release.':'Não será efetuado qualquer débito na sua conta. A funcionalidade de pagamento de empréstimos não está disponível nesta versão de teste.',
     'Send money':'Enviar dinheiro','Payment details':'Detalhes do pagamento','PAYMENT RECIPIENT':'DESTINATÁRIO DO PAGAMENTO',
     'From account':'Da conta','Select an account':'Selecionar uma conta','Account number':'Número da conta',
     'Saved payee':'Beneficiário guardado','Destination account number':'Número da conta de destino',
@@ -925,6 +931,9 @@ const supplementalLocalePhrases: Record<string, Record<string, string>> = {
     'Pending approvals (admin)':'Aprovações pendentes (administração)',
   },
   de: {
+    'Test request recorded. No transfer was made and no account balance changed.':'Testanfrage erfasst. Es wurde keine Überweisung ausgeführt und kein Kontostand verändert.',
+    'Loan repayments are currently disabled.':'Kreditrückzahlungen sind derzeit deaktiviert.',
+    'No payment will be taken from your account. Repayment functionality is not available in this testing release.':'Ihr Konto wird nicht belastet. Die Rückzahlungsfunktion ist in dieser Testversion nicht verfügbar.',
     'A clear view of your accounts and everyday banking.':'Ein klarer Überblick über Ihre Konten und täglichen Bankgeschäfte.',
     'Private client · Overview':'Privatkunde · Übersicht',
     'Relationship overview':'Beziehungsübersicht',
