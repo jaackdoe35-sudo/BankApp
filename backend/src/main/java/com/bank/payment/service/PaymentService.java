@@ -21,6 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -96,9 +98,19 @@ public class PaymentService {
                 PostingLine.debit(system.getId(), payment.getAmount())));
 
         payment.setStatus(PaymentStatus.SUCCEEDED);
+        Account creditedAccount = accountRepository.findById(payment.getAccountId())
+                .orElseThrow(() -> new NotFoundException("Account not found"));
+        String accountNumber = creditedAccount.getAccountNumber();
+        String accountSuffix = accountNumber.substring(Math.max(0, accountNumber.length() - 4));
+        NumberFormat amountFormat = NumberFormat.getNumberInstance(Locale.US);
+        amountFormat.setMinimumFractionDigits(2);
+        amountFormat.setMaximumFractionDigits(2);
+        String formattedAmount = payment.getCurrency() + " " + amountFormat.format(payment.getAmount());
+
         DomainEvent event = DomainEvent.userAction(EventActions.TOP_UP_SUCCEEDED, payment.getUserId(),
                 "PAYMENT", payment.getId().toString(),
-                "Your top-up of " + payment.getAmount() + " succeeded");
+                "Your " + formattedAmount + " top-up was successful and has been credited to your account ending "
+                        + accountSuffix + ".");
         notificationService.handle(event);
         eventPublisher.publish(event);
     }
