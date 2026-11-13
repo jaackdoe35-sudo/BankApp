@@ -10,7 +10,6 @@ import {
   listAdminLoans,
   listLoans,
   rejectLoan,
-  repayLoan,
   type Loan,
 } from '../lib/loans'
 import { formatMoney } from '../lib/format'
@@ -124,18 +123,8 @@ export default function LoansPage() {
 }
 
 function LoanRow({ loan }: { loan: Loan }) {
-  const qc = useQueryClient()
   const [open, setOpen] = useState(false)
   const detailQ = useQuery({ queryKey: ['loan', loan.id], queryFn: () => getLoan(loan.id), enabled: open })
-
-  const repayM = useMutation({
-    mutationFn: () => repayLoan(loan.id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['loan', loan.id] })
-      qc.invalidateQueries({ queryKey: ['loans'] })
-      qc.invalidateQueries({ queryKey: ['accounts'] })
-    },
-  })
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5">
