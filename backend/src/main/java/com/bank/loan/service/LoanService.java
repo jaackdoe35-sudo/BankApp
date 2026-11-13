@@ -108,7 +108,7 @@ public class LoanService {
     public Loan repayNext(UUID userId, UUID loanId) {
         // Loan repayments debit a customer account and are therefore disabled.
         get(userId, loanId);
-        throw new com.bank.common.exception.PaymentDeclinedException("withdrawal declined");
+        throw new com.bank.common.exception.PaymentDeclinedException("Loan repayments are currently disabled. No payment was taken.");
     }
 
     // ---- Admin ----
