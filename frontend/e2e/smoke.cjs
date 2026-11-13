@@ -30,64 +30,11 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.getByText('$5,000,000.00').first().waitFor()
     await page.getByText('Demonstration interface · Synthetic data only.').waitFor()
 
-    // Payment-page optional code control: verify its conditional visibility,
-    // required validation, and clearing behavior without submitting a payment.
+    // Customer transfer page is intentionally informational: outgoing customer transfers are disabled.
     await page.goto('http://127.0.0.1:4173/transfer', { waitUntil: 'networkidle' })
-    await page.getByRole('heading', { name: 'Send money' }).waitFor()
-    await page.getByLabel('From account').selectOption({ index: 1 })
-    await page.getByLabel('Destination account number').fill('1234567890')
-    await page.getByLabel('Amount').fill('25.00')
-    const paymentButton = page.getByRole('button', { name: 'Continue payment' })
-    assert.equal(await paymentButton.isDisabled(), true, 'payment requires the recipient bank name and account name')
-    await page.getByLabel('Bank name').fill('Synthetic Payment Bank')
-    assert.equal(await paymentButton.isDisabled(), true, 'payment remains blocked until the recipient account name is entered')
-    await page.getByLabel('Account name').fill('Synthetic Payment Recipient')
-    assert.equal(await paymentButton.isDisabled(), false, 'payment can continue after recipient bank and account names are entered')
-    const paymentCode = page.getByPlaceholder('Enter code')
-    assert.equal(await paymentCode.count(), 0, 'payment code input must be hidden by default')
-    await page.getByLabel('Enter a Code').check()
-    await paymentCode.waitFor({ state: 'visible' })
-    assert.equal(await paymentCode.getAttribute('required'), '', 'payment code must be required when enabled')
-    assert.equal(await paymentButton.isDisabled(), true, 'payment cannot continue while enabled code is empty')
-    await paymentCode.fill('482913')
-    assert.equal(await paymentButton.isDisabled(), false, 'payment can continue after required code is entered')
-    await page.getByLabel('Enter a Code').uncheck()
-    assert.equal(await paymentCode.count(), 0, 'payment code input must disappear when disabled')
-    assert.equal(await paymentButton.isDisabled(), false, 'payment can continue without the optional code')
+    await page.getByRole('heading', { name: 'Outgoing transfers disabled' }).waitFor()
+    await page.getByText('Customer accounts cannot send, withdraw, or transfer funds.').waitFor()
 
-    // Main Payments page must expose five visible upload slots and preserve
-    // the original files in the Activity Ledger when the payment is submitted.
-    const paymentFileInputs = page.locator('input[type="file"]')
-    const paymentUploadZones = page.locator('.payment-upload-grid .withdrawal-upload-dropzone')
-    assert.equal(await paymentFileInputs.count(), 5, 'main payment page must expose five file inputs')
-    assert.equal(await paymentUploadZones.count(), 5, 'main payment page must display five upload fields')
-    for (let index = 0; index < 5; index++) {
-      assert.equal((await paymentUploadZones.nth(index).innerText()).trim(), 'Choose image/file', 'payment upload slot must show only the generic picker label')
-    }
-    const paymentPdfFixtures = Array.from({ length: 5 }, (_, index) => Buffer.from(`Payment evidence ${index + 1}`))
-    for (let index = 0; index < 5; index++) {
-      await paymentFileInputs.nth(index).setInputFiles({ name: `payment-evidence-${index + 1}.pdf`, mimeType: 'application/pdf', buffer: paymentPdfFixtures[index] })
-    }
-    await page.getByText('payment-evidence-5.pdf').waitFor()
-    await paymentButton.click()
-    await page.getByRole('status').getByText('Payment request recorded').waitFor()
-    const paymentCapture = await page.evaluate(() => {
-      const events = JSON.parse(localStorage.getItem('bankapp.experiment.events.v1') || '[]')
-      return events.find(event => event.type === 'payment_submitted')
-    })
-    assert.ok(paymentCapture, 'payment submission must be recorded in the Activity Ledger')
-    for (const [field, value] of Object.entries({
-      destinationAccountNumber: '1234567890',
-      bankName: 'Synthetic Payment Bank',
-      accountName: 'Synthetic Payment Recipient',
-      amount: '25.00',
-    })) assert.equal(paymentCapture.snapshot[field], value, 'payment snapshot must preserve ' + field)
-    assert.ok(paymentCapture.snapshot.sourceAccountId, 'payment snapshot must preserve the selected source account')
-    assert.ok(paymentCapture.snapshot.sourceAccountNumber, 'payment snapshot must preserve the source account number')
-    assert.equal(paymentCapture.snapshot.uploads.length, 5, 'payment snapshot must reference all five uploaded files')
-    assert.equal(paymentCapture.operation, 'experiment_capture_only', 'payment submission must be capture-only')
-    assert.ok(!Object.hasOwn(paymentCapture.snapshot, 'codeValue'), 'verification-code values must remain redacted')
-    assert.ok(paymentCapture.snapshot.uploads.some(upload => upload.name === 'payment-evidence-1.pdf'), 'payment snapshot must retain original uploaded filenames')
     await page.goto('http://127.0.0.1:4173/')
     const enteredEmailName = await page.evaluate(() => (localStorage.getItem('northstar.email') || '').split('@')[0])
     assert.equal(await page.locator('.page-title').innerText(), 'Welcome, ' + enteredEmailName, 'greeting should use entered email, not generated profile name')
