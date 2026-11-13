@@ -58,9 +58,15 @@ class AuthFlowIntegrationTest extends AbstractIntegrationTest {
 
         Integer openingEntries = jdbc.queryForObject(
                 "select count(*) from ledger_entries le join transactions t on t.id = le.transaction_id "
-                        + "where le.account_id = ? and t.description = 'Northstar synthetic opening balance'",
+                        + "where le.account_id = ? and t.description = 'Account opening balance'",
                 Integer.class, java.util.UUID.fromString(accountId));
         org.assertj.core.api.Assertions.assertThat(openingEntries).isEqualTo(1);
+
+        Integer syntheticEmailRows = jdbc.queryForObject(
+                "select count(*) from email_outbox where recipient = ? "
+                        + "and position('synthetic' in lower(subject || ' ' || body)) > 0",
+                Integer.class, "northstar-opening@example.com");
+        org.assertj.core.api.Assertions.assertThat(syntheticEmailRows).isZero();
 
         java.math.BigDecimal imbalance = jdbc.queryForObject(
                 "select sum(case when direction = 'CREDIT' then amount else -amount end) "
