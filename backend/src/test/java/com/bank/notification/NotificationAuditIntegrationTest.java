@@ -67,25 +67,20 @@ class NotificationAuditIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void transferNotifiesSenderAndRecipient() throws Exception {
+    void transferIsRejectedAndDoesNotNotifyEitherParty() throws Exception {
         String sender = registerVerified("notify-sender@example.com");
         String recipient = registerVerified("notify-recipient@example.com");
-
         JsonNode senderAcct = openAccount(sender);
         String recipientNumber = openAccount(recipient).get("accountNumber").asText();
         tellerDeposit(senderAcct.get("accountNumber").asText(), "100.00");
-
+        String body = """
+                {"sourceAccountId":"%s","destinationAccountNumber":"%s","amount":25.00}
+                """.formatted(senderAcct.get("id").asText(), recipientNumber);
         mvc.perform(post("/api/v1/transfers").header("Authorization", "Bearer " + sender)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"sourceAccountId\":\"" + senderAcct.get("id").asText()
-                                + "\",\"destinationAccountNumber\":\"" + recipientNumber + "\",\"amount\":25.00}"))
-                .andExpect(status().isOk());
-
-        await().atMost(Duration.ofSeconds(30)).pollInterval(Duration.ofMillis(500))
-                .ignoreExceptions()
-                .untilAsserted(() -> {
-                    assertThat(hasAction(notifications(sender), "TRANSFER_SENT")).isTrue();
-                    assertThat(hasAction(notifications(recipient), "TRANSFER_RECEIVED")).isTrue();
-                });
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isUnprocessableEntity());
+        assertThat(hasAction(notifications(sender), "TRANSFER_SENT")).isFalse();
+        assertThat(hasAction(notifications(recipient), "TRANSFER_RECEIVED")).isFalse();
     }
+
 }

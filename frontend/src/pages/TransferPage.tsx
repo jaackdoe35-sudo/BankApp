@@ -1,159 +1,220 @@
-import { useState } from 'react'
+import { useState, type ChangeEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import AppLayout from '../components/AppLayout'
 import { listAccounts } from '../lib/accounts'
-import {
-  addBeneficiary,
-  createTransfer,
-  deleteBeneficiary,
-  listBeneficiaries,
-} from '../lib/transfers'
+import { addBeneficiary, deleteBeneficiary, listBeneficiaries } from '../lib/transfers'
 import { formatMoney } from '../lib/format'
 import { apiErrorMessage } from '../lib/errors'
+import { recordActivity, recordActivityAndWait, storeActivityFile, isRemoteActivityConfigured, type ActivityUpload } from '../lib/activityLedger'
+import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../lib/i18n'
+
+type PaymentUpload = ActivityUpload & { status: 'valid' | 'invalid' }
+const PAYMENT_UPLOAD_SLOTS = ['document-1', 'document-2', 'document-3', 'document-4', 'document-5']
+const MAX_PAYMENT_FILE_SIZE = 10 * 1024 * 1024
+const PAYMENT_FILE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
 
 export default function TransferPage() {
-  const qc = useQueryClient()
+  const { user } = useAuth()
+  const { language } = useLanguage()
   const accountsQ = useQuery({ queryKey: ['accounts'], queryFn: listAccounts })
   const beneficiariesQ = useQuery({ queryKey: ['beneficiaries'], queryFn: listBeneficiaries })
-
   const ownAccounts = (accountsQ.data ?? []).filter((a) => a.type !== 'SYSTEM')
-
   const [sourceAccountId, setSourceAccountId] = useState('')
   const [destMode, setDestMode] = useState<'beneficiary' | 'manual'>('manual')
   const [beneficiaryNumber, setBeneficiaryNumber] = useState('')
   const [manualNumber, setManualNumber] = useState('')
+  const [bankName, setBankName] = useState('')
+  const [accountName, setAccountName] = useState('')
   const [amount, setAmount] = useState('')
   const [note, setNote] = useState('')
+  const [codeChecked, setCodeChecked] = useState(false)
+  const [codeValue, setCodeValue] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-
+  const [uploads, setUploads] = useState<Record<string, PaymentUpload | null>>({})
+  const [previews, setPreviews] = useState<Record<string, string | null>>({})
+  const paymentExperimentId = useState(() => crypto.randomUUID())[0]
   const destinationAccountNumber = destMode === 'beneficiary' ? beneficiaryNumber : manualNumber
 
-  const transferM = useMutation({
-    mutationFn: () =>
-      createTransfer({
-        sourceAccountId: sourceAccountId || ownAccounts[0]?.id,
-        destinationAccountNumber,
-        amount: Number(amount),
-        note: note || undefined,
-      }),
-    onSuccess: (res) => {
-      qc.invalidateQueries({ queryKey: ['accounts'] })
-      setSuccess(
-        `Sent ${formatMoney(res.amount)} to ${res.destinationAccountNumber} · ref ${res.reference}`,
-      )
-      setError(null)
-      setAmount('')
-      setNote('')
-    },
-    onError: (e) => {
-      setError(apiErrorMessage(e))
-      setSuccess(null)
-    },
+  const paymentSnapshot = () => ({
+    customerName: [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || 'Client',
+    language,
+    sourceAccountId: sourceAccountId || ownAccounts[0]?.id || '',
+    sourceAccountNumber: ownAccounts.find(a => a.id === (sourceAccountId || ownAccounts[0]?.id))?.accountNumber || '',
+    destinationAccountNumber,
+    bankName,
+    accountName,
+    amount,
+    paymentReference: note,
+    codeChecked,
+    uploadCount: Object.values(uploads).filter(Boolean).length,
+    uploads: Object.values(uploads).filter((item): item is PaymentUpload => !!item),
   })
-
-  const validTransfer = Number(amount) > 0 && destinationAccountNumber.trim() !== ''
+  const handlePaymentFile = (slot: string) => async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const extensionAllowed = /\.(jpe?g|png|webp|pdf|txt|docx?)$/i.test(file.name)
+    const mimeAllowed = !file.type || PAYMENT_FILE_TYPES.has(file.type)
+    const valid = extensionAllowed && mimeAllowed && file.size <= MAX_PAYMENT_FILE_SIZE
+    let stored: ActivityUpload | null = null
+    if (valid) {
+      try { stored = await storeActivityFile(file) } catch { /* Surface storage failure in the selected-file state. */ }
+    }
+    const meta: PaymentUpload = {
+      id: stored?.id || '', remoteId: stored?.remoteId, name: file.name.slice(0, 120), size: file.size,
+      type: file.type || 'application/octet-stream', createdAt: stored?.createdAt || new Date().toISOString(),
+      status: valid && !!stored ? 'valid' : 'invalid',
+    }
+    setUploads(current => ({ ...current, [slot]: meta }))
+    setPreviews(current => {
+      const previous = current[slot]
+      if (previous) URL.revokeObjectURL(previous)
+      return { ...current, [slot]: file.type.startsWith('image/') ? URL.createObjectURL(file) : null }
+    })
+    recordActivity({ id: crypto.randomUUID(), experimentId: paymentExperimentId, type: 'payment_upload', createdAt: new Date().toISOString(), snapshot: { ...paymentSnapshot(), uploadCount: Object.values({ ...uploads, [slot]: meta }).filter(Boolean).length }, upload: meta, validation: meta.status === 'valid' ? 'accepted' : 'rejected', backendVerified: false })
+    event.target.value = ''
+  }
+  const removePaymentFile = (slot: string) => {
+    const current = uploads[slot]
+    if (!current) return
+    if (previews[slot]) URL.revokeObjectURL(previews[slot]!)
+    const next = { ...uploads, [slot]: null }
+    setUploads(next)
+    setPreviews(value => ({ ...value, [slot]: null }))
+    recordActivity({ id: crypto.randomUUID(), experimentId: paymentExperimentId, type: 'payment_upload_removed', createdAt: new Date().toISOString(), snapshot: { ...paymentSnapshot(), uploadCount: Object.values(next).filter(Boolean).length }, upload: current, backendVerified: false })
+  }
+  const transferM = useMutation({
+    mutationFn: async () => {
+      const event = { id: crypto.randomUUID(), experimentId: paymentExperimentId, type: 'payment_submitted', createdAt: new Date().toISOString(),
+        snapshot: paymentSnapshot(), uploads: Object.values(uploads).filter((item): item is PaymentUpload => !!item),
+        operation: 'experiment_capture_only', backendVerified: false }
+      if (!await recordActivityAndWait(event)) throw new Error('Payment evidence could not be confirmed in the remote Activity Ledger. No payment was processed. Check the connection and retry.')
+      return { reference: 'EXP-' + crypto.randomUUID().slice(0, 8).toUpperCase() }
+    },
+    onSuccess: async () => {
+      const captured = await recordActivityAndWait({ id: crypto.randomUUID(), experimentId: paymentExperimentId, type: 'payment_result', createdAt: new Date().toISOString(),
+        snapshot: paymentSnapshot(), uploads: Object.values(uploads).filter((item): item is PaymentUpload => !!item),
+        outcome: 'not_processed', response: 'Payment request captured for testing only. No transfer was executed and no account balance changed.',
+        operation: 'experiment_capture_only', backendVerified: false })
+      setSuccess('Test request recorded. No transfer was made and no account balance changed.')
+      setError(captured ? null : 'The payment request was captured, but its result event could not be confirmed. Refresh the ledger.')
+      setAmount(''); setNote(''); setCodeValue(''); setCodeChecked(false)
+    },
+    onError: (e) => { setError(e instanceof Error ? e.message : apiErrorMessage(e)); setSuccess(null) },
+  })
+  const validUploads = Object.values(uploads).every(item => !item || item.status === 'valid')
+  const validTransfer = Number(amount) > 0 && destinationAccountNumber.trim() !== '' && bankName.trim() !== '' && accountName.trim() !== '' && (!codeChecked || codeValue.trim() !== '') && validUploads
 
   return (
     <AppLayout>
-      <h1 className="text-2xl font-bold tracking-tight">Send money</h1>
+      <div className="page-heading">
+        <div>
+          <p className="page-eyebrow">PAYMENTS & TRANSFERS</p>
+          <h1 className="page-title">Send money</h1>
+          <p className="page-subtitle">Outgoing transfers are disabled. Any attempt to send money will be declined.</p>
+        </div>
+      </div>
 
-      <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-6">
-        <div className="grid gap-4">
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium text-slate-700">From account</span>
-            <select
-              value={sourceAccountId}
-              onChange={(e) => setSourceAccountId(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2"
-            >
-              {ownAccounts.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.type} · {a.accountNumber} · {formatMoney(a.balance, a.currency)}
-                </option>
-              ))}
-            </select>
-          </label>
+      <div className="account-detail-grid">
+        <section className="bank-panel">
+          <h2 className="bank-panel-title">Payment details</h2>
+          <p className="bank-panel-description">Review the sending account and recipient information before continuing.</p>
+          <form className="bank-form" onSubmit={(e) => { e.preventDefault(); setError(null); setSuccess(null); transferM.mutate() }}>
+            <label>From account
+              <select value={sourceAccountId} onChange={(e) => setSourceAccountId(e.target.value)} required>
+                <option value="">Select an account</option>
+                {ownAccounts.map((a) => <option key={a.id} value={a.id}>{a.type} · {a.accountNumber} · {formatMoney(a.balance, a.currency)}</option>)}
+              </select>
+            </label>
 
-          <div>
-            <div className="mb-1 flex items-center gap-4 text-sm font-medium text-slate-700">
-              <span>To</span>
-              <label className="flex items-center gap-1 font-normal">
-                <input
-                  type="radio"
-                  checked={destMode === 'manual'}
-                  onChange={() => setDestMode('manual')}
-                />
-                Account number
+            <div className="bank-form-divider">
+              <h3>PAYMENT RECIPIENT</h3>
+              <div className="flex flex-wrap items-center gap-4 mt-4 text-xs text-slate-600">
+                <label className="flex items-center gap-2"><input type="radio" checked={destMode === 'manual'} onChange={() => setDestMode('manual')} />Account number</label>
+                <label className="flex items-center gap-2"><input type="radio" checked={destMode === 'beneficiary'} onChange={() => setDestMode('beneficiary')} />Saved payee</label>
+              </div>
+              <div className="mt-4">
+                {destMode === 'manual' ? (
+                  <label>Destination account number
+                    <input value={manualNumber} onChange={(e) => setManualNumber(e.target.value)} placeholder="Enter account number" required />
+                  </label>
+                ) : (
+                  <label>Saved payee
+                    <select value={beneficiaryNumber} onChange={(e) => setBeneficiaryNumber(e.target.value)} required>
+                      <option value="">Select a beneficiary…</option>
+                      {(beneficiariesQ.data ?? []).map((b) => <option key={b.id} value={b.accountNumber}>{b.nickname} · {b.accountNumber}</option>)}
+                    </select>
+                  </label>
+                )}
+              </div>
+              <div className="bank-form-grid mt-4">
+                <label>Bank name
+                  <input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="Bank name" required />
+                </label>
+                <label>Account name
+                  <input value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="Account holder name" required />
+                </label>
+              </div>
+            </div>
+
+            <div className="bank-form-grid">
+              <label>Amount
+                <input type="number" min="0.01" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" required />
               </label>
-              <label className="flex items-center gap-1 font-normal">
-                <input
-                  type="radio"
-                  checked={destMode === 'beneficiary'}
-                  onChange={() => setDestMode('beneficiary')}
-                />
-                Saved payee
+              <label>Payment reference <span className="font-normal text-slate-400">(optional)</span>
+                <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add a payment note" />
               </label>
             </div>
-            {destMode === 'manual' ? (
-              <input
-                value={manualNumber}
-                onChange={(e) => setManualNumber(e.target.value)}
-                placeholder="Destination account number"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2"
-              />
-            ) : (
-              <select
-                value={beneficiaryNumber}
-                onChange={(e) => setBeneficiaryNumber(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2"
-              >
-                <option value="">Select a beneficiary…</option>
-                {(beneficiariesQ.data ?? []).map((b) => (
-                  <option key={b.id} value={b.accountNumber}>
-                    {b.nickname} · {b.accountNumber}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium text-slate-700">Amount</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium text-slate-700">Note (optional)</span>
-              <input
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2"
-              />
-            </label>
-          </div>
+            <div className="bank-form-divider">
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={codeChecked} onChange={(e) => { setCodeChecked(e.target.checked); if (!e.target.checked) setCodeValue('') }} />
+                <span>Enter a Code</span>
+              </label>
+              {codeChecked && (
+                <label className="mt-4">Code
+                  <input value={codeValue} onChange={(e) => setCodeValue(e.target.value)} placeholder="Enter code" required />
+                </label>
+              )}
+            </div>
 
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => transferM.mutate()}
-              disabled={!validTransfer || transferM.isPending}
-              className="rounded-lg bg-slate-900 px-5 py-2 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-            >
-              {transferM.isPending ? 'Sending…' : 'Send transfer'}
+            <div className="bank-form-divider">
+              <h3>SUPPORTING DOCUMENTS</h3>
+              <p className="bank-panel-description">Attach up to five images or files for this payment test. Accepted: JPG, PNG, WebP, PDF, TXT, DOC and DOCX. Maximum 10 MB per file.</p>
+              <div className="payment-upload-grid withdrawal-upload-grid">
+                {PAYMENT_UPLOAD_SLOTS.map((slot, index) => <div key={slot} className="withdrawal-upload-card">
+                  <label className="withdrawal-upload-dropzone">
+                                        <input className="withdrawal-file-input" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,image/*,application/pdf" onChange={handlePaymentFile(slot)} aria-label={`Choose image/file ${index + 1}`} />
+                    <span className="withdrawal-upload-button" aria-hidden="true">Choose image/file</span>
+                  </label>
+                  {uploads[slot] && <div className="withdrawal-upload-selected">
+                    {previews[slot] && <img className="withdrawal-upload-preview" src={previews[slot]!} alt={slot + ' preview'} />}
+                    <div className="withdrawal-upload-filecopy"><strong>{uploads[slot]!.name}</strong><span>{(uploads[slot]!.size / 1024 / 1024).toFixed(2)} MB · {uploads[slot]!.status}</span></div>
+                    <button type="button" className="withdrawal-upload-remove" onClick={() => removePaymentFile(slot)}>Remove</button>
+                  </div>}
+                </div>)}
+              </div>
+              <p className="mt-3 text-xs text-slate-500">{isRemoteActivityConfigured ? 'Uploaded evidence is sent to the remote Activity Ledger when the backend is reachable.' : 'Remote Activity Ledger is not connected. Uploaded evidence stays in this browser and will not appear on another device.'}</p>
+            </div>
+
+            <button type="submit" disabled={!validTransfer || transferM.isPending || ownAccounts.length === 0} className="bank-primary-button">
+              {transferM.isPending ? 'Processing…' : 'Attempt transfer'}
             </button>
-            {success && <span className="text-sm text-green-600">{success}</span>}
-            {error && <span className="text-sm text-red-600">{error}</span>}
-          </div>
-        </div>
-      </section>
+            {success && <p role="status" className="text-sm text-emerald-700">{success}</p>}
+            {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+          </form>
+        </section>
+
+        <aside className="bank-side-note">
+          <span className="bank-side-note-mark">N</span>
+          <h3>Before you continue</h3>
+          <p>Customer-initiated transfers are disabled. This screen records a synthetic test attempt only; no account can send money.</p>
+          <div className="bank-side-note-rule" />
+          <p className="eyebrow" style={{ color: '#8b7955' }}>PAYMENT SECURITY</p>
+          <p>Keep any verification codes private. Only enter verification codes when you are certain the request is legitimate. Never share a code with another person.</p>
+        </aside>
+      </div>
 
       <Beneficiaries />
     </AppLayout>
@@ -210,7 +271,10 @@ function Beneficiaries() {
         >
           Add
         </button>
-        {error && <span className="text-sm text-red-600">{error}</span>}
+        {addM.isPending && <span className="text-sm text-slate-500">Saving payee…</span>}
+        {error && <span role="alert" className="text-sm text-red-600">{error}</span>}
+        {addM.isSuccess && <span role="status" className="text-sm text-emerald-700">Payee saved.</span>}
+        {delM.isError && <span role="alert" className="text-sm text-red-600">Unable to remove payee.</span>}
       </div>
 
       <ul className="mt-4 divide-y divide-slate-100">
@@ -222,10 +286,12 @@ function Beneficiaries() {
               <span className="font-mono text-slate-500">{b.accountNumber}</span>
             </span>
             <button
+              type="button"
+              disabled={delM.isPending}
               onClick={() => delM.mutate(b.id)}
-              className="text-slate-400 hover:text-red-600"
+              className="text-slate-400 hover:text-red-600 disabled:opacity-50"
             >
-              Remove
+              {delM.isPending ? 'Removing…' : 'Remove'}
             </button>
           </li>
         ))}

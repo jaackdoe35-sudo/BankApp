@@ -1,91 +1,97 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import AppLayout from '../components/AppLayout'
+import { useAuth } from '../context/AuthContext'
 import { createAccount, listAccounts, type AccountType } from '../lib/accounts'
+import { getAdminWallet } from '../lib/admin'
 import { formatMoney } from '../lib/format'
 import { apiErrorMessage } from '../lib/errors'
+import { useLanguage } from '../lib/i18n'
+
+function AccountMark() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></svg>
+}
 
 export default function DashboardPage() {
   const qc = useQueryClient()
-  const navigate = useNavigate()
+  const { user } = useAuth()
+  const { t } = useLanguage()
   const [type, setType] = useState<AccountType>('CHECKING')
-
-  const { data: accounts, isLoading, isError } = useQuery({
+  const isAdmin = user?.role === 'ADMIN'
+  const { data: customerAccounts, isLoading: accountsLoading, isError: accountsError } = useQuery({
     queryKey: ['accounts'],
     queryFn: listAccounts,
+    enabled: !isAdmin,
   })
-
-  const open = useMutation({
-    mutationFn: () => createAccount(type),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['accounts'] }),
+  const { data: adminWallet, isLoading: walletLoading, isError: walletError } = useQuery({
+    queryKey: ['admin-wallet'],
+    queryFn: getAdminWallet,
+    enabled: isAdmin,
+    retry: false,
   })
-
-  const customerAccounts = accounts ?? []
-  const total = customerAccounts.reduce((sum, a) => sum + Number(a.balance), 0)
+  const open = useMutation({ mutationFn: () => createAccount(type), onSuccess: () => qc.invalidateQueries({ queryKey: ['accounts'] }) })
+  const list = isAdmin ? (adminWallet ? [adminWallet] : []) : (customerAccounts ?? [])
+  const isLoading = isAdmin ? walletLoading : accountsLoading
+  const isError = isAdmin ? walletError : accountsError
+  const total = list.reduce((sum, account) => sum + Number(account.balance), 0)
+  const emailLabel = user?.email?.trim().split('@')[0] || ''
 
   return (
     <AppLayout>
-      <div className="flex items-center justify-between">
+      <div className="page-heading">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Accounts</h1>
-          {!isLoading && (
-            <p className="mt-1 text-sm text-slate-500">
-              Total balance: <span className="font-semibold text-slate-900">{formatMoney(total)}</span>
-            </p>
-          )}
+          <p className="page-eyebrow">{t('position')}</p>
+          <h1 className="page-title">{t('welcome')}{emailLabel ? `, ${emailLabel}` : ''}</h1>
+          <p className="page-subtitle">A clear view of your accounts and everyday banking.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigate('/transfer')}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50"
-          >
-            Send money
-          </button>
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value as AccountType)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="CHECKING">Checking</option>
-            <option value="SAVINGS">Savings</option>
-          </select>
-          <button
-            onClick={() => open.mutate()}
-            disabled={open.isPending}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
-          >
-            {open.isPending ? 'Opening…' : 'Open account'}
-          </button>
-        </div>
+        <span className="page-meta">Private client · Overview</span>
       </div>
 
-      {open.isError && <p className="mt-3 text-sm text-red-600">{apiErrorMessage(open.error)}</p>}
-
-      <div className="mt-6 space-y-3">
-        {isLoading && <p className="text-slate-500">Loading accounts…</p>}
-        {isError && <p className="text-red-600">Failed to load accounts.</p>}
-        {!isLoading && customerAccounts.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center text-slate-500">
-            No accounts yet. Open your first account to get started.
-            <div className="mt-1 text-xs text-slate-400">
-              Your KYC must be verified by an admin before you can open an account.
-            </div>
+      <div className="overview-grid">
+        <section className="wealth-card">
+          <div className="wealth-card-top"><span className="wealth-card-label">Relationship overview</span><span className="wealth-card-status">Account overview</span></div>
+          <div className="wealth-card-main">
+            <p className="wealth-card-caption">{t('balance')}</p>
+            <p className="wealth-card-amount">{formatMoney(total)}</p>
+            <p className="wealth-card-support">Across {list.length} {list.length === 1 ? 'account' : 'accounts'}</p>
           </div>
-        )}
-        {customerAccounts.map((a) => (
-          <Link
-            key={a.id}
-            to={`/accounts/${a.id}`}
-            className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 hover:border-slate-400"
-          >
-            <div>
-              <div className="font-medium">
-                {a.type} · <span className="font-mono text-sm text-slate-500">{a.accountNumber}</span>
-              </div>
-              <div className="text-xs text-slate-400">{a.status}</div>
-            </div>
-            <div className="text-xl font-semibold">{formatMoney(a.balance, a.currency)}</div>
+          <div className="wealth-card-bottom"><span>Northstar Private · Client portfolio</span><span>USD · Consolidated</span></div>
+        </section>
+
+        <section className="service-card">
+          <div>
+            <p className="service-card-kicker">PERSONAL BANKING</p>
+            <h2>At your service.</h2>
+            <p>Explore payments, cards and account details in one place.</p>
+          </div>
+          <div className="service-links">
+            <Link className="service-link" to="/transfer"><span>Make a payment</span><span>↗</span></Link>
+            <Link className="service-link" to="/cards"><span>Manage your cards</span><span>↗</span></Link>
+          </div>
+        </section>
+      </div>
+
+      <div className="section-heading">
+        <div><h2>{t('accounts')}</h2><p>Account details and available balances</p></div>
+        {!isAdmin && <div className="flex items-center gap-2">
+          <select aria-label="New account type" value={type} onChange={(e) => setType(e.target.value as AccountType)} className="max-w-32 rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm">
+            <option value="CHECKING">Checking</option><option value="SAVINGS">Savings</option>
+          </select>
+          <button onClick={() => open.mutate()} disabled={open.isPending} className="bank-primary-button">{open.isPending ? 'Opening…' : 'Open account'}</button>
+        </div>}
+      </div>
+      {!isAdmin && open.isError && <p className="mb-3 text-sm text-red-600">{apiErrorMessage(open.error)}</p>}
+      <div id="account-list" className="account-list">
+        {isLoading && <p className="py-5 text-sm text-slate-500">Loading accounts…</p>}
+        {isError && <p className="py-5 text-sm text-red-600">Unable to load accounts.</p>}
+        {list.map((account) => (
+          <Link key={account.id} to={'/accounts/' + account.id} className="account-card">
+            <span className="account-card-left">
+              <span className="account-card-icon"><AccountMark /></span>
+              <span><span className="account-card-title">{account.type} account</span><span className="account-card-meta">{account.accountNumber} · {account.status}</span></span>
+            </span>
+            <span className="flex items-center"><span className="account-card-balance">{formatMoney(account.balance, account.currency)}</span><span className="account-card-arrow">›</span></span>
           </Link>
         ))}
       </div>

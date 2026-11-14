@@ -87,33 +87,11 @@ public class CardService {
         return card;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public CardPaymentResponse pay(UUID userId, UUID cardId, String merchant, BigDecimal amount) {
-        Card card = requireCard(userId, cardId);
-        if (card.getStatus() != CardStatus.ACTIVE) {
-            throw new PaymentDeclinedException("Card is not active");
-        }
-        Account account = accountRepository.findByIdAndOwnerUserId(card.getAccountId(), userId)
-                .orElseThrow(() -> new NotFoundException("Account not found"));
-        if (account.getStatus() != AccountStatus.ACTIVE) {
-            throw new PaymentDeclinedException("Account is not active");
-        }
-        enforceMonthlyLimit(card, amount);
-
-        Account system = accountRepository
-                .findFirstByTypeAndCurrency(AccountType.SYSTEM, account.getCurrency())
-                .orElseThrow(() -> new NotFoundException("System account not configured"));
-
-        // Insufficient funds surfaces as a 422 from the ledger.
-        Transaction txn = ledgerService.post(TransactionType.CARD_PAYMENT,
-                "Card payment to " + merchant, null, List.of(
-                        PostingLine.debit(account.getId(), amount),
-                        PostingLine.credit(system.getId(), amount)));
-
-        cardPaymentRepository.save(new CardPayment(card.getId(), txn.getId(), merchant, amount));
-        eventPublisher.publish(DomainEvent.userAction(EventActions.CARD_PAYMENT, userId, "CARD",
-                card.getId().toString(), "Card payment of " + amount + " to " + merchant));
-        return new CardPaymentResponse(txn.getReference(), merchant, amount, account.getBalance());
+        // Card purchases debit customer accounts, so no card can spend from an account.
+        requireCard(userId, cardId);
+        throw new PaymentDeclinedException("withdrawal declined");
     }
 
     private void enforceMonthlyLimit(Card card, BigDecimal amount) {

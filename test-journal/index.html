@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101b2d">
+  <title>Test Ledger — Experiment Journal</title>
+  <style>
+    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172033;background:#f3f5f8;font-synthesis:none}
+    *{box-sizing:border-box}body{margin:0}button,input,select,textarea{font:inherit}button{cursor:pointer}
+    .top{background:#101b2d;color:#fff;padding:24px max(20px,calc((100vw - 1180px)/2));display:flex;align-items:center;justify-content:space-between;gap:18px}
+    .brand{font-size:18px;font-weight:750;letter-spacing:.02em}.brand span{color:#8eb5ff}.sub{color:#bac5d6;font-size:13px;margin-top:5px}
+    .local{border:1px solid #40516b;border-radius:999px;padding:7px 11px;color:#dbe7f7;font-size:12px;white-space:nowrap}
+    main{max-width:1180px;margin:28px auto;padding:0 20px 60px}.notice{background:#fff8e8;border:1px solid #ead8aa;color:#6e5318;padding:12px 15px;border-radius:10px;font-size:13px;line-height:1.5;margin-bottom:20px}
+    .layout{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(300px,.9fr);gap:20px;align-items:start}
+    .panel{background:#fff;border:1px solid #e1e6ee;border-radius:14px;padding:20px;box-shadow:0 3px 14px #1a2b4508}
+    h1{font-size:25px;margin:0 0 7px}h2{font-size:16px;margin:0 0 16px}.muted{color:#68758a;font-size:13px;line-height:1.5;margin:0 0 18px}
+    .section{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:#64748b;font-weight:750;margin:20px 0 10px;padding-bottom:7px;border-bottom:1px solid #edf0f4}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{margin-bottom:12px}.field label{display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:6px}
+    input,select,textarea{width:100%;border:1px solid #cfd7e3;border-radius:8px;padding:10px 11px;background:#fff;color:#172033;outline:none}
+    input:focus,select:focus,textarea:focus{border-color:#4778c7;box-shadow:0 0 0 3px #4778c71a}textarea{min-height:78px;resize:vertical}
+    .check{display:flex;align-items:center;gap:9px;font-size:13px;color:#334155;margin:8px 0 12px}.check input{width:16px;height:16px}
+    .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.btn{border:0;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:700}.primary{background:#2458a6;color:#fff}.secondary{background:#edf2f8;color:#26364d}.danger{background:#fff0ef;color:#a52d27}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}.stat{background:#f5f7fa;border-radius:9px;padding:11px}.stat strong{display:block;font-size:20px}.stat span{font-size:11px;color:#68758a}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.toolbar input{flex:1;min-width:150px}
+    .records{display:flex;flex-direction:column;gap:9px;max-height:720px;overflow:auto}.record{border:1px solid #e3e8ef;border-radius:10px;padding:12px}.record-head{display:flex;justify-content:space-between;gap:10px;align-items:start}.record-title{font-weight:750;font-size:14px}.record-time{font-size:11px;color:#718096}.pill{display:inline-block;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}.blocked{background:#fff0e9;color:#9b481e}.accepted{background:#e9f8ef;color:#17683c}.inconclusive{background:#eef2f8;color:#526176}.details{font-size:12px;color:#59677c;line-height:1.55;margin-top:8px;overflow-wrap:anywhere}.empty{border:1px dashed #cbd5e1;border-radius:10px;padding:28px 15px;text-align:center;color:#718096;font-size:13px}
+    .foot{font-size:11px;color:#778397;margin-top:16px;line-height:1.5}.hidden{display:none!important}
+    @media(max-width:800px){.layout{grid-template-columns:1fr}.top{align-items:flex-start}.grid2{grid-template-columns:1fr 1fr}}
+    @media(max-width:480px){main{padding:0 12px 40px;margin-top:16px}.panel{padding:15px}.grid2{grid-template-columns:1fr}.top{padding:18px 14px}.local{font-size:10px}}
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div><div class="brand">TEST <span>LEDGER</span></div><div class="sub">Independent experiment journal · BankApp withdrawal testing</div></div>
+    <div class="local">LOCAL DEVICE STORAGE</div>
+  </header>
+  <main>
+    <div class="notice"><strong>Test data only.</strong> Use synthetic codes and fictional bank details. Entries are saved in this browser on this device; this journal has no server, email delivery, or connection to BankApp.</div>
+    <div class="layout">
+      <section class="panel">
+        <h1>Record an experiment</h1>
+        <p class="muted">Create one entry for each attempt. Record what you entered, what you tried, what the application returned, and whether account state changed.</p>
+        <form id="entryForm">
+          <div class="field"><label for="title">Experiment title *</label><input id="title" required maxlength="100" placeholder="e.g. Withdrawal with a test code"></div>
+          <div class="grid2">
+            <div class="field"><label for="method">Attempt method</label><select id="method"><option>Normal application flow</option><option>Direct API request</option><option>Browser developer tools</option><option>Input validation test</option><option>Other</option></select></div>
+            <div class="field"><label for="outcome">Observed outcome *</label><select id="outcome"><option value="inconclusive">Not yet determined</option><option value="blocked">Rejected / blocked</option><option value="accepted">Accepted</option></select></div>
+          </div>
+          <div class="section">Code control and input</div>
+          <label class="check"><input type="checkbox" id="codeChecked"> The “Enter Code” checkbox was selected</label>
+          <div class="field"><label for="codeValue">Exact synthetic code typed (if a text field was present)</label><input id="codeValue" inputmode="numeric" autocomplete="off" maxlength="32" placeholder="e.g. 482913"></div>
+          <div class="section">Fictional bank details</div>
+          <div class="grid2">
+            <div class="field"><label for="bankName">Bank name</label><input id="bankName" maxlength="80" placeholder="Fictional Bank"></div>
+            <div class="field"><label for="accountName">Account name</label><input id="accountName" maxlength="80" placeholder="Test Customer"></div>
+          </div>
+          <div class="field"><label for="accountNumber">Fictional account number</label><input id="accountNumber" inputmode="numeric" maxlength="24" placeholder="Synthetic number only"></div>
+          <div class="section">Request, response and account state</div>
+          <div class="field"><label for="request">Request / action attempted</label><textarea id="request" placeholder="Describe the exact steps or paste a sanitized request. Do not include cookies, tokens, passwords, or real credentials."></textarea></div>
+          <div class="field"><label for="response">Application response / error</label><textarea id="response" placeholder="Paste the response or exact error text."></textarea></div>
+          <div class="grid2">
+            <div class="field"><label for="balanceBefore">Balance before</label><input id="balanceBefore" placeholder="e.g. 50000.00"></div>
+            <div class="field"><label for="balanceAfter">Balance after</label><input id="balanceAfter" placeholder="e.g. 50000.00"></div>
+          </div>
+          <div class="field"><label for="ledgerChange">Ledger change</label><select id="ledgerChange"><option value="unknown">Not checked</option><option value="none">No new ledger entry</option><option value="created">Withdrawal entry created</option><option value="other">Other / unclear</option></select></div>
+          <div class="field"><label for="notes">Steps, observations and evidence references</label><textarea id="notes" placeholder="What did you do? What happened? Add screenshot filenames, request IDs or commit references if available."></textarea></div>
+          <div class="actions"><button class="btn primary" type="submit">Save experiment</button><button class="btn secondary" type="reset">Clear form</button></div>
+        </form>
+        <p class="foot">The checkbox state and typed code are separate fields: a checkbox records only selected / unselected. It does not itself contain a number.</p>
+      </section>
+      <aside class="panel">
+        <h2>Experiment history</h2>
+        <div class="stats"><div class="stat"><strong id="totalCount">0</strong><span>Total tests</span></div><div class="stat"><strong id="blockedCount">0</strong><span>Blocked</span></div><div class="stat"><strong id="acceptedCount">0</strong><span>Accepted</span></div></div>
+        <div class="toolbar"><input id="search" placeholder="Search records…" aria-label="Search records"><button class="btn secondary" id="exportJson" type="button">Export JSON</button><button class="btn secondary" id="exportCsv" type="button">Export CSV</button></div>
+        <div class="toolbar"><label class="btn secondary" for="importFile">Import JSON</label><input class="hidden" id="importFile" type="file" accept="application/json,.json"><button class="btn danger" id="clearAll" type="button">Clear all</button></div>
+        <div class="records" id="records"><div class="empty">No experiments recorded yet.</div></div>
+        <p class="foot">Records remain in this browser's local storage. Export backups regularly. Clearing browser data or changing browsers/devices may remove access to these records. JSON export is the recommended full-fidelity backup.</p>
+      </aside>
+    </div>
+  </main>
+<script>
+(() => {
+  const KEY = 'test-ledger.entries.v1';
+  const EVENT_KEY = 'test-ledger.events.v1';
+  const $ = (id) => document.getElementById(id);
+  const read = (key) => { try { const value = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(value) ? value : []; } catch { return []; } };
+  const write = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+  let entries = read(KEY);
+  let events = read(EVENT_KEY);
+  const stamp = () => new Date().toISOString();
+  const logEvent = (type, detail) => { events.push({id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), at: stamp(), type, detail}); write(EVENT_KEY, events); };
+  const safe = (value) => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const fmt = (value) => new Date(value).toLocaleString();
+  function render() {
+    $('totalCount').textContent = entries.length;
+    $('blockedCount').textContent = entries.filter(x => x.outcome === 'blocked').length;
+    $('acceptedCount').textContent = entries.filter(x => x.outcome === 'accepted').length;
+    const q = $('search').value.trim().toLowerCase();
+    const filtered = [...entries].reverse().filter(x => JSON.stringify(x).toLowerCase().includes(q));
+    $('records').innerHTML = filtered.length ? filtered.map(x => {
+      const label = x.outcome === 'blocked' ? 'Rejected' : x.outcome === 'accepted' ? 'Accepted' : 'Inconclusive';
+      return '<article class="record"><div class="record-head"><div><div class="record-title">' + safe(x.title) + '</div><div class="record-time">' + safe(fmt(x.createdAt)) + '</div></div><span class="pill ' + safe(x.outcome) + '">' + label + '</span></div><div class="details">' +
+        '<strong>Method:</strong> ' + safe(x.method) + ' · <strong>Checkbox:</strong> ' + (x.codeChecked ? 'Selected' : 'Not selected') +
+        '<br><strong>Test code:</strong> ' + safe(x.codeValue || 'Not entered') +
+        '<br><strong>Bank details:</strong> ' + safe([x.bankName,x.accountName,x.accountNumber].filter(Boolean).join(' / ') || 'Not entered') +
+        '<br><strong>Balance:</strong> ' + safe(x.balanceBefore || 'Unknown') + ' → ' + safe(x.balanceAfter || 'Unknown') +
+        '<br><strong>Ledger:</strong> ' + safe(x.ledgerChange) +
+        (x.response ? '<br><strong>Response:</strong> ' + safe(x.response) : '') +
+        (x.notes ? '<br><strong>Notes:</strong> ' + safe(x.notes) : '') +
+        '</div></article>';
+    }).join('') : '<div class="empty">' + (entries.length ? 'No matching experiments.' : 'No experiments recorded yet.') + '</div>';
+  }
+  $('entryForm').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const entry = {
+      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      createdAt: stamp(),
+      title: $('title').value.trim(),
+      method: $('method').value,
+      outcome: $('outcome').value,
+      codeChecked: $('codeChecked').checked,
+      codeValue: $('codeValue').value,
+      bankName: $('bankName').value.trim(),
+      accountName: $('accountName').value.trim(),
+      accountNumber: $('accountNumber').value.trim(),
+      request: $('request').value,
+      response: $('response').value,
+      balanceBefore: $('balanceBefore').value.trim(),
+      balanceAfter: $('balanceAfter').value.trim(),
+      ledgerChange: $('ledgerChange').value,
+      notes: $('notes').value
+    };
+    entries.push(entry); write(KEY, entries); logEvent('experiment_saved', {entryId:entry.id, outcome:entry.outcome}); $('entryForm').reset(); render();
+  });
+  $('search').addEventListener('input', render);
+  function download(name, type, content) {
+    const url = URL.createObjectURL(new Blob([content], {type}));
+    const a = document.createElement('a'); a.href = url; a.download = name; a.click(); URL.revokeObjectURL(url);
+    logEvent('exported', {file:name});
+  }
+  $('exportJson').addEventListener('click', () => download('test-ledger-backup.json','application/json',JSON.stringify({schemaVersion:1,exportedAt:stamp(),entries,events},null,2)));
+  const csvCell = (v) => '"' + String(v ?? '').replace(/"/g,'""') + '"';
+  $('exportCsv').addEventListener('click', () => {
+    const fields = ['createdAt','title','method','outcome','codeChecked','codeValue','bankName','accountName','accountNumber','request','response','balanceBefore','balanceAfter','ledgerChange','notes'];
+    const csv = [fields.join(','), ...entries.map(x => fields.map(k => csvCell(x[k])).join(','))].join('\r\n');
+    download('test-ledger-entries.csv','text/csv;charset=utf-8',csv);
+  });
+  $('importFile').addEventListener('change', async (event) => {
+    const file = event.target.files[0]; if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      const incoming = Array.isArray(parsed) ? parsed : parsed.entries;
+      if (!Array.isArray(incoming) || incoming.some(x => !x || typeof x !== 'object' || !x.id || !x.createdAt || !x.title)) throw new Error('The file does not contain valid Test Ledger entries.');
+      const ids = new Set(entries.map(x => x.id)); const additions = incoming.filter(x => !ids.has(x.id));
+      entries = entries.concat(additions); write(KEY, entries);
+      if (Array.isArray(parsed.events)) { const eventIds = new Set(events.map(x => x.id)); events = events.concat(parsed.events.filter(x => x && x.id && !eventIds.has(x.id))); write(EVENT_KEY, events); }
+      logEvent('imported', {file:file.name, added:additions.length}); render(); alert('Imported ' + additions.length + ' new record(s).');
+    } catch (error) { alert(error.message || 'Could not import this file.'); }
+    event.target.value = '';
+  });
+  $('clearAll').addEventListener('click', () => {
+    if (!confirm('Delete every saved experiment and event from this browser? Export a backup first if you need one.')) return;
+    entries = []; events = []; write(KEY, entries); write(EVENT_KEY, events); logEvent('history_cleared', {at:stamp()}); render();
+  });
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,6 +1,11 @@
 # Production profile (SPRING_PROFILES_ACTIVE=prod). Everything is env-driven; the
 # hosting platform supplies DB/Redis/Kafka URLs and terminates TLS.
 spring:
+  # Authentication is handled by the application's database-backed auth service
+  # and JWT filter. Do not create Spring Boot's default in-memory development user.
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
   jpa:
     show-sql: false
 

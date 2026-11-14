@@ -3,6 +3,8 @@ package com.bank.payment;
 import com.bank.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.MediaType;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -10,8 +12,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 class PaymentIntegrationTest extends AbstractIntegrationTest {
+
+    @Autowired
+    JdbcTemplate jdbc;
 
     private JsonNode topUp(String token, String accountId, String amount) throws Exception {
         String json = mvc.perform(post("/api/v1/payments/top-up")
@@ -45,7 +51,17 @@ class PaymentIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("SUCCEEDED"));
 
-        assertThat(balance(token, acct)).isEqualTo(100.00);
+        assertThat(balance(token, acct)).isEqualTo(5000100.00);
+        assertThat(jdbc.queryForObject(
+                "SELECT subject FROM email_outbox WHERE recipient = ? ORDER BY created_at DESC LIMIT 1",
+                String.class, "pay-topup@example.com"))
+                .isEqualTo("Top-up confirmation");
+
+        mvc.perform(get("/api/v1/notifications")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(
+                        "Your USD 100.00 top-up was successful and has been credited to your account ending")));
     }
 
     @Test
@@ -59,6 +75,6 @@ class PaymentIntegrationTest extends AbstractIntegrationTest {
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk());
         }
-        assertThat(balance(token, acct)).isEqualTo(40.00);
+        assertThat(balance(token, acct)).isEqualTo(5000040.00);
     }
 }
