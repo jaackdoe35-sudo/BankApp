@@ -24,6 +24,8 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
 
     boolean existsByAccountNumber(String accountNumber);
 
+    boolean existsByOwnerUserId(UUID ownerUserId);
+
     /** Acquires a row-level write lock for safe balance updates during posting. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select a from Account a where a.id = :id")

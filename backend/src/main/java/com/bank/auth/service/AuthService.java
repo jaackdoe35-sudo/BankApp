@@ -1,5 +1,7 @@
 package com.bank.auth.service;
 
+import com.bank.account.domain.AccountType;
+import com.bank.account.service.AccountService;
 import com.bank.auth.domain.Role;
 import com.bank.auth.domain.User;
 import com.bank.auth.dto.AuthResponse;
@@ -29,19 +31,22 @@ public class AuthService {
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
     private final EventPublisher eventPublisher;
+    private final AccountService accountService;
 
     public AuthService(UserRepository userRepository,
                        CustomerProfileRepository profileRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
                        RefreshTokenService refreshTokenService,
-                       EventPublisher eventPublisher) {
+                       EventPublisher eventPublisher,
+                       AccountService accountService) {
         this.userRepository = userRepository;
         this.profileRepository = profileRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
         this.eventPublisher = eventPublisher;
+        this.accountService = accountService;
     }
 
     @Transactional
@@ -54,6 +59,9 @@ public class AuthService {
                 new User(email, passwordEncoder.encode(request.password()), Role.CUSTOMER));
         profileRepository.save(
                 new CustomerProfile(user.getId(), request.firstName(), request.lastName()));
+        // Provision the first checking account during registration. Account creation
+        // and its opening ledger posting join this registration transaction.
+        accountService.createAccount(user.getId(), AccountType.CHECKING, "USD");
         eventPublisher.publish(DomainEvent.userAction(EventActions.USER_REGISTERED, user.getId(),
                 "USER", user.getId().toString(), "Welcome to the bank, " + request.firstName() + "!"));
         return issueTokens(user);

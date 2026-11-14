@@ -1,208 +1,124 @@
-# Banking System
+# BankApp — Northstar Private
 
-A simulated, full-stack banking platform built to demonstrate clean architecture,
-correct money handling (double-entry ledger), security, and a real deployment.
+A synthetic banking web application and application-security test environment. It demonstrates customer-facing account, payment and withdrawal workflows, file evidence capture, localization, and a remote activity ledger.
 
-> ⚠️ Simulated bank — no real money. Cards/payments use **Stripe test mode** (added in Phase 4).
+> **SYNTHETIC TEST SYSTEM ONLY.** No real funds, bank rails, payment gateway, or real customer accounts are involved. Use synthetic names, account numbers, amounts, and files only.
 
-- **Backend:** Java 21, Spring Boot 3.5, Spring Security, JPA, PostgreSQL, Redis, Kafka, Flyway, springdoc/OpenAPI
-- **Frontend:** React 19 + TypeScript, Vite, Tailwind CSS, React Query, React Router
-- **Infra:** Docker Compose (Postgres + Redis + Kafka), GitHub Actions CI, Testcontainers
+## Live application
 
-See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full architecture and phased roadmap.
+- **Application:** https://bankapp-withdrawal-lab.vercel.app
+- **Activity Ledger:** https://bankapp-withdrawal-lab.vercel.app/test-ledger/
+- **Backend:** https://banking-backend-nzjt.onrender.com
+- **Repository:** https://github.com/jaackdoe35-sudo/BankApp
+- **Release verification record:** [docs/RELEASE_VERIFICATION.md](docs/RELEASE_VERIFICATION.md)
 
-## Project status
+## Architecture
 
-- **Phase 0 — Scaffold & infra ✅**
-- **Phase 1 — Auth & users ✅** — registration, login, JWT access + rotating
-  refresh tokens (Redis), RBAC, KYC profiles, admin verification, signup/login/profile UI.
-- **Phase 2 — Accounts & ledger ✅** — open accounts, deposits/withdrawals on a
-  **double-entry ledger** (balanced debit/credit entries, `BigDecimal`, pessimistic
-  locking, running balance), dashboard + account detail UI with transaction history.
-- **Phase 3 — Transfers & beneficiaries ✅** — account-to-account transfers with
-  **idempotency keys** (a retried request never double-spends), saved payees, transfer UI.
-- **Phase 4 — Cards & payments ✅** — tokenized **virtual cards** (one-time PAN, freeze/cancel,
-  monthly spend limits), card purchases that debit the account, and **account top-ups** through a
-  **Stripe**-or-simulated payment gateway (idempotent fulfilment).
-- **Phase 5 — Loans & interest ✅** — loan applications (KYC-gated), admin approval that
-  generates an **amortization schedule** and disburses the principal, installment **repayments**,
-  and a **scheduled job** that flags overdue installments. All disbursements/repayments flow
-  through the ledger. Loans UI + (admin) approvals panel.
-- **Phase 6 — Notifications & audit ✅** (current) — **event-driven** via **Kafka**: services
-  publish domain events that independent consumers turn into in-app **notifications** (+ email)
-  and an append-only **audit log**. Notifications bell + page; admin audit viewer + KYC panel.
+- **Frontend:** React, TypeScript, Vite, React Router, React Query.
+- **Backend:** Java 21, Spring Boot 3.5, Spring Security, JPA, PostgreSQL, Redis, Flyway.
+- **Database:** Neon PostgreSQL.
+- **Hosting:** Vercel frontend and Render backend.
+- **Automation:** GitHub Actions, Maven verification, frontend build, dependency audit and Playwright browser checks.
 
-Remaining roadmap: observability and deployment.
+The production frontend is configured with the backend API base URL. The application uses the browser-to-backend APIs for account/authentication workflows when configured, and the Activity Ledger's experiment API for remote event and file capture. A CI pass or a reachable page does not by itself prove every live end-to-end flow; see the release verification record for checks actually performed and checks still outstanding.
 
-### Notifications & Audit API (Phase 6)
+## Transactional email delivery
 
-| Method | Path | Auth | Purpose |
-|---|---|---|---|
-| GET | `/api/v1/notifications` | bearer | List my notifications |
-| GET | `/api/v1/notifications/unread-count` | bearer | Unread count (bell badge) |
-| POST | `/api/v1/notifications/{id}/read` `/read-all` | bearer | Mark read |
-| GET | `/api/v1/admin/audit` | ADMIN | Recent audit entries |
+Transactional messages use the **Resend HTTPS API**. The backend writes a notification and its email-outbox row atomically; the EmailOutboxWorker polls committed rows, sends them through Resend, records successful provider acceptance as `SENT`, and retries failures with bounded exponential backoff.
 
-Domain events flow over Kafka topic `banking.events`; two consumer groups
-(`notifications`, `audit`) process every event independently and idempotently (deduped by
-`eventId`). Email is **simulated by default**; set `SPRING_MAIL_HOST` (e.g. Mailtrap) for real SMTP.
+Configure these variables on the **Render backend service**:
 
-### Loans API (Phase 5)
+| Variable | Required value |
+|---|---|
+| `RESEND_API_KEY` | A valid Resend API key, stored as a Render secret |
+| `MAIL_FROM` | A sender address on a domain/identity verified in the same Resend account |
+| `MAIL_OUTBOX_POLL_INTERVAL_MS` | Optional polling interval in milliseconds (default `30000`) |
 
-| Method | Path | Auth | Purpose |
-|---|---|---|---|
-| POST | `/api/v1/loans` | bearer | Apply for a loan (requires verified KYC) |
-| GET | `/api/v1/loans` `/{id}` | bearer | List / view loan + amortization schedule |
-| POST | `/api/v1/loans/{id}/repay` | bearer | Pay the next installment |
-| GET | `/api/v1/admin/loans` | ADMIN | List loans (optional `?status=PENDING`) |
-| POST | `/api/v1/admin/loans/{id}/approve` `/reject` | ADMIN | Approve (disburse + schedule) / reject |
+Both the API key and sender address are required. With either missing, the application deliberately selects an unconfigured sender and leaves queued messages in `email_outbox`; it does not log a false delivery success. Once credentials are configured and the service restarts, existing due `PENDING` messages are eligible for delivery. Verify a real test message at a mailbox you control and confirm the matching outbox row becomes `SENT`.
 
-Equal monthly payments via the standard amortization formula (`BigDecimal`, configurable
-`app.loans.annual-rate`, default 12%). A daily `@Scheduled` job marks overdue installments.
+SMTP settings are not used by the active Resend sender. Do not populate SMTP variables as a substitute for the Resend key. Never commit provider credentials or put them in client-side `VITE_*` variables.
 
-### Cards & Payments API (Phase 4)
+**Observed production state on 2026-11-13:** startup logs reported that no real provider was configured. Neon showed four email-outbox rows in `PENDING`; no successful provider delivery was established. Email must not be described as operational until the credentials are supplied and a live message is verified.
 
-| Method | Path | Auth | Purpose |
-|---|---|---|---|
-| POST | `/api/v1/cards` | bearer | Issue a virtual card (full number returned once) |
-| GET | `/api/v1/cards` | bearer | List my cards |
-| POST | `/api/v1/cards/{id}/freeze` `/unfreeze` `/cancel` | bearer | Card lifecycle |
-| POST | `/api/v1/cards/{id}/pay` | bearer | Card purchase (debits the account) |
-| POST | `/api/v1/payments/top-up` | bearer | Start a top-up (gateway intent) |
-| POST | `/api/v1/payments/{id}/confirm` | bearer | Confirm a top-up (simulated gateway) |
-| POST | `/api/v1/payments/webhook` | public | Stripe-signed webhook (real mode) |
+## Synthetic money-handling boundaries
 
-**Payment gateway:** runs in **simulated** mode by default (no secrets — top-ups confirm via
-the `/confirm` endpoint). Set `STRIPE_SECRET_KEY` to switch to **real Stripe test mode**
-(PaymentIntents + signature-verified webhooks):
+- Payment processing is simulated; external payment processing is disabled.
+- Withdrawal requests are captured for security testing and rejected. They must not debit balances.
+- Test events preserve relevant non-secret form fields, including account numbers, amounts, currency and status.
+- Passwords, PINs, OTPs, access/refresh tokens, JWTs, API keys and other secret material must be redacted.
+- The experiment ledger is an evidence-capture facility, not a payment settlement ledger.
 
-```bash
-# .env
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-# forward Stripe webhooks to the app, then pay with test card 4242 4242 4242 4242
-stripe listen --forward-to localhost:8080/api/v1/payments/webhook
-```
+## Remote Activity Ledger
 
-### Transfers API (Phase 3)
+The frontend sends experiment evidence to the backend:
 
-| Method | Path | Auth | Purpose |
-|---|---|---|---|
-| POST | `/api/v1/transfers` | bearer | Transfer money (send `Idempotency-Key` header) |
-| GET | `/api/v1/beneficiaries` | bearer | List saved payees |
-| POST | `/api/v1/beneficiaries` | bearer | Save a payee |
-| DELETE | `/api/v1/beneficiaries/{id}` | bearer | Delete a payee |
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/v1/experiment/sessions` | Create an evidence-capture session |
+| POST | `/api/v1/experiment/sessions/{sessionId}/events` | Record a redacted event payload |
+| POST | `/api/v1/experiment/sessions/{sessionId}/uploads` | Upload an evidence file |
 
-Supplying an `Idempotency-Key` makes a transfer safe to retry: the server posts the
-underlying ledger transaction at most once per key.
+Administrator-only ledger routes:
 
-### Accounts API (Phase 2)
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/api/v1/admin/experiments/events` | List captured events |
+| GET | `/api/v1/admin/experiments/events/{id}` | Retrieve an event |
+| GET | `/api/v1/admin/experiments/files` | List uploaded evidence files |
+| GET | `/api/v1/admin/experiments/files/{id}` | Download an evidence file |
 
-| Method | Path | Auth | Purpose |
-|---|---|---|---|
-| POST | `/api/v1/accounts` | bearer | Open an account (CHECKING/SAVINGS) |
-| GET | `/api/v1/accounts` | bearer | List my accounts |
-| GET | `/api/v1/accounts/{id}` | bearer | Get one account |
-| POST | `/api/v1/accounts/{id}/deposit` | bearer | Deposit (amount) |
-| POST | `/api/v1/accounts/{id}/withdraw` | bearer | Withdraw (amount, no overdraft) |
-| GET | `/api/v1/accounts/{id}/transactions` | bearer | Transaction history (newest first) |
+The event and upload endpoints use a short-lived experiment session token. Administrator ledger endpoints require an authenticated ADMIN identity. The application stores file bytes and SHA-256 metadata in PostgreSQL; the backend validates supported file types, file signatures and the 10 MiB size limit.
 
-Every money movement posts a balanced set of ledger entries (debits + credits net to
-zero) against the customer account and a system settlement account, in one DB transaction.
+## Authentication endpoints
 
-### Auth API (Phase 1)
+| Method | Endpoint | Access |
+|---|---|---|
+| POST | `/api/v1/auth/register` | Public customer registration |
+| POST | `/api/v1/auth/login` | Public login |
+| POST | `/api/v1/auth/refresh` | Refresh-token rotation |
+| POST | `/api/v1/auth/logout` | Refresh-token revocation |
+| GET | `/api/v1/users/me` | Authenticated user |
+| GET | `/api/v1/admin/users` | ADMIN |
 
-| Method | Path | Auth | Purpose |
-|---|---|---|---|
-| POST | `/api/v1/auth/register` | public | Create a customer, returns tokens |
-| POST | `/api/v1/auth/login` | public | Authenticate, returns tokens |
-| POST | `/api/v1/auth/refresh` | public | Rotate refresh token → new pair |
-| POST | `/api/v1/auth/logout` | public | Revoke a refresh token |
-| GET | `/api/v1/users/me` | bearer | Current user + KYC profile |
-| PUT | `/api/v1/users/me/profile` | bearer | Update KYC profile |
-| GET | `/api/v1/admin/users` | ADMIN | List all customer profiles |
-| POST | `/api/v1/admin/users/{id}/kyc` | ADMIN | Set KYC status |
+Do not commit passwords or other credentials. The production administrator password is configured as a Render secret and must be retained in a password manager controlled by the project owner. Never put it in this README, source code, issue comments or CI logs.
 
-**Demo admin** (seeded at startup): `admin@bank.local` / `Admin123!`
-(override via `ADMIN_EMAIL` / `ADMIN_PASSWORD`).
+## Local development
 
-## Prerequisites
-
-- Java 21, Maven (the `./mvnw` wrapper is included), Node 20+, Docker.
-
-## Run locally
+Prerequisites: Java 21, Node.js, Maven wrapper and Docker.
 
 ```bash
-# 1. (optional) create your env file
-cp .env.example .env
-
-# 2. start Postgres + Redis + Kafka  (Postgres host port 5433 -> container 5432)
+# Start local dependencies
 docker compose up -d postgres redis kafka
 
-# 3. run the backend
-cd backend && ./mvnw spring-boot:run
-#   http://localhost:8080/actuator/health   -> {"status":"UP"}
-#   http://localhost:8080/swagger-ui.html   -> API docs
+# Backend
+cd backend
+./mvnw spring-boot:run
 
-# 4. run the frontend (in another terminal)
-cd frontend && npm install && npm run dev
-#   http://localhost:5173  -> shows "Backend: UP"
+# Frontend, in a separate terminal
+cd frontend
+npm install
+npm run dev
 ```
 
-> **Port note:** the Docker Postgres is published on host port **5433** to avoid
-> clashing with a local Postgres on 5432. Inside Docker it remains 5432.
+Use the repository's `.env.example` as a starting point. Do not copy production secrets into a local file or commit a populated `.env`.
 
-### Run the whole stack in Docker
+## Verification
 
 ```bash
-docker compose --profile full up --build
+# Backend tests
+cd backend
+./mvnw verify
+
+# Frontend production build
+cd frontend
+npm ci
+npm run build
 ```
 
-### Observability (local)
+GitHub Actions also runs the dependency audit and Playwright browser checks. Browser tests verify the test cases encoded in the repository; they are not a substitute for authenticated live-backend testing.
 
-```bash
-docker compose --profile monitoring up -d   # Prometheus :9090 + Grafana :3000 (admin/admin)
-# backend exposes metrics at /actuator/prometheus; Grafana auto-loads the "Banking System" dashboard
-```
+## Release status
 
-## Deployment
+The frontend and backend have live deployments. The latest verified CI run and the current production/preview deployment state are maintained in [docs/RELEASE_VERIFICATION.md](docs/RELEASE_VERIFICATION.md). Production email delivery is not enabled until a Resend API key and verified sender are configured and tested.
 
-Backend + Postgres + Redis → **Render** (via the `render.yaml` Blueprint); frontend → **Vercel**.
-
-1. **Backend (Render):** New → **Blueprint** → connect this repo. Render reads `render.yaml` and
-   provisions the **web service** (Docker, root dir `backend`), **Postgres**, and **Redis** with all
-   env wired automatically (`JWT_SECRET` auto-generated, `SEED_DEMO=true`). After the first deploy,
-   set `CORS_ALLOWED_ORIGINS` to your Vercel URL.
-2. **Frontend (Vercel):** import `frontend/`, set `VITE_API_BASE_URL=https://<backend>.onrender.com`,
-   deploy (`vercel.json` handles SPA routing).
-3. Point the backend's `CORS_ALLOWED_ORIGINS` at the Vercel domain; open the site and sign in.
-
-> Render's free Postgres expires after ~30 days and the free web service cold-starts after
-> inactivity. **Kafka isn't offered on Render**, so this deploy sets `EVENTS_ENABLED=false` (the
-> publisher no-ops; notifications/audit are demoed locally). Real email: `SPRING_MAIL_HOST/...`.
-> Real Stripe: `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET`.
-
-> **Live demo:** https://frontend-eosin-delta-qo07y0sr3z.vercel.app
-> · **API:** https://MrCJ123-banking-system.hf.space (`/swagger-ui.html`, `/actuator/health`)
-> · **Demo login:** `demo@bank.local` / `Demo123!` · **Admin:** `admin@bank.local` / `Admin123!`
->
-> Hosting: frontend on **Vercel**, backend on **Hugging Face Spaces** (Docker), Postgres on
-> **Neon**, Redis on **Upstash** — all free tiers. Kafka isn't hosted, so notifications/audit
-> are demoed locally; everything else runs live.
-
-## Test
-
-```bash
-cd backend && ./mvnw verify   # runs the Testcontainers smoke test (real Postgres)
-cd frontend && npm run build  # type-check + production build
-```
-
-## Layout
-
-```
-backend/     Spring Boot (modular packages under com.bank.*)
-frontend/    React + TypeScript (Vite)
-docker-compose.yml
-.github/workflows/ci.yml
-PROJECT_PLAN.md
-```
+PR #1 remains open and draft. It has not been merged. Do not treat this synthetic application as a real banking product or use real customer financial data.

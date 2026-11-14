@@ -4,30 +4,15 @@ import { useAuth } from '../context/AuthContext'
 import { useState } from 'react'
 import {
   listAdminAccounts,
-  listAllUsers,
   listAudit,
-  setKyc,
   tellerDeposit,
-  type KycStatus,
 } from '../lib/admin'
 import { formatDateTime, formatMoney } from '../lib/format'
 import { apiErrorMessage } from '../lib/errors'
-
-const KYC_STYLES: Record<string, string> = {
-  PENDING: 'bg-amber-100 text-amber-800',
-  VERIFIED: 'bg-green-100 text-green-800',
-  REJECTED: 'bg-red-100 text-red-800',
-}
+import { api } from '../lib/api'
 
 export default function AdminPage() {
   const { user } = useAuth()
-  const qc = useQueryClient()
-  const usersQ = useQuery({ queryKey: ['admin-users'], queryFn: listAllUsers, enabled: user?.role === 'ADMIN' })
-
-  const kycM = useMutation({
-    mutationFn: ({ userId, status }: { userId: string; status: KycStatus }) => setKyc(userId, status),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-users'] }),
-  })
 
   if (user?.role !== 'ADMIN') {
     return (
@@ -37,71 +22,63 @@ export default function AdminPage() {
     )
   }
 
-  const users = usersQ.data ?? []
-
   return (
     <AppLayout>
-      <h1 className="text-2xl font-bold tracking-tight">Admin · KYC approvals</h1>
-      <p className="mt-1 text-sm text-slate-500">Verify or reject customer identity checks.</p>
+      <h1 className="text-2xl font-bold tracking-tight">Admin</h1>
 
-      <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-6">
-        {usersQ.isLoading && <p className="text-slate-500">Loading…</p>}
-        {!usersQ.isLoading && users.length === 0 && (
-          <p className="text-slate-500">No customers yet.</p>
-        )}
-        {users.length > 0 && (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-slate-400">
-                <th className="pb-2">Customer</th>
-                <th className="pb-2">Email</th>
-                <th className="pb-2">KYC</th>
-                <th className="pb-2 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => {
-                const name = [u.firstName, u.lastName].filter(Boolean).join(' ') || '—'
-                const pending = kycM.isPending && kycM.variables?.userId === u.userId
-                return (
-                  <tr key={u.userId} className="border-t border-slate-100">
-                    <td className="py-2">{name}</td>
-                    <td className="py-2 text-slate-500">{u.email}</td>
-                    <td className="py-2">
-                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${KYC_STYLES[u.kycStatus]}`}>
-                        {u.kycStatus}
-                      </span>
-                    </td>
-                    <td className="py-2 text-right">
-                      <span className="inline-flex gap-2">
-                        <button
-                          onClick={() => kycM.mutate({ userId: u.userId, status: 'VERIFIED' })}
-                          disabled={pending || u.kycStatus === 'VERIFIED'}
-                          className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-40"
-                        >
-                          Verify
-                        </button>
-                        <button
-                          onClick={() => kycM.mutate({ userId: u.userId, status: 'REJECTED' })}
-                          disabled={pending || u.kycStatus === 'REJECTED'}
-                          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 disabled:opacity-40"
-                        >
-                          Reject
-                        </button>
-                      </span>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
-        {kycM.isError && <p className="mt-3 text-sm text-red-600">Could not update KYC.</p>}
-      </section>
-
+      <GmailConnection />
       <TellerDeposit />
       <AuditLog />
     </AppLayout>
+  )
+}
+
+
+function GmailConnection() {
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['admin-email-gmail-status'],
+    queryFn: async () => (await api.get<{
+      oauthConfigured: boolean
+      connected: boolean
+      senderEmail: string
+    }>('/api/v1/admin/email/status')).data,
+  })
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function connect() {
+    setBusy(true)
+    setError('')
+    try {
+      const response = await api.get<{ authorizationUrl: string }>('/api/v1/admin/email/oauth/authorize')
+      window.location.assign(response.data.authorizationUrl)
+    } catch (e) {
+      setError(apiErrorMessage(e))
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
+      <h2 className="text-lg font-semibold">Transactional email · Gmail</h2>
+      <p className="mt-1 text-sm text-slate-500">
+        Connect the bank's Gmail sender using Google's secure authorization. The refresh token is encrypted in the backend database.
+      </p>
+      {isLoading ? <p className="mt-3 text-sm text-slate-500">Checking connection…</p> : (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <span className={'rounded-full px-3 py-1 text-xs font-medium ' + (data?.connected ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700')}>
+            {data?.connected ? 'Connected' : 'Not connected'}
+          </span>
+          {data?.senderEmail && <span className="text-sm text-slate-600">{data.senderEmail}</span>}
+          {!data?.oauthConfigured && <span className="text-sm text-amber-700">Google OAuth client settings are not configured in Render.</span>}
+          <button onClick={connect} disabled={!data?.oauthConfigured || busy} className="bank-primary-button">
+            {busy ? 'Opening Google…' : data?.connected ? 'Reconnect Gmail' : 'Connect Gmail'}
+          </button>
+          <button onClick={() => refetch()} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">Refresh status</button>
+        </div>
+      )}
+      {error && <p role="alert" className="mt-2 text-sm text-red-600">{error}</p>}
+    </section>
   )
 }
 
@@ -109,6 +86,8 @@ function TellerDeposit() {
   const qc = useQueryClient()
   const { data } = useQuery({ queryKey: ['admin-accounts'], queryFn: listAdminAccounts })
   const [amounts, setAmounts] = useState<Record<string, string>>({})
+  const [accountNumber, setAccountNumber] = useState('')
+  const [sendAmount, setSendAmount] = useState('')
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
 
   const depositM = useMutation({
@@ -116,17 +95,21 @@ function TellerDeposit() {
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ['admin-accounts'] })
       setAmounts((a) => ({ ...a, [vars.number]: '' }))
-      setMsg({ kind: 'ok', text: `Deposited to ${vars.number}` })
+      setMsg({ kind: 'ok', text: `Deposit request recorded for ${vars.number}` })
     },
     onError: (e) => setMsg({ kind: 'err', text: apiErrorMessage(e) }),
   })
 
   const accounts = data ?? []
+  const sendM = useMutation({ mutationFn: () => tellerDeposit(accountNumber.trim(), Number(sendAmount)), onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-accounts'] }); setAccountNumber(''); setSendAmount(''); setMsg({ kind: 'ok', text: 'Funds sent. The account holder has been notified.' }) }, onError: (e) => setMsg({ kind: 'err', text: apiErrorMessage(e) }) })
 
   return (
     <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6">
-      <h2 className="text-lg font-semibold">Teller deposit</h2>
-      <p className="mt-1 text-sm text-slate-500">Record a cash deposit into a customer's account.</p>
+      <h2 className="text-lg font-semibold">Send money to any account</h2>
+      <p className="mt-1 text-sm text-slate-500">Enter any existing customer account number and the amount to credit. The recipient receives an account notification.</p>
+      <div className="mt-4 flex flex-wrap items-end gap-3"><label className="block text-sm">Account number<input value={accountNumber} onChange={e => setAccountNumber(e.target.value)} inputMode="numeric" autoComplete="off" placeholder="Enter account number" className="mt-1 block w-56 rounded-lg border border-slate-300 px-3 py-2 font-mono" /></label><label className="block text-sm">Amount (USD)<input type="number" min="0.01" step="0.01" value={sendAmount} onChange={e => setSendAmount(e.target.value)} placeholder="0.00" className="mt-1 block w-36 rounded-lg border border-slate-300 px-3 py-2" /></label><button onClick={() => sendM.mutate()} disabled={!accountNumber.trim() || !(Number(sendAmount)>0) || sendM.isPending} className="bank-primary-button">{sendM.isPending ? 'Sending…' : 'Send funds'}</button></div>
+      <h3 className="mt-8 text-sm font-semibold text-slate-700">Customer account directory</h3>
+      <p className="mt-1 text-xs text-slate-500">You can also credit a listed account directly.</p>
       <div className="mt-4 space-y-2">
         {accounts.length === 0 && <p className="text-sm text-slate-500">No customer accounts yet.</p>}
         {accounts.map((a) => (
@@ -150,7 +133,7 @@ function TellerDeposit() {
                   depositM.mutate({ number: a.accountNumber, amount: Number(amounts[a.accountNumber]) })
                 }
                 disabled={!(Number(amounts[a.accountNumber]) > 0) || depositM.isPending}
-                className="rounded-lg bg-green-600 px-3 py-1.5 font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                className="bank-primary-button"
               >
                 Deposit
               </button>

@@ -20,35 +20,29 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.time.Duration;
 
-/**
- * Per-IP rate limiting on the authentication endpoints (login/register/refresh),
- * to blunt credential stuffing / brute force. Buckets are kept in an in-memory
- * Caffeine cache (token-bucket via Bucket4j); exceeding the limit returns 429.
- */
+/** Per-IP limits for authentication and public experiment session ingestion. */
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
-
-    private static final String PROTECTED_PREFIX = "/api/v1/auth/";
-
+    private static final String AUTH_PREFIX = "/api/v1/auth/";
+    private static final String EXPERIMENT_PREFIX = "/api/v1/experiment/sessions";
     private final ObjectMapper objectMapper;
     private final boolean enabled;
-    private final int capacity;
+    private final int authCapacity;
     private final Cache<String, Bucket> buckets = Caffeine.newBuilder()
-            .expireAfterAccess(Duration.ofMinutes(10))
-            .maximumSize(100_000)
-            .build();
+            .expireAfterAccess(Duration.ofMinutes(10)).maximumSize(100_000).build();
 
     public RateLimitFilter(ObjectMapper objectMapper,
                            @Value("${app.ratelimit.enabled:true}") boolean enabled,
                            @Value("${app.ratelimit.auth-per-minute:20}") int capacity) {
         this.objectMapper = objectMapper;
         this.enabled = enabled;
-        this.capacity = capacity;
+        this.authCapacity = capacity;
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !enabled || !request.getRequestURI().startsWith(PROTECTED_PREFIX);
+        String path = request.getRequestURI();
+        return !enabled || !(path.startsWith(AUTH_PREFIX) || path.startsWith(EXPERIMENT_PREFIX));
     }
 
     @Override
@@ -56,7 +50,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain)
             throws ServletException, IOException {
-        Bucket bucket = buckets.get(clientIp(request), ip -> newBucket());
+        String path = request.getRequestURI();
+        boolean experiment = path.startsWith(EXPERIMENT_PREFIX);
+        int capacity = experiment
+                ? (path.equals(EXPERIMENT_PREFIX) ? 10 : 120)
+                : authCapacity;
+        String bucketKey = clientIp(request) + (experiment ? (path.equals(EXPERIMENT_PREFIX) ? ":experiment-bootstrap" : ":experiment-ingest") : ":auth");
+        Bucket bucket = buckets.get(bucketKey, ip -> newBucket(capacity));
         if (bucket.tryConsume(1)) {
             filterChain.doFilter(request, response);
         } else {
@@ -64,19 +64,17 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
     }
 
-    private Bucket newBucket() {
-        Bandwidth limit = Bandwidth.builder()
-                .capacity(capacity)
-                .refillGreedy(capacity, Duration.ofMinutes(1))
-                .build();
+    private Bucket newBucket(int capacity) {
+        Bandwidth limit = Bandwidth.builder().capacity(capacity)
+                .refillGreedy(capacity, Duration.ofMinutes(1)).build();
         return Bucket.builder().addLimit(limit).build();
     }
 
     private String clientIp(HttpServletRequest request) {
+        // The hosting proxy must overwrite X-Forwarded-For; never trust a user-supplied
+        // forwarding header when the deployment does not sit behind a trusted proxy.
         String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
+        if (forwarded != null && !forwarded.isBlank()) return forwarded.split(",")[0].trim();
         return request.getRemoteAddr();
     }
 

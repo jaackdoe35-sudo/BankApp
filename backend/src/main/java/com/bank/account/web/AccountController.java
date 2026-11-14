@@ -1,7 +1,6 @@
 package com.bank.account.web;
 
 import com.bank.account.dto.AccountResponse;
-import com.bank.account.dto.AmountRequest;
 import com.bank.account.dto.CreateAccountRequest;
 import com.bank.account.dto.LedgerEntryResponse;
 import com.bank.account.service.AccountService;
@@ -57,10 +56,9 @@ public class AccountController {
     }
 
     @PostMapping("/{accountId}/withdraw")
-    @Operation(summary = "Withdraw money from an account")
-    public AccountResponse withdraw(@PathVariable UUID accountId, @Valid @RequestBody AmountRequest request) {
-        return AccountResponse.from(
-                accountService.withdraw(SecurityUtils.currentUserId(), accountId, request.amount()));
+    @Operation(summary = "Withdrawals are disabled")
+    public AccountResponse withdraw(@PathVariable UUID accountId) {
+        return AccountResponse.from(accountService.withdraw(SecurityUtils.currentUserId(), accountId));
     }
 
     @GetMapping("/{accountId}/transactions")

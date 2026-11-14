@@ -2,13 +2,11 @@ package com.bank.customer.service;
 
 import com.bank.auth.domain.User;
 import com.bank.auth.repo.UserRepository;
-import com.bank.common.SecurityUtils;
 import com.bank.common.event.DomainEvent;
 import com.bank.common.event.EventActions;
 import com.bank.common.event.EventPublisher;
 import com.bank.common.exception.NotFoundException;
 import com.bank.customer.domain.CustomerProfile;
-import com.bank.customer.domain.KycStatus;
 import com.bank.customer.dto.ProfileResponse;
 import com.bank.customer.dto.UpdateProfileRequest;
 import com.bank.customer.repo.CustomerProfileRepository;
@@ -46,15 +44,14 @@ public class CustomerService {
     @Transactional
     public ProfileResponse updateProfile(UUID userId, UpdateProfileRequest request) {
         User user = requireUser(userId);
-        CustomerProfile profile = requireProfile(userId);
-        if (request.firstName() != null) profile.setFirstName(request.firstName());
-        if (request.lastName() != null) profile.setLastName(request.lastName());
-        if (request.dateOfBirth() != null) profile.setDateOfBirth(request.dateOfBirth());
-        if (request.phone() != null) profile.setPhone(request.phone());
-        if (request.addressLine1() != null) profile.setAddressLine1(request.addressLine1());
-        if (request.city() != null) profile.setCity(request.city());
-        if (request.country() != null) profile.setCountry(request.country());
-        return toResponse(user, profile);
+        // Staff/admin users may predate customer profile creation. Create the
+        // profile on first edit instead of rejecting a valid authenticated user.
+        CustomerProfile profile = profileRepository.findByUserId(userId)
+                .orElseGet(() -> new CustomerProfile(userId, null, null));
+        if (request.firstName() != null) profile.setFirstName(request.firstName().trim());
+        if (request.lastName() != null) profile.setLastName(request.lastName().trim());
+        CustomerProfile saved = profileRepository.save(profile);
+        return toResponse(user, saved);
     }
 
     @Transactional(readOnly = true)
@@ -67,26 +64,9 @@ public class CustomerService {
                 .toList();
     }
 
-    @Transactional
-    public ProfileResponse setKycStatus(UUID userId, KycStatus status) {
-        User user = requireUser(userId);
-        CustomerProfile profile = requireProfile(userId);
-        profile.setKycStatus(status);
-        String action = status == KycStatus.VERIFIED ? EventActions.KYC_VERIFIED : EventActions.KYC_REJECTED;
-        UUID actor = SecurityUtils.currentUserId();
-        eventPublisher.publish(DomainEvent.of(action, actor, userId, "KYC", userId.toString(),
-                "Your identity verification is now " + status, true));
-        return toResponse(user, profile);
-    }
-
     private User requireUser(UUID userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
-    }
-
-    private CustomerProfile requireProfile(UUID userId) {
-        return profileRepository.findByUserId(userId)
-                .orElseThrow(() -> new NotFoundException("Profile not found"));
     }
 
     private ProfileResponse toResponse(User user, CustomerProfile p) {
@@ -95,12 +75,6 @@ public class CustomerService {
                 user.getEmail(),
                 user.getRole().name(),
                 p == null ? null : p.getFirstName(),
-                p == null ? null : p.getLastName(),
-                p == null ? null : p.getDateOfBirth(),
-                p == null ? null : p.getPhone(),
-                p == null ? null : p.getAddressLine1(),
-                p == null ? null : p.getCity(),
-                p == null ? null : p.getCountry(),
-                p == null ? null : p.getKycStatus());
+                p == null ? null : p.getLastName());
     }
 }

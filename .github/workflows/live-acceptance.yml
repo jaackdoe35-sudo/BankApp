@@ -1,0 +1,24 @@
+name: Live API acceptance
+
+# Manual only: this workflow creates persistent test records in production.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-acceptance:
+    name: Production backend authenticated acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exercise authenticated production customer workflows
+        env:
+          BANKAPP_API_BASE_URL: https://banking-backend-nzjt.onrender.com
+        run: node backend/scripts/live-acceptance.mjs

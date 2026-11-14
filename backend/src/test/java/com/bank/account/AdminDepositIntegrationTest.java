@@ -3,9 +3,15 @@ package com.bank.account;
 import com.bank.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
+
+import java.util.HashSet;
+import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.MediaType;
 
 import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -13,12 +19,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class AdminDepositIntegrationTest extends AbstractIntegrationTest {
 
+    @Autowired
+    JdbcTemplate jdbcTemplate;
+
     @Test
-    void openingAccountRequiresVerifiedKyc() throws Exception {
-        String token = register("kyc-gate@example.com"); // not verified
-        mvc.perform(post("/api/v1/accounts").header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"type\":\"CHECKING\"}"))
-                .andExpect(status().isBadRequest());
+    void registrationProvisionedFirstAccountAndAdditionalAccountGetsNoOpeningCredit() throws Exception {
+        String token = register("account-open@example.com");
+        JsonNode first = openAccount(token);
+        JsonNode additional = openAdditionalAccount(token);
+
+        assertThat(first.get("balance").decimalValue()).isEqualByComparingTo("5000000.00");
+        assertThat(additional.get("balance").decimalValue()).isEqualByComparingTo("0.00");
     }
 
     @Test
@@ -35,7 +46,6 @@ class AdminDepositIntegrationTest extends AbstractIntegrationTest {
     void customerCannotUseTellerDeposit() throws Exception {
         String token = registerVerified("teller-denied@example.com");
         String number = openAccount(token).get("accountNumber").asText();
-        // The customer's own token may not hit the admin teller endpoint.
         mvc.perform(post("/api/v1/admin/accounts/deposit").header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"accountNumber\":\"" + number + "\",\"amount\":100.00}"))
@@ -51,7 +61,14 @@ class AdminDepositIntegrationTest extends AbstractIntegrationTest {
         mvc.perform(get("/api/v1/accounts/" + account.get("id").asText())
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.balance", is(250.00)));
+                .andExpect(jsonPath("$.balance", is(5000250.00)));
+    }
+
+    @Test
+    void designatedAdminGetsOneTrillionDollarWallet() throws Exception {
+        mvc.perform(get("/api/v1/admin/accounts/wallet").header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.balance").isNumber());
     }
 
     @Test
@@ -63,7 +80,56 @@ class AdminDepositIntegrationTest extends AbstractIntegrationTest {
         String json = mvc.perform(get("/api/v1/admin/accounts").header("Authorization", "Bearer " + admin))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        // The newly opened account appears with its owner's email.
-        org.assertj.core.api.Assertions.assertThat(json).contains(number).contains("teller-list@example.com");
+        assertThat(json).contains(number).contains("teller-list@example.com");
+    }
+
+    @Test
+    void registrationAutomaticallyAssignsDistinctAccountNumbers() throws Exception {
+        Set<String> accountNumbers = new HashSet<>();
+        for (int i = 0; i < 6; i++) {
+            String token = register("number-assignment-" + i + "@example.com");
+            String json = mvc.perform(get("/api/v1/accounts").header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+            JsonNode accounts = mapper.readTree(json);
+            assertThat(accounts).hasSize(1);
+            String number = accounts.get(0).get("accountNumber").asText();
+            assertThat(number).matches("\\d{12}");
+            assertThat(accountNumbers.add(number)).isTrue();
+        }
+    }
+
+    @Test
+    void adminCanSendToAccountNumberAndRecipientGetsNotificationAndQueuesEmail() throws Exception {
+        String recipientEmail = "admin-send-recipient@example.com";
+        String recipientToken = register(recipientEmail);
+        JsonNode account = openAccount(recipientToken);
+        String accountNumber = account.get("accountNumber").asText();
+
+        mvc.perform(post("/api/v1/admin/accounts/send").header("Authorization", "Bearer " + adminToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"accountNumber\":\"" + accountNumber + "\",\"amount\":75.50}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accountNumber", is(accountNumber)))
+                .andExpect(jsonPath("$.balance", is(5000075.50)));
+
+        String notificationsJson = mvc.perform(get("/api/v1/notifications")
+                        .header("Authorization", "Bearer " + recipientToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode notifications = mapper.readTree(notificationsJson);
+        boolean received = false;
+        for (JsonNode notification : notifications) {
+            if ("DEPOSIT".equals(notification.path("type").asText())
+                    && notification.path("message").asText().contains("You have received USD 75.50")) {
+                received = true;
+            }
+        }
+        assertThat(received).isTrue();
+        Long queuedEmails = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM email_outbox
+                WHERE recipient = ? AND subject = ? AND body LIKE ?
+                """, Long.class, recipientEmail, "Deposit confirmation", "%You have received USD 75.50%");
+        assertThat(queuedEmails).isEqualTo(1L);
     }
 }

@@ -1,5 +1,5 @@
 package com.bank;
-
+ 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,11 +22,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Shared base for integration tests: real Postgres + Redis + Kafka via Testcontainers
  * (singleton pattern so the cached Spring context stays valid across classes), plus
- * common HTTP helpers (auth, KYC verification, account opening, teller deposits).
+ * common HTTP helpers (auth, account retrieval/opening, teller deposits).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 public abstract class AbstractIntegrationTest {
+
+    private static final String TEST_ADMIN_PASSWORD = "BankApp-Test-Admin-Only-2026!";
 
     @ServiceConnection
     static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
@@ -36,7 +38,8 @@ public abstract class AbstractIntegrationTest {
             new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
 
     @ServiceConnection
-    static final KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("apache/kafka:3.8.0"));
+    static final KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("apache/kafka:3.8.0"))
+            .withStartupAttempts(3);
 
     static {
         postgres.start();
@@ -50,6 +53,12 @@ public abstract class AbstractIntegrationTest {
         // Disable per-IP auth rate limiting so the many register/login calls across the
         // suite (all from 127.0.0.1) don't trip it. The filter is unit-tested separately.
         registry.add("app.ratelimit.enabled", () -> "false");
+        // Testcontainers uses an isolated database; bootstrap a strong test-only admin
+        // so admin-authorized integration tests do not depend on production seed settings.
+        registry.add("app.seed.admin.enabled", () -> "true");
+        registry.add("app.seed.admin.email", () -> "admin@bank.local");
+        registry.add("app.admin.owner-email", () -> "admin@bank.local");
+        registry.add("app.seed.admin.password", () -> TEST_ADMIN_PASSWORD);
     }
 
     @Autowired
@@ -58,7 +67,7 @@ public abstract class AbstractIntegrationTest {
     @Autowired
     protected ObjectMapper mapper;
 
-    /** Registers a customer (KYC still PENDING) and returns the access token. */
+    /** Registers a customer and returns the access token. */
     protected String register(String email) throws Exception {
         String body = """
                 {"email":"%s","password":"Secret123","firstName":"Test","lastName":"User"}
@@ -70,17 +79,15 @@ public abstract class AbstractIntegrationTest {
         return mapper.readTree(json).get("accessToken").asText();
     }
 
-    /** Registers a customer and verifies their KYC (so they can open accounts). */
+    /** Backwards-compatible test helper; customer accounts no longer require KYC. */
     protected String registerVerified(String email) throws Exception {
-        String token = register(email);
-        verifyKyc(meId(token));
-        return token;
+        return register(email);
     }
 
     protected String adminToken() throws Exception {
         String json = mvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"admin@bank.local\",\"password\":\"Admin123!\"}"))
+                        .content("{\"email\":\"admin@bank.local\",\"password\":\"" + TEST_ADMIN_PASSWORD + "\"}"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         return mapper.readTree(json).get("accessToken").asText();
@@ -92,15 +99,23 @@ public abstract class AbstractIntegrationTest {
         return mapper.readTree(json).get("userId").asText();
     }
 
-    protected void verifyKyc(String userId) throws Exception {
-        mvc.perform(post("/api/v1/admin/users/" + userId + "/kyc")
-                        .header("Authorization", "Bearer " + adminToken())
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"VERIFIED\"}"))
-                .andExpect(status().isOk());
+    /**
+     * Returns the first account automatically provisioned during registration.
+     * Use openAdditionalAccount() when a test needs to exercise POST /accounts.
+     */
+    protected JsonNode openAccount(String token) throws Exception {
+        String json = mvc.perform(get("/api/v1/accounts").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode accounts = mapper.readTree(json);
+        if (accounts.isEmpty()) {
+            throw new IllegalStateException("Registration did not provision the customer's first account");
+        }
+        return accounts.get(0);
     }
 
-    /** Opens a CHECKING account; returns the account JSON (id, accountNumber, balance, ...). */
-    protected JsonNode openAccount(String token) throws Exception {
+    /** Opens a genuinely additional account; under the one-time opening-credit rule it starts at zero. */
+    protected JsonNode openAdditionalAccount(String token) throws Exception {
         String json = mvc.perform(post("/api/v1/accounts").header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"type\":\"CHECKING\"}"))
                 .andExpect(status().isCreated())

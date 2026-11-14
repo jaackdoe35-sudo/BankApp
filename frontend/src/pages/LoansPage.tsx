@@ -10,7 +10,6 @@ import {
   listAdminLoans,
   listLoans,
   rejectLoan,
-  repayLoan,
   type Loan,
 } from '../lib/loans'
 import { formatMoney } from '../lib/format'
@@ -55,7 +54,7 @@ export default function LoansPage() {
 
       <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-6">
         <h2 className="text-lg font-semibold">Apply for a loan</h2>
-        <p className="mt-1 text-sm text-slate-500">Requires verified KYC. Fixed-rate, equal monthly payments.</p>
+        <p className="mt-1 text-sm text-slate-500">Fixed-rate, equal monthly payments.</p>
         <div className="mt-4 flex flex-wrap items-end gap-3">
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-slate-700">Disburse to</span>
@@ -97,12 +96,13 @@ export default function LoansPage() {
           <button
             onClick={() => applyM.mutate()}
             disabled={applyM.isPending || Number(principal) <= 0 || ownAccounts.length === 0}
-            className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+            className="bank-primary-button"
           >
             {applyM.isPending ? 'Submitting…' : 'Apply'}
           </button>
         </div>
-        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+        {error && <p role="alert" className="mt-3 text-sm text-red-600">{error}</p>}
+        {applyM.isSuccess && <p role="status" className="mt-3 text-sm text-emerald-700">Your application has been received and is pending review.</p>}
       </section>
 
       <div className="mt-6 space-y-3">
@@ -123,18 +123,8 @@ export default function LoansPage() {
 }
 
 function LoanRow({ loan }: { loan: Loan }) {
-  const qc = useQueryClient()
   const [open, setOpen] = useState(false)
   const detailQ = useQuery({ queryKey: ['loan', loan.id], queryFn: () => getLoan(loan.id), enabled: open })
-
-  const repayM = useMutation({
-    mutationFn: () => repayLoan(loan.id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['loan', loan.id] })
-      qc.invalidateQueries({ queryKey: ['loans'] })
-      qc.invalidateQueries({ queryKey: ['accounts'] })
-    },
-  })
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -189,15 +179,11 @@ function LoanRow({ loan }: { loan: Loan }) {
                 </tbody>
               </table>
               {loan.status === 'ACTIVE' && (
-                <button
-                  onClick={() => repayM.mutate()}
-                  disabled={repayM.isPending}
-                  className="mt-3 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-                >
-                  {repayM.isPending ? 'Paying…' : 'Pay next installment'}
-                </button>
+                <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                  <p className="font-medium">Loan repayments are currently disabled.</p>
+                  <p className="mt-1">No payment will be taken from your account. Repayment functionality is not available in this testing release.</p>
+                </div>
               )}
-              {repayM.isError && <p className="mt-2 text-sm text-red-600">{apiErrorMessage(repayM.error)}</p>}
             </>
           )}
         </div>
@@ -231,12 +217,14 @@ function PendingApprovals() {
             <span className="flex gap-2">
               <button
                 onClick={() => approveM.mutate(loan.id)}
-                className="rounded-lg bg-green-600 px-3 py-1.5 font-medium text-white hover:bg-green-700"
+                disabled={approveM.isPending || rejectM.isPending}
+                className="bank-primary-button"
               >
                 Approve
               </button>
               <button
                 onClick={() => rejectM.mutate(loan.id)}
+                disabled={approveM.isPending || rejectM.isPending}
                 className="rounded-lg border border-slate-300 px-3 py-1.5 text-red-600 hover:bg-red-50"
               >
                 Reject

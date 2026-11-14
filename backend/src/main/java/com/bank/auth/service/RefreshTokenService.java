@@ -5,6 +5,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
+import java.util.Set;
 
 /**
  * Opaque refresh tokens stored in Redis with a TTL. Each token maps to a user id.
@@ -39,6 +40,17 @@ public class RefreshTokenService {
 
     public void revoke(String token) {
         redis.delete(key(token));
+    }
+
+    /** Revoke every refresh token currently associated with a user. */
+    public void revokeAllForUser(UUID userId) {
+        Set<String> keys = redis.keys(KEY_PREFIX + "*");
+        if (keys == null || keys.isEmpty()) return;
+        for (String key : keys) {
+            if (userId.toString().equals(redis.opsForValue().get(key))) {
+                redis.delete(key);
+            }
+        }
     }
 
     private String key(String token) {

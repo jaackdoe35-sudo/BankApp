@@ -40,8 +40,8 @@ export async function createAccount(type: AccountType): Promise<Account> {
   return data
 }
 
-export async function withdraw(id: string, amount: number): Promise<Account> {
-  const { data } = await api.post<Account>(`/api/v1/accounts/${id}/withdraw`, { amount })
+export async function withdraw(id: string): Promise<Account> {
+  const { data } = await api.post<Account>(`/api/v1/accounts/${id}/withdraw`)
   return data
 }
 
