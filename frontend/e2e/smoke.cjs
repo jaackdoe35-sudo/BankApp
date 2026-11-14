@@ -212,7 +212,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.getByText('Withdraw funds').waitFor()
     await page.getByText('$5,000,000.00').first().waitFor()
     const languageSelect = page.locator('.language-picker select')
-    assert.equal(await languageSelect.locator('option').count(), 14, 'language dropdown must list only bundled offline languages')
+    assert.equal(await languageSelect.locator('option').count(), 15, 'language dropdown must list only bundled offline languages')
     await languageSelect.selectOption('fr')
     await page.getByText('Vue d’ensemble').waitFor()
     assert.equal(await page.evaluate(() => document.documentElement.lang), 'fr', 'language code must be applied')
@@ -289,7 +289,7 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded' })
     // Every selectable locale is local-only; RTL metadata is checked for Arabic.
     const localeSelect = page.locator('.language-picker select')
-    for (const code of ['en','fr','es','pt','de','ar','ha','yo','fil','ms','ko','zh-CN','zh-TW','id']) {
+    for (const code of ['en','fr','es','pt','de','ar','ha','yo','fil','ms','ko','zh-CN','zh-TW','id','ja']) {
       await localeSelect.selectOption(code)
       assert.equal(await page.evaluate(() => document.documentElement.lang), code, 'selected locale metadata must match ' + code)
     }
@@ -313,6 +313,19 @@ const { chromium } = require(path.resolve(binDir, '../playwright'))
     await page.waitForFunction(() => document.querySelector('.bank-nav-link')?.textContent?.includes('总览'))
     await localeSelect.selectOption('en')
     await page.waitForFunction(() => document.querySelector('.bank-nav-link')?.textContent?.includes('Overview'))
+
+    // Japanese is bundled offline and must apply across the app, including
+    // persisted language selection and the notifications/login routes.
+    await localeSelect.selectOption('ja')
+    await page.waitForFunction(() => document.documentElement.lang === 'ja')
+    await page.waitForFunction(() => document.querySelector('.bank-nav-link')?.textContent?.includes('概要'))
+    await page.goto('http://127.0.0.1:4173/notifications', { waitUntil: 'domcontentloaded' })
+    await page.getByRole('heading', { name: '通知' }).waitFor()
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await page.waitForFunction(() => document.documentElement.lang === 'ja')
+    await page.getByRole('heading', { name: '通知' }).waitFor()
+    await page.goto('http://127.0.0.1:4173/login', { waitUntil: 'domcontentloaded' })
+    await page.getByRole('button', { name: 'ログイン' }).waitFor()
 
     const routeMatrix = {
       en: ['Welcome','Open your account','Send money','Cards','Loans','Profile','Notifications','Account details','Admins only.'],
