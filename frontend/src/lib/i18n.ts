@@ -18,22 +18,22 @@ export const languages = LANGUAGE_CODES
 export type Language = typeof LANGUAGE_CODES[number]
 const KEY = 'northstar.language.v1'
 const messages: Record<string, Record<string,string>> = {
-en:{overview:'Overview',payments:'Payments',cards:'Cards',loans:'Lending',profile:'Profile',activity:'Activity',signOut:'Sign out',welcome:'Welcome',position:'YOUR FINANCIAL POSITION',balance:'Total account balance',accounts:'Your accounts',language:'Language',demoAccess:"Demo access · Use synthetic details only.",demoFooter:"Demonstration interface · Synthetic data only."},
-fr:{overview:'Vue d’ensemble',payments:'Paiements',cards:'Cartes',loans:'Crédit',profile:'Profil',activity:'Activité',signOut:'Déconnexion',welcome:'Bienvenue',position:'VOTRE SITUATION FINANCIÈRE',balance:'Solde total des comptes',accounts:'Vos comptes',language:'Langue',demoAccess:"Accès de démonstration · Utilisez uniquement des informations synthétiques.",demoFooter:"Interface de démonstration · Données synthétiques uniquement."},
-es:{overview:'Resumen',payments:'Pagos',cards:'Tarjetas',loans:'Préstamos',profile:'Perfil',activity:'Actividad',signOut:'Cerrar sesión',welcome:'Bienvenido',position:'TU SITUACIÓN FINANCIERA',balance:'Saldo total de las cuentas',accounts:'Tus cuentas',language:'Idioma',demoAccess:"Acceso de demostración · Utilice únicamente datos sintéticos.",demoFooter:"Interfaz de demostración · Solo datos sintéticos."},
-pt:{overview:'Visão geral',payments:'Pagamentos',cards:'Cartões',loans:'Empréstimos',profile:'Perfil',activity:'Atividade',signOut:'Terminar sessão',welcome:'Boas-vindas',position:'A SUA POSIÇÃO FINANCEIRA',balance:'Saldo total das contas',accounts:'As suas contas',language:'Idioma',demoAccess:"Acesso de demonstração · Utilize apenas dados sintéticos.",demoFooter:"Interface de demonstração · Apenas dados sintéticos."},
-ar:{overview:'نظرة عامة',payments:'المدفوعات',cards:'البطاقات',loans:'القروض',profile:'الملف الشخصي',activity:'النشاط',signOut:'تسجيل الخروج',welcome:'مرحبًا',position:'وضعك المالي',balance:'إجمالي رصيد الحسابات',accounts:'حساباتك',language:'اللغة',demoAccess:"وصول تجريبي · استخدم بيانات اصطناعية فقط.",demoFooter:"واجهة تجريبية · بيانات اصطناعية فقط."},
-ha:{overview:'Taƙaitawa',payments:'Biyan kuɗi',cards:'Katuna',loans:'Lamuni',profile:'Bayani',activity:'Ayyuka',signOut:'Fita',welcome:'Barka',position:'MATSAYIN KUƊIN KA',balance:'Jimillar kuɗin asusu',accounts:'Asusunka',language:'Harshe',demoAccess:"Shiga na gwaji · Yi amfani da bayanan ƙirƙira kawai.",demoFooter:"Manhajar gwaji · Bayanai na ƙirƙira kawai."},
-yo:{overview:'Àkótán',payments:'Ìsanwó',cards:'Káàdì',loans:'Àwìn',profile:'Àkọ́ọ́lẹ̀',activity:'Ìṣe',signOut:'Jáde',welcome:'Ẹ káàbọ̀',position:'IPÒ OWÓ RẸ',balance:'Àpapọ̀ owó inú àkọọ́lẹ̀',accounts:'Àwọn àkọọ́lẹ̀ rẹ',language:'Èdè',demoAccess:"Wíwọlé ìdánwò · Lo dátà àròsọ nìkan.",demoFooter:"Ojú ìwòye ìdánwò · Dátà àròsọ nìkan."},
-fil:{overview:'Pangkalahatang-ideya',payments:'Mga pagbabayad',cards:'Mga card',loans:'Mga pautang',profile:'Profile',activity:'Aktibidad',signOut:'Mag-sign out',welcome:'Maligayang pagdating',position:'IYONG KALAGAYANG PINANSYAL',balance:'Kabuuang balanse ng account',accounts:'Iyong mga account',language:'Wika',demoAccess:"Demo access · Gumamit lamang ng sintetikong impormasyon.",demoFooter:"Demo interface · Sintetikong data lamang."}
+en:{overview:'Overview',payments:'Payments',cards:'Cards',loans:'Lending',profile:'Profile',activity:'Activity',signOut:'Sign out',welcome:'Welcome',position:'YOUR FINANCIAL POSITION',balance:'Total account balance',accounts:'Your accounts',language:'Language',demoAccess:"Demo access · Use synthetic details only.",demoFooter:"Private Access Only · Evaluation Environment"},
+fr:{overview:'Vue d’ensemble',payments:'Paiements',cards:'Cartes',loans:'Crédit',profile:'Profil',activity:'Activité',signOut:'Déconnexion',welcome:'Bienvenue',position:'VOTRE SITUATION FINANCIÈRE',balance:'Solde total des comptes',accounts:'Vos comptes',language:'Langue',demoAccess:"Accès de démonstration · Utilisez uniquement des informations synthétiques.",demoFooter:"Private Access Only · Evaluation Environment"},
+es:{overview:'Resumen',payments:'Pagos',cards:'Tarjetas',loans:'Préstamos',profile:'Perfil',activity:'Actividad',signOut:'Cerrar sesión',welcome:'Bienvenido',position:'TU SITUACIÓN FINANCIERA',balance:'Saldo total de las cuentas',accounts:'Tus cuentas',language:'Idioma',demoAccess:"Acceso de demostración · Utilice únicamente datos sintéticos.",demoFooter:"Private Access Only · Evaluation Environment"},
+pt:{overview:'Visão geral',payments:'Pagamentos',cards:'Cartões',loans:'Empréstimos',profile:'Perfil',activity:'Atividade',signOut:'Terminar sessão',welcome:'Boas-vindas',position:'A SUA POSIÇÃO FINANCEIRA',balance:'Saldo total das contas',accounts:'As suas contas',language:'Idioma',demoAccess:"Acesso de demonstração · Utilize apenas dados sintéticos.",demoFooter:"Private Access Only · Evaluation Environment"},
+ar:{overview:'نظرة عامة',payments:'المدفوعات',cards:'البطاقات',loans:'القروض',profile:'الملف الشخصي',activity:'النشاط',signOut:'تسجيل الخروج',welcome:'مرحبًا',position:'وضعك المالي',balance:'إجمالي رصيد الحسابات',accounts:'حساباتك',language:'اللغة',demoAccess:"وصول تجريبي · استخدم بيانات اصطناعية فقط.",demoFooter:"Private Access Only · Evaluation Environment"},
+ha:{overview:'Taƙaitawa',payments:'Biyan kuɗi',cards:'Katuna',loans:'Lamuni',profile:'Bayani',activity:'Ayyuka',signOut:'Fita',welcome:'Barka',position:'MATSAYIN KUƊIN KA',balance:'Jimillar kuɗin asusu',accounts:'Asusunka',language:'Harshe',demoAccess:"Shiga na gwaji · Yi amfani da bayanan ƙirƙira kawai.",demoFooter:"Private Access Only · Evaluation Environment"},
+yo:{overview:'Àkótán',payments:'Ìsanwó',cards:'Káàdì',loans:'Àwìn',profile:'Àkọ́ọ́lẹ̀',activity:'Ìṣe',signOut:'Jáde',welcome:'Ẹ káàbọ̀',position:'IPÒ OWÓ RẸ',balance:'Àpapọ̀ owó inú àkọọ́lẹ̀',accounts:'Àwọn àkọọ́lẹ̀ rẹ',language:'Èdè',demoAccess:"Wíwọlé ìdánwò · Lo dátà àròsọ nìkan.",demoFooter:"Private Access Only · Evaluation Environment"},
+fil:{overview:'Pangkalahatang-ideya',payments:'Mga pagbabayad',cards:'Mga card',loans:'Mga pautang',profile:'Profile',activity:'Aktibidad',signOut:'Mag-sign out',welcome:'Maligayang pagdating',position:'IYONG KALAGAYANG PINANSYAL',balance:'Kabuuang balanse ng account',accounts:'Iyong mga account',language:'Wika',demoAccess:"Demo access · Gumamit lamang ng sintetikong impormasyon.",demoFooter:"Private Access Only · Evaluation Environment"}
 }
 
 Object.assign(messages, {
-  ms: { overview:'Gambaran keseluruhan',payments:'Pembayaran',cards:'Kad',loans:'Pinjaman',profile:'Profil',activity:'Aktiviti',signOut:'Log keluar',welcome:'Selamat datang',position:'KEDUDUKAN KEWANGAN ANDA',balance:'Jumlah baki akaun',accounts:'Akaun anda',language:'Bahasa' ,demoAccess:"Akses demo · Gunakan data sintetik sahaja.",demoFooter:"Antara muka demo · Data sintetik sahaja."},
-  ko: { overview:'개요',payments:'결제',cards:'카드',loans:'대출',profile:'프로필',activity:'활동',signOut:'로그아웃',welcome:'환영합니다',position:'재정 현황',balance:'총 계좌 잔액',accounts:'내 계좌',language:'언어' ,demoAccess:"데모 액세스 · 합성 정보만 사용하세요.",demoFooter:"데모 인터페이스 · 합성 데이터만 사용하세요."},
-  'zh-CN': { overview:'总览',payments:'付款',cards:'银行卡',loans:'贷款',profile:'个人资料',activity:'活动',signOut:'退出登录',welcome:'欢迎',position:'您的财务状况',balance:'账户总余额',accounts:'您的账户',language:'语言' ,demoAccess:"演示访问 · 仅使用合成信息。",demoFooter:"演示界面 · 仅使用合成数据。"},
-  'zh-TW': { overview:'總覽',payments:'付款',cards:'銀行卡',loans:'貸款',profile:'個人資料',activity:'活動',signOut:'登出',welcome:'歡迎',position:'您的財務狀況',balance:'帳戶總餘額',accounts:'您的帳戶',language:'語言' ,demoAccess:"展示存取 · 僅使用合成資訊。",demoFooter:"展示介面 · 僅使用合成資料。"},
-  id: { overview:'Ringkasan',payments:'Pembayaran',cards:'Kartu',loans:'Pinjaman',profile:'Profil',activity:'Aktivitas',signOut:'Keluar',welcome:'Selamat datang',position:'POSISI KEUANGAN ANDA',balance:'Total saldo rekening',accounts:'Rekening Anda',language:'Bahasa' ,demoAccess:"Akses demo · Gunakan informasi sintetis saja.",demoFooter:"Antarmuka demo · Data sintetis saja."},
+  ms: { overview:'Gambaran keseluruhan',payments:'Pembayaran',cards:'Kad',loans:'Pinjaman',profile:'Profil',activity:'Aktiviti',signOut:'Log keluar',welcome:'Selamat datang',position:'KEDUDUKAN KEWANGAN ANDA',balance:'Jumlah baki akaun',accounts:'Akaun anda',language:'Bahasa' ,demoAccess:"Akses demo · Gunakan data sintetik sahaja.",demoFooter:"Private Access Only · Evaluation Environment"},
+  ko: { overview:'개요',payments:'결제',cards:'카드',loans:'대출',profile:'프로필',activity:'활동',signOut:'로그아웃',welcome:'환영합니다',position:'재정 현황',balance:'총 계좌 잔액',accounts:'내 계좌',language:'언어' ,demoAccess:"데모 액세스 · 합성 정보만 사용하세요.",demoFooter:"Private Access Only · Evaluation Environment"},
+  'zh-CN': { overview:'总览',payments:'付款',cards:'银行卡',loans:'贷款',profile:'个人资料',activity:'活动',signOut:'退出登录',welcome:'欢迎',position:'您的财务状况',balance:'账户总余额',accounts:'您的账户',language:'语言' ,demoAccess:"演示访问 · 仅使用合成信息。",demoFooter:"Private Access Only · Evaluation Environment"},
+  'zh-TW': { overview:'總覽',payments:'付款',cards:'銀行卡',loans:'貸款',profile:'個人資料',activity:'活動',signOut:'登出',welcome:'歡迎',position:'您的財務狀況',balance:'帳戶總餘額',accounts:'您的帳戶',language:'語言' ,demoAccess:"展示存取 · 僅使用合成資訊。",demoFooter:"Private Access Only · Evaluation Environment"},
+  id: { overview:'Ringkasan',payments:'Pembayaran',cards:'Kartu',loans:'Pinjaman',profile:'Profil',activity:'Aktivitas',signOut:'Keluar',welcome:'Selamat datang',position:'POSISI KEUANGAN ANDA',balance:'Total saldo rekening',accounts:'Rekening Anda',language:'Bahasa' ,demoAccess:"Akses demo · Gunakan informasi sintetis saja.",demoFooter:"Private Access Only · Evaluation Environment"},
 })
 
 messages.de = {
@@ -50,7 +50,7 @@ messages.de = {
   accounts:'Ihre Konten',
   language:'Sprache',
   demoAccess:'Demo-Zugang · Verwenden Sie nur synthetische Angaben.',
-  demoFooter:'Demonstrationsoberfläche · Nur synthetische Daten.',
+  demoFooter:"Private Access Only · Evaluation Environment",
 }
 
 messages.ja = {
@@ -67,7 +67,7 @@ messages.ja = {
   accounts:'お客様の口座',
   language:'言語',
   demoAccess:'デモアクセス · 合成データのみを使用してください。',
-  demoFooter:'デモ用インターフェース · 合成データのみを使用しています。',
+  demoFooter:"Private Access Only · Evaluation Environment",
 }
 
 const demoLabels: Record<string, string> = {
